@@ -1,0 +1,3 @@
+<project name="face_detection">
+  <depends buildtime="true" runtime="true" names="libnaoqi" />
+</project>
