@@ -68,22 +68,25 @@ typedef enum {
 
 int main(int argc, char* argv[])
 {
-    if (argc < 2)
+    //-- 1. Load the cascades
+    cv::CascadeClassifier face_cascade;
+    /** Global variables */
+    cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/romeo_face_detection/haarcascade_frontalface_alt.xml";
+
+    if (argc == 2)
     {
-        std::cerr << "Usage 'getimages robotIp'" << std::endl;
-        return 1;
+        face_cascade_name = cv::String(argv[1]);
     }
+
+    if( !face_cascade.load( face_cascade_name ) ) {
+      std::cout << "--(!)Error loading default " << face_cascade_name << std::endl;
+      std::cout << "Usage : " << argv[0] << " <haarcascade_file.xml>" << std::endl;
+      return -1;
+    };
 
     vpNaoqiGrabber g;
 
     g.open();
-
-    //-- 1. Load the cascades
-    cv::CascadeClassifier face_cascade;
-    /** Global variables */
-    cv::String face_cascade_name = "/local/soft/Naoqi/cpp/workspace/face_detection/haarcascade_frontalface_alt.xml";
-
-    if( !face_cascade.load( face_cascade_name ) ){ printf("--(!)Error loading\n"); return -1; };
 
     vpTemplateTrackerWarpSRT warp;
     vpTemplateTrackerSSDInverseCompositional tracker(&warp);
