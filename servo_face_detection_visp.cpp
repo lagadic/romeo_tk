@@ -295,7 +295,7 @@ int main(int argc, char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
   robot.stop(jointNames);
-
+  g.cleanup();
   task.kill();
 
   return 0;
