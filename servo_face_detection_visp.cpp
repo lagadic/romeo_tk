@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
   //-- 1. Load the cascades
   cv::CascadeClassifier face_cascade;
   /** Global variables */
-  cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/romeo_face_detection/haarcascade_frontalface_alt.xml";
+  cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/haarcascade_frontalface_alt.xml";
 
   if (argc == 2)
   {
@@ -144,8 +144,8 @@ int main(int argc, char* argv[])
     jointVel[i] = 0.0f;
 
   vpCameraParameters cam;
-  cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
-
+  //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
+  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
   robot.setStiffness(jointNames, 1.f);
 
   double tinit = 0; // initial time in second
