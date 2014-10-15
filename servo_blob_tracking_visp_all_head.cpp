@@ -12,6 +12,7 @@
 #include <alvision/alvisiondefinitions.h>
 #include <alerror/alerror.h>
 #include <alproxies/almotionproxy.h>
+#include <alproxies/altexttospeechproxy.h>
 
 // ViSP includes.
 #include <visp/vpDisplayX.h>
@@ -88,6 +89,11 @@ int main(int argc, char* argv[])
     else {
         robotIp = argv[1];
     }
+
+
+    AL::ALTextToSpeechProxy tts(robotIp, 9559);
+
+    const std::string phraseToSay = "Yes";
 
 
     vpNaoqiGrabber g;
@@ -190,6 +196,9 @@ int main(int argc, char* argv[])
 
     vpImage<vpRGBa> O;
 
+    bool speech = true;
+    double normError = 0.0;
+
     while(1)
     {
         double t = vpTime::measureTimeMs();
@@ -236,6 +245,20 @@ int main(int argc, char* argv[])
                 jointVel[2] = q_dot[2];
                 jointVel[3] = q_dot[3];
                 robot.setVelocity(jointNames, jointVel);
+
+                normError = task.getError().euclideanNorm();
+
+                //std::cout << "Norm error = " << (task.getError()).euclideanNorm() << std::endl;
+                if (normError < 0.007 && speech)
+                {
+                  /** Call the say method */
+                  tts.post.say(phraseToSay);
+                  speech = false;
+
+                }
+                else if (normError > 0.05)
+                  speech = true;
+
             }
             else {
                 std::cout << "Stop the robot..." << std::endl;
