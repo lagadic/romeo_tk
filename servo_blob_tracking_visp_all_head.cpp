@@ -143,9 +143,9 @@ int main(int argc, char* argv[])
     // Add the 2D point feature to the task
     task.addFeature(s, sd);
 
-    vpAdaptiveGain lambda(0.5, 0.01, 5); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-    task.setLambda(lambda);
-    //task.setLambda(0.8);
+    //vpAdaptiveGain lambda(0.5, 0.01, 5); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    //task.setLambda(lambda);
+    task.setLambda(0.8);
 
     vpColVector q_dot;
 
