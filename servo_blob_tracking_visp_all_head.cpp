@@ -158,21 +158,9 @@ int main(int argc, char* argv[])
     // Transformation HeadRoll to Camera Left
     vpHomogeneousMatrix cMe;
 
-    cMe[0][0] = -1.;
-    cMe[1][0] = 0.;
-    cMe[2][0] =  0.;
+    cMe = robot.getTransfEndEffector("CameraLeft");
 
-    cMe[0][1] = 0.;
-    cMe[1][1] = -1.;
-    cMe[2][1] =  0.;
 
-    cMe[0][2] = 0.;
-    cMe[1][2] = 0.;
-    cMe[2][2] =  1.;
-
-    cMe[0][3] = 0.04;
-    cMe[1][3] = 0.09938;
-    cMe[2][3] =  0.11999;
 
     // Motion
 
@@ -285,8 +273,6 @@ int main(int argc, char* argv[])
     std::cout << "The end: stop the robot..." << std::endl;
     robot.stop(jointNames);
 
-    /** Cleanup.*/
-    g.cleanup();
     task.kill();
 #endif
 
