@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
 
   cMe = robot.getTransfEndEffector("CameraLeft");
 
-  std::vector<std::string> jointNames =  robot.getJointNames("Head");
+  std::vector<std::string> jointNames =  robot.getBodyNames("Head");
   const unsigned int numJoints = jointNames.size();
 
   std::vector<float> jointVel(numJoints);
@@ -167,7 +167,6 @@ int main(int argc, char* argv[])
 
 
   bool speech = true;
-  double normError = 0.0;
 
   double tinit = 0; // initial time in second
 
@@ -282,7 +281,7 @@ int main(int argc, char* argv[])
         vpPixelMeterConversion::convertPoint(cam, cog, x, y);
         s.buildFrom(x, y, Z);
 
-        eJe = robot.getJacobian("Head");
+        eJe = robot.get_eJe("Head");
         task.set_eJe(eJe);
         task.set_cVe( vpVelocityTwistMatrix(cMe) );
 
@@ -294,22 +293,20 @@ int main(int argc, char* argv[])
         vpDisplay::displayCross(I, cog_desired, 10, vpColor::green, 2);
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
-        jointVel[0] = q_dot[0];
-        jointVel[1] = q_dot[1];
-        jointVel[2] = q_dot[2];
-        jointVel[3] = q_dot[3];
-        robot.setVelocity(jointNames, jointVel);
-        normError = task.getError().euclideanNorm();
+        robot.setVelocity(jointNames, q_dot);
+
+        // Compute the distance in pixel between the target and the center of the image
+        double distance = vpImagePoint::distance(cog_desired, cog);
 
         //std::cout << "Norm error = " << (task.getError()).euclideanNorm() << std::endl;
-        if (normError < 0.007 && speech)
+        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
         {
           /** Call the say method */
           tts.post.say(phraseToSay);
           speech = false;
 
         }
-        else if (normError > 0.05)
+        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
           speech = true;
       }
       else {
