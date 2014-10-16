@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
   // Add the 2D point feature to the task
   task.addFeature(s, sd);
 
-  vpAdaptiveGain lambda(2, 0.3, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+  vpAdaptiveGain lambda(2, 0.8, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
   task.setLambda(lambda);
   //task.setLambda(0.8);
 
