@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 
+#include <alproxies/altexttospeechproxy.h>
+
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -43,6 +45,17 @@ typedef enum {
 
 int main(int argc, char* argv[])
 {
+
+  std::string robotIp = "198.18.0.1";
+
+  if (argc < 2) {
+      std::cerr << "Usage: almotion_setangles robotIp "
+                << "(optional default \"198.18.0.1\")."<< std::endl;
+  }
+  else {
+      robotIp = argv[1];
+  }
+
   //-- 1. Load the cascades
   cv::CascadeClassifier face_cascade;
   /** Global variables */
@@ -58,6 +71,12 @@ int main(int argc, char* argv[])
     std::cout << "Usage : " << argv[0] << " <haarcascade_file.xml>" << std::endl;
     return -1;
   };
+
+
+  AL::ALTextToSpeechProxy tts(robotIp, 9559);
+
+  const std::string phraseToSay = "Hello!";
+
 
   vpNaoqiGrabber g;
 
@@ -160,6 +179,9 @@ int main(int argc, char* argv[])
   //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
   cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
   robot.setStiffness(jointNames, 1.f);
+
+
+  bool speech = true;
 
   double tinit = 0; // initial time in second
 
@@ -287,6 +309,20 @@ int main(int argc, char* argv[])
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
         robot.setVelocity(jointNames, q_dot);
+
+        // Compute the distance in pixel between the target and the center of the image
+        double distance = vpImagePoint::distance(cog_desired, cog);
+
+        //std::cout << "Norm error = " << (task.getError()).euclideanNorm() << std::endl;
+        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
+        {
+          /** Call the say method */
+          tts.post.say(phraseToSay);
+          speech = false;
+
+        }
+        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
+          speech = true;
       }
       else {
         std::cout << "Stop the robot..." << std::endl;
