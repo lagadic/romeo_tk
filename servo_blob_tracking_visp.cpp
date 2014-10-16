@@ -170,11 +170,6 @@ int main(int argc, char* argv[])
     jointNames.push_back(pan);
     jointNames.push_back(tilt);
 
-    std::vector<float> jointVel(2);
-
-    for(unsigned int i=0; i< jointVel.size(); i++)
-        jointVel[i] = 0.0f;
-
     vpCameraParameters cam;
     //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
     cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
@@ -224,9 +219,7 @@ int main(int argc, char* argv[])
                 vpDisplay::displayCross(I, cog_desired, 10, vpColor::green, 2);
                 std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                           << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
-                jointVel[0] = q_dot[0]*5;
-                jointVel[1] = q_dot[1]*0.5;
-                robot.setVelocity(jointNames, jointVel);
+                robot.setVelocity(jointNames, q_dot);
             }
             else {
                 std::cout << "Stop the robot..." << std::endl;

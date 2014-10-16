@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
   cMe[2][3] =  0.11999;
 
 
-  std::vector<std::string> jointNames =  robot.getJointNames("Head");
+  std::vector<std::string> jointNames =  robot.getBodyNames("Head");
   const unsigned int numJoints = jointNames.size();
 
   std::vector<float> jointVel(numJoints);
@@ -274,7 +274,7 @@ int main(int argc, char* argv[])
         vpPixelMeterConversion::convertPoint(cam, cog, x, y);
         s.buildFrom(x, y, Z);
 
-        eJe = robot.getJacobian("Head");
+        eJe = robot.get_eJe("Head");
         task.set_eJe(eJe);
         task.set_cVe( vpVelocityTwistMatrix(cMe) );
 
@@ -286,11 +286,7 @@ int main(int argc, char* argv[])
         vpDisplay::displayCross(I, cog_desired, 10, vpColor::green, 2);
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
-        jointVel[0] = q_dot[0];
-        jointVel[1] = q_dot[1];
-        jointVel[2] = q_dot[2];
-        jointVel[3] = q_dot[3];
-        robot.setVelocity(jointNames, jointVel);
+        robot.setVelocity(jointNames, q_dot);
       }
       else {
         std::cout << "Stop the robot..." << std::endl;

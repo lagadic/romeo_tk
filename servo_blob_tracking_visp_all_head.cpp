@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
     // Motion
 
-    std::vector<std::string> jointNames =  robot.getJointNames("Head");
+    std::vector<std::string> jointNames =  robot.getBodyNames("Head");
     const unsigned int numJoints = jointNames.size();
 
     std::vector<float> jointVel(numJoints);
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
                 vpPixelMeterConversion::convertPoint(cam, cog, x, y);
                 s.buildFrom(x, y, Z);
 
-                eJe = robot.getJacobian("Head");
+                eJe = robot.get_eJe("Head");
                 task.set_eJe(eJe);
                 task.set_cVe( vpVelocityTwistMatrix(cMe) );
 
