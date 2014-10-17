@@ -1,17 +1,11 @@
 /**
  *
- * This example demonstrates how to get images from the robot remotely and how
- * to display them on your screen using opencv.
+ * This example demonstrates how to get images from the robot remotely, how
+ * to track a blob using all the four joints of the Romeo Head;
  *
- * Copyright Aldebaran Robotics
  */
 
 // Aldebaran includes.
-#include <alproxies/alvideodeviceproxy.h>
-#include <alvision/alimage.h>
-#include <alvision/alvisiondefinitions.h>
-#include <alerror/alerror.h>
-#include <alproxies/almotionproxy.h>
 #include <alproxies/altexttospeechproxy.h>
 
 // ViSP includes.
@@ -37,9 +31,6 @@
 
 
 using namespace AL;
-
-
-
 
 
 void computeCentroidBlob(const vpImage<unsigned char> &I,vpDot2 &blob,vpImagePoint &cog,bool &init_done )
@@ -91,26 +82,28 @@ int main(int argc, char* argv[])
     }
 
 
+    /** Open Proxy for the speech*/
     AL::ALTextToSpeechProxy tts(robotIp, 9559);
-
+    tts.setLanguage("English");
     const std::string phraseToSay = "Yes";
+    bool speech = true;
 
-
+    /** Open the grabber for the acquisition of the images from the robot*/
     vpNaoqiGrabber g;
-
     g.open();
 
+    /** Create a new istance NaoqiRobot*/
     vpNaoqiRobot robot;
-
     robot.open();
 
 
-
-
-    /** Initialization Visp Image and display*/
+    /** Initialization Visp Image, display and camera paramenters*/
     vpImage<unsigned char> I(240,320);
     vpDisplayX d(I);
     vpDisplay::setTitle(I, "ViSP viewer");
+    vpCameraParameters cam;
+    //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
+    cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
 
     /** Initialization Visp blob*/
     vpDot2 blob;
@@ -118,11 +111,11 @@ int main(int argc, char* argv[])
     blob.setGraphicsThickness(2);
     vpImagePoint cog;
 
-    /** Initialization array velocities*/
+
 
     bool init_done = false;
 
-
+    /** Initialization Visual servoing task*/
     vpServo task; // Visual servoing task
     vpFeaturePoint sd; //The desired point feature.
     //Set the desired features x and y
@@ -167,25 +160,15 @@ int main(int argc, char* argv[])
     std::vector<std::string> jointNames =  robot.getBodyNames("Head");
     const unsigned int numJoints = jointNames.size();
 
-    std::vector<float> jointVel(numJoints);
-
-    for(unsigned int i=0; i< numJoints; i++)
-        jointVel[i] = 0.0f;
-
-    // Declate Jacobian
+    // Declarate Jacobian
     vpMatrix eJe(6,numJoints);
 
-    vpCameraParameters cam;
-    //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
-    cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+    //Set the stiffness
     robot.setStiffness(jointNames, 1.f);
 
     double tinit = 0; // initial time in second
 
     vpImage<vpRGBa> O;
-
-    bool speech = true;
-    double normError = 0.0;
 
     while(1)
     {
@@ -228,26 +211,22 @@ int main(int argc, char* argv[])
 
                 std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                           << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
-                jointVel[0] = q_dot[0];
-                jointVel[1] = q_dot[1];
-                jointVel[2] = q_dot[2];
-                jointVel[3] = q_dot[3];
-                robot.setVelocity(jointNames, jointVel);
 
-                normError = task.getError().euclideanNorm();
+                robot.setVelocity(jointNames, q_dot);
 
-                //std::cout << "Norm error = " << (task.getError()).euclideanNorm() << std::endl;
-                if (normError < 0.007 && speech)
+                // Compute the distance in pixel between the target and the center of the image
+                double distance = vpImagePoint::distance(cog_desired, cog);
+
+                if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
                 {
                   /** Call the say method */
                   tts.post.say(phraseToSay);
                   speech = false;
 
                 }
-                else if (normError > 0.05)
+                else if (distance > 0.15*I.getWidth()) // 15 % of the image witdh
                   speech = true;
-
-            }
+              }
             else {
                 std::cout << "Stop the robot..." << std::endl;
                 robot.stop(jointNames);

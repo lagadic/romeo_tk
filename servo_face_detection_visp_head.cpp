@@ -1,9 +1,8 @@
 /**
  *
- * This example demonstrates how to get images from the robot remotely and how
- * to display them on your screen using opencv.
+ * This example demonstrates how to get images from the robot remotely, how
+ * to track a face using all the four joints of the Romeo Head;
  *
- * Copyright Aldebaran Robotics
  */
 
 #include <iostream>
@@ -15,6 +14,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+// ViSP includes.
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageConvert.h>
@@ -72,20 +72,23 @@ int main(int argc, char* argv[])
     return -1;
   };
 
-
+  /** Open Proxy for the speech*/
   AL::ALTextToSpeechProxy tts(robotIp, 9559);
-
+  tts.setLanguage("English");
   const std::string phraseToSay = "Hello!";
+  bool speech = true;
 
-
+   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
-
   g.open();
 
-  vpNaoqiRobot robot;
 
+  /** Create a new istance NaoqiRobot*/
+  vpNaoqiRobot robot;
   robot.open();
 
+
+  /** Initialization settings face detection*/
   vpTemplateTrackerWarpSRT warp;
   vpTemplateTrackerSSDInverseCompositional tracker(&warp);
   tracker.setSampling(2,2);
@@ -101,16 +104,20 @@ int main(int argc, char* argv[])
   double area_zone_ref, area_zone_cur, area_zone_prev;
   vpColVector p; // Estimated parameters
 
-
+  /** Initialization Visp Image, display and camera paramenters*/
   vpImage<unsigned char> I(240,320);
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
+  vpCameraParameters cam;
+  //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
+  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
 
   cv::Mat frame_gray;
 
   vpRect target;
   int iter = 0;
 
+  /** Initialization Visual servoing task*/
   vpServo task; // Visual servoi    vpServo task; // Visual servoing task
   vpFeaturePoint sd; //The desired point feature.
   //Set the desired features x and y
@@ -151,22 +158,11 @@ int main(int argc, char* argv[])
   std::vector<std::string> jointNames =  robot.getBodyNames("Head");
   const unsigned int numJoints = jointNames.size();
 
-  std::vector<float> jointVel(numJoints);
-
-  for(unsigned int i=0; i< numJoints; i++)
-      jointVel[i] = 0.0f;
-
-
   // Declate Jacobian
   vpMatrix eJe(6,numJoints);
 
-  vpCameraParameters cam;
-  //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
-  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
   robot.setStiffness(jointNames, 1.f);
 
-
-  bool speech = true;
 
   double tinit = 0; // initial time in second
 
@@ -249,7 +245,7 @@ int main(int argc, char* argv[])
             warp.warpZone(zone_ref, p, zone_cur);
             area_zone_cur = zone_cur.getArea();
 
-            //          std::cout << "Area ref: " << area_zone_ref << std::endl;
+            // std::cout << "Area ref: " << area_zone_ref << std::endl;
             std::cout << "Area tracked: " << area_zone_cur << std::endl;
 
             double size_percent = 0.6;
@@ -298,7 +294,6 @@ int main(int argc, char* argv[])
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(cog_desired, cog);
 
-        //std::cout << "Norm error = " << (task.getError()).euclideanNorm() << std::endl;
         if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
         {
           /** Call the say method */
@@ -328,7 +323,6 @@ int main(int argc, char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
   robot.stop(jointNames);
-  g.cleanup();
   task.kill();
 
   return 0;
