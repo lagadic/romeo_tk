@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
   /** Global variables */
   cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/haarcascade_frontalface_alt.xml";
 
-  if (argc == 2)
+  if (argc == 3)
   {
-    face_cascade_name = cv::String(argv[1]);
+    face_cascade_name = cv::String(argv[2]);
   }
 
   if( !face_cascade.load( face_cascade_name ) ) {
