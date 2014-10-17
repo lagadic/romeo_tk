@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
   // Transformation HeadRoll to Camera Left
   vpHomogeneousMatrix cMe;
 
-  cMe = robot.getTransfEndEffector("CameraLeft");
+  cMe = robot.get_cMe("CameraLeft");
 
   std::vector<std::string> jointNames =  robot.getBodyNames("Head");
   const unsigned int numJoints = jointNames.size();

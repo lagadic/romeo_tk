@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
     // Transformation HeadRoll to Camera Left
     vpHomogeneousMatrix cMe;
 
-    cMe = robot.getTransfEndEffector("CameraLeft");
+    cMe = robot.get_cMe("CameraLeft");
 
 
 
@@ -191,7 +191,6 @@ int main(int argc, char* argv[])
             if (! init_done)
                 tinit = vpTime::measureTimeSecond();
 
-            //            computeVelocities(cog);
             if (init_done) {
 
                 std::cout << "Centroid: X = " << cog.get_i() << ". Y =  " << cog.get_j() << std::endl;
