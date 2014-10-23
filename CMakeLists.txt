@@ -27,6 +27,8 @@ qi_create_bin(servo_face_detection_visp_head servo_face_detection_visp_head.cpp)
 qi_create_bin(servo_blob_tracking_visp_LArm servo_blob_tracking_visp_LArm.cpp)
 qi_create_bin(servo_blob_tracking_visp_LArm_metapod servo_blob_tracking_visp_LArm_metapod.cpp)
 qi_create_bin(servo_visp_LArm_6dof servo_visp_LArm_6dof.cpp)
+qi_create_bin(servo_face_detection_visp_head_joint_avoidance_basic servo_face_detection_visp_head_joint_avoidance_basic.cpp)
+
 
 # Here we say that our executable depends on
 # - ALCOMMON (main naoqi lib)
@@ -44,3 +46,5 @@ qi_use_lib(servo_face_detection_visp_head visp_naoqi ALCOMMON ALPROXIES ALVISION
 qi_use_lib(servo_blob_tracking_visp_LArm visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_blob_tracking_visp_LArm_metapod visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_visp_LArm_6dof visp_naoqi ALCOMMON ALPROXIES ALVISION)
+qi_use_lib(servo_face_detection_visp_head_joint_avoidance_basic visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
