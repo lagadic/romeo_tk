@@ -168,9 +168,9 @@ int main(int argc, char* argv[])
   // Add the 2D point feature to the task
   task.addFeature(s, sd);
 
-  //    vpAdaptiveGain lambda(2, 0.8, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-  //    task.setLambda(lambda);
-  task.setLambda(0.6);
+   //   vpAdaptiveGain lambda(2, 0.8, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+   //   task.setLambda(lambda);
+  task.setLambda(0.4);
 
   vpColVector q_dot;
 
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 
   // Constant transformation Target Frame to LArm end-effector (LWristPitch)
   vpHomogeneousMatrix oMe_LArm;
-  oMe_LArm[0][3] = 0.05;
+  oMe_LArm[0][3] = -0.05;
   oMe_LArm[1][3] = 0.026;
   oMe_LArm[2][3] = 0.0;
 
@@ -286,7 +286,7 @@ int main(int argc, char* argv[])
         std::cout << "torso M left camera :\n" << lcMtorso.inverse() << std::endl;
 
         vpVelocityTwistMatrix cVtorso(lcMtorso);
-        task.set_fVe( cVtorso );
+        task.set_cVf( cVtorso );
 
         //** Set task fVe matrix
         // get the torsoMe_LArm tranformation from NaoQi api
@@ -319,10 +319,10 @@ int main(int argc, char* argv[])
         std::cout << "torso M object :\n" << torsoMo << std::endl;
 
         vpVelocityTwistMatrix torsoVo(torsoMo);
-        task.set_cVf( torsoVo );
+        task.set_fVe( torsoVo );
 
-        //q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
-        q_dot = task.computeControlLaw();
+        q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
+        //q_dot = task.computeControlLaw();
 
 #ifdef USE_PLOTTER
         graph.plot(0, iter, q_dot); // plot joint velocities applied to the robot
