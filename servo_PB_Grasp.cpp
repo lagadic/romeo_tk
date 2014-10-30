@@ -261,20 +261,20 @@ int main(int argc, char* argv[])
   task.setLambda(0.18);
 
 
-//  // Set the proportional gain
-//  // - set the gain
-//  vpAdaptiveGain  lambda;
-//  lambda.initStandard(2, 0.2, 50);
+  //  // Set the proportional gain
+  //  // - set the gain
+  //  vpAdaptiveGain  lambda;
+  //  lambda.initStandard(2, 0.2, 50);
 
-//  task.setLambda(lambda) ;
+  //  task.setLambda(lambda) ;
 
   vpColVector q_dot;
 
 
   // Constant transformation Target Frame to LArm end-effector (LWristPitch)
   vpHomogeneousMatrix oMe_LArm;
-  oMe_LArm[0][3] = -0.05;
-  oMe_LArm[1][3] = 0.0;
+  oMe_LArm[0][3] = -0.03;
+  oMe_LArm[1][3] = 0.01;
   oMe_LArm[2][3] = -0.026;
 
 
@@ -310,6 +310,8 @@ int main(int argc, char* argv[])
 
 
   double tinit = 0; // initial time in second
+
+  robot.getProxy()->openHand("LHand");
 
   vpImage<vpRGBa> O;
 
@@ -448,40 +450,23 @@ int main(int argc, char* argv[])
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
 
-       robot.setVelocity(jointNames, q_dot);
+        robot.setVelocity(jointNames, q_dot);
 
 
-       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::green);
+        vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::green);
 
 
-       vpDisplay::flush(I) ;
-       //vpTime::sleepMs(20);
+        vpDisplay::flush(I) ;
+        vpTime::sleepMs(20);
 
 
 
-        // Compute the distance in pixel between the target and the center of the image
-//        double distance = vpImagePoint::distance(cog_desired, cog_tot);
-
-//        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
-//        {
-//          /** Call the say method */
-//          tts.post.say(phraseToSay);
-//          speech = false;
-
-//        }
-//        else if (distance > 0.15*I.getWidth()) // 15 % of the image witdh
-//          speech = true;
       }
       else {
         std::cout << "Stop the robot..." << std::endl;
         robot.stop(jointNames);
 
       }
-
-
-      // Grasping
-
-      //robot.getProxy()->changePosition();
 
 
 
@@ -492,17 +477,85 @@ int main(int argc, char* argv[])
     }
 
     if (vpDisplay::getClick(I, false))
-      break;
+
+    {
+      q_dot = 0.0 * q_dot;
+      robot.setVelocity(jointNames, q_dot);
+
+          break;
+    }
+
 
     vpDisplay::flush(I);
     vpDisplay::getImage(I, O);
     std::cout << "Loop time: " << vpTime::measureTimeMs() - time << std::endl;
   }
 
-  std::cout << "The end: stop the robot..." << std::endl;
-  robot.stop(jointNames);
+  // Grasping
 
+//  robot.stop(jointNames);
+//  std::string nameChain = "LArm";
+//  std::vector<float> handPos = robot.getProxy()->getPosition(nameChain, 0, true);
+//  robot.getProxy()->setPositions(nameChain,0,handPos,0.3,63);
+
+//  vpTime::sleepMs(3000);
+
+
+ //robot.stop(jointNames);
+
+ // robot.stop(jointNames);
+
+
+
+
+  std::string nameChain = "LArm";
+  std::vector<float>  handPos = robot.getProxy()->getPosition(nameChain, 0, true);
+  handPos[2] =  handPos[2] - 0.015;
+
+  std::cout << "Click to move the hand" << std::endl;
+  vpDisplay::getClick(I);
+  robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
+
+  //vpTime::sleepMs(3000);
+
+  std::cout << "Click to Graps" << std::endl;
+  vpDisplay::getClick(I);
+
+  robot.getProxy()->closeHand("LHand");
+
+
+  std::cout << "Click to take the object " << std::endl;
+  vpDisplay::getClick(I);
+
+  handPos = robot.getProxy()->getPosition(nameChain, 0, false);
+  handPos[2] =  handPos[2] + 0.07;
+  robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
+
+  std::cout << "Click to put back the object " << std::endl;
+  vpDisplay::getClick(I);
+
+  handPos = robot.getProxy()->getPosition(nameChain, 0, false);
+  handPos[2] =  handPos[2] - 0.05;
+  robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
+
+
+
+  std::cout << "Click to Open the Hand" <<  std::endl;
+  vpDisplay::getClick(I);
+
+  robot.getProxy()->openHand("LHand");
+
+
+  std::cout << "Click to Stop the demo" << std::endl;
+  vpDisplay::getClick(I);
+
+  std::cout << "The end: stop the robot..." << std::endl;
+  robot.getProxy()->killMove();
+  robot.stop(jointNames);
   task.kill();
+
+
+
 #endif
 
   return 0;
