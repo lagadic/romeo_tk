@@ -482,7 +482,7 @@ int main(int argc, char* argv[])
       q_dot = 0.0 * q_dot;
       robot.setVelocity(jointNames, q_dot);
 
-          break;
+      break;
     }
 
 
@@ -493,30 +493,19 @@ int main(int argc, char* argv[])
 
   // Grasping
 
-//  robot.stop(jointNames);
-//  std::string nameChain = "LArm";
-//  std::vector<float> handPos = robot.getProxy()->getPosition(nameChain, 0, true);
-//  robot.getProxy()->setPositions(nameChain,0,handPos,0.3,63);
-
-//  vpTime::sleepMs(3000);
-
-
- //robot.stop(jointNames);
-
- // robot.stop(jointNames);
-
-
-
+  robot.stop(jointNames);
 
   std::string nameChain = "LArm";
-  std::vector<float>  handPos = robot.getProxy()->getPosition(nameChain, 0, true);
-  handPos[2] =  handPos[2] - 0.015;
 
   std::cout << "Click to move the hand" << std::endl;
-  vpDisplay::getClick(I);
-  robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
+  std::vector<float> positionChange(6, 0.0f);
+  positionChange[2] = -0.032f;
+  float fractionMaxSpeed    = 0.05f;
+  int axisMask              = 7;
 
-  //vpTime::sleepMs(3000);
+  vpDisplay::getClick(I);
+  robot.getProxy()->changePosition(nameChain, 0, positionChange, fractionMaxSpeed, axisMask);
+
 
   std::cout << "Click to Graps" << std::endl;
   vpDisplay::getClick(I);
@@ -527,7 +516,7 @@ int main(int argc, char* argv[])
   std::cout << "Click to take the object " << std::endl;
   vpDisplay::getClick(I);
 
-  handPos = robot.getProxy()->getPosition(nameChain, 0, false);
+  std::vector<float> handPos = robot.getProxy()->getPosition(nameChain, 0, false);
   handPos[2] =  handPos[2] + 0.07;
   robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
 
