@@ -87,8 +87,6 @@ bool computeCentroidBlob(const vpImage<unsigned char> &I,std::list<vpDot2> &blob
 
       // Compute the center of gravity of the object
       cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
-      // Display the ACTUAL center of gravity of the object
-      vpDisplay::displayCross(I,cog_tot,10, vpColor::blue,2 );
     }
   }
   catch(...)
@@ -242,7 +240,15 @@ int main(int argc, char* argv[])
   vpDisplay::getClick(I) ;
 
 
-  task.setLambda(0.3);
+  task.setLambda(0.25);
+
+
+//  // Set the proportional gain
+//  // - set the gain
+//  vpAdaptiveGain  lambda;
+//  lambda.initStandard(2, 0.2, 50);
+
+//  task.setLambda(lambda) ;
 
   vpColVector q_dot;
 
@@ -279,6 +285,9 @@ int main(int argc, char* argv[])
   vpHomogeneousMatrix torsoMo;
   //Set the stiffness
   robot.setStiffness(jointNames, 1.f);
+
+  vpHomogeneousMatrix Larm;
+  vpHomogeneousMatrix LTarget;
 
 
 
@@ -344,14 +353,13 @@ int main(int argc, char* argv[])
 
           pose.addPoint(point[kk]) ;
 
-          point[kk].display(I,cMo,cam, vpColor::green) ;
-          point[kk].display(I,cdMo,cam, vpColor::blue) ;
+          //point[kk].display(I,cMo,cam, vpColor::green) ;
+          //point[kk].display(I,cdMo,cam, vpColor::blue) ;
           kk++;
         }
         pose.computePose(vpPose::VIRTUAL_VS, cMo) ;
         vpDisplay::displayFrame(I, cMo, cam, 0.05, vpColor::none);
         vpDisplay::displayFrame(I, cdMo, cam, 0.05, vpColor::none);
-        vpDisplay::flush(I) ;
 
 
         // Update the features
@@ -369,7 +377,7 @@ int main(int argc, char* argv[])
         // get the torsoMe_head tranformation from NaoQi api
 
         vpHomogeneousMatrix torsoMlcam_al;
-        std::vector<float> torsoMlcam_al_ = robot.getProxy()->getTransform("CameraLeft", 0, true); // get torsoMhead_roll which is equal to our torsoMe_head
+        std::vector<float> torsoMlcam_al_ = robot.getProxy()->getTransform("CameraLeft", 0, true);
         unsigned int k=0;
         for(unsigned int i=0; i< 4; i++)
           for(unsigned int j=0; j< 4; j++)
@@ -408,6 +416,8 @@ int main(int argc, char* argv[])
         q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 
 
+
+
 #ifdef USE_PLOTTER
         graph.plot(0, iter, q_dot); // plot joint velocities applied to the robot
         graph.plot(1, iter, task.getError()); // plot error vector s-s*
@@ -421,6 +431,17 @@ int main(int argc, char* argv[])
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
 
        robot.setVelocity(jointNames, q_dot);
+
+
+       //LTarget =  torsoMlcam_visp.inverse()* torsoMo;
+
+       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::green);
+
+
+       vpDisplay::flush(I) ;
+       //vpTime::sleepMs(20);
+
+
 
         // Compute the distance in pixel between the target and the center of the image
 //        double distance = vpImagePoint::distance(cog_desired, cog_tot);

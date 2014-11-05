@@ -115,6 +115,9 @@ int main(int argc, char* argv[])
 
     bool init_done = false;
 
+
+
+
     /** Initialization Visual servoing task*/
     vpServo task; // Visual servoing task
     vpFeaturePoint sd; //The desired point feature.
@@ -203,6 +206,8 @@ int main(int argc, char* argv[])
                 task.set_cVe( vpVelocityTwistMatrix(cMe) );
 
                 q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
+
+
                 task.print();
                 vpImagePoint cog_desired;
                 vpMeterPixelConversion::convertPoint(cam, sd.get_x(), sd.get_y(), cog_desired);

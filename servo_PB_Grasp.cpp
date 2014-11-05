@@ -23,6 +23,8 @@
 #include <visp/vpMeterPixelConversion.h>
 #include <visp/vpPlot.h>
 #include <visp/vpFeatureBuilder.h>
+#include <visp/vpCameraParameters.h>
+#include <visp/vpXmlParserCamera.h>
 
 #include <iostream>
 #include <string>
@@ -131,8 +133,32 @@ int main(int argc, char* argv[])
   vpImage<unsigned char> I(240,320);
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
+//  vpCameraParameters cam;
+//  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+
+  char filename[FILENAME_MAX];
   vpCameraParameters cam;
-  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+  vpXmlParserCamera p; // Create a XML parser
+  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
+  // Use a perspective projection model without distortion
+  projModel = vpCameraParameters::perspectiveProjWithDistortion;
+  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
+  // parameters of the camera named "myCamera" for the image sizes 640x480,
+  // for the projection model projModel. The size of the image is optional
+  // if camera parameters are given only for one image size.
+  sprintf(filename, "%s", "camera.xml");
+  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
+    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
+    std::cout << "Loading default camera parameters" << std::endl;
+    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
+  }
+
+  std::cout << "Camera parameters: " << cam << std::endl;
+
+
+
+
+
 
   /** Initialization Visp blob*/
   std::list<vpDot2> blob_list;
@@ -460,14 +486,12 @@ int main(int argc, char* argv[])
         vpTime::sleepMs(20);
 
 
-
       }
       else {
         std::cout << "Stop the robot..." << std::endl;
         robot.stop(jointNames);
 
       }
-
 
 
     }
@@ -485,7 +509,6 @@ int main(int argc, char* argv[])
       break;
     }
 
-
     vpDisplay::flush(I);
     vpDisplay::getImage(I, O);
     std::cout << "Loop time: " << vpTime::measureTimeMs() - time << std::endl;
@@ -493,25 +516,51 @@ int main(int argc, char* argv[])
 
   // Grasping
 
-  robot.stop(jointNames);
+  //robot.stop(jointNames);
 
   std::string nameChain = "LArm";
 
   std::cout << "Click to move the hand" << std::endl;
-  std::vector<float> positionChange(6, 0.0f);
-  positionChange[2] = -0.032f;
-  float fractionMaxSpeed    = 0.05f;
-  int axisMask              = 7;
+//  std::vector<float> positionChange(6, 0.0f);
+//  positionChange[2] = -0.032f;
+//  float fractionMaxSpeed    = 0.05f;
+//  int axisMask              = 7;
 
-  vpDisplay::getClick(I);
-  robot.getProxy()->changePosition(nameChain, 0, positionChange, fractionMaxSpeed, axisMask);
+//  vpDisplay::getClick(I);
+//  robot.getProxy()->changePosition(nameChain, 0, positionChange, fractionMaxSpeed, axisMask);
+
+
+  // Velocity end effector
+  vpColVector v_o(6);
+  v_o = 0.0;
+  v_o[2] = -0.005; // vpMath::rad(5);
+
+   vpDisplay::getClick(I);
+
+  double t_initial = vpTime::measureTimeSecond();
+  while (vpTime::measureTimeSecond() < t_initial+5)
+  {
+    //** Set task eJe matrix
+    // Get the actual Jacobian of the Larm
+    eJe_LArm = robot.get_eJe("LArm");
+    oJo = oVe_LArm * eJe_LArm;
+
+    q_dot = eJe_LArm.pseudoInverse() * v_o;
+
+    std::cout << "q_dot: " << q_dot.t() << std::endl;
+
+    robot.setVelocity(jointNames, q_dot);
+  }
+
+  robot.stop(jointNames);
+
+
 
 
   std::cout << "Click to Graps" << std::endl;
   vpDisplay::getClick(I);
 
   robot.getProxy()->closeHand("LHand");
-
 
   std::cout << "Click to take the object " << std::endl;
   vpDisplay::getClick(I);
@@ -526,8 +575,6 @@ int main(int argc, char* argv[])
   handPos = robot.getProxy()->getPosition(nameChain, 0, false);
   handPos[2] =  handPos[2] - 0.05;
   robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
-
-
 
   std::cout << "Click to Open the Hand" <<  std::endl;
   vpDisplay::getClick(I);
