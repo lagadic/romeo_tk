@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
 
     /** Initialization Visp Image and display*/
-    vpImage<unsigned char> I(240,320);
+    vpImage<unsigned char> I(g.getHeight(), g.getWidth());
     vpDisplayX d(I);
     vpDisplay::setTitle(I, "ViSP viewer");
 

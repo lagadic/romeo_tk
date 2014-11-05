@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
   vpColVector p; // Estimated parameters
 
   /** Initialization Visp Image, display and camera paramenters*/
-  vpImage<unsigned char> I(240,320);
+  vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
   vpCameraParameters cam;

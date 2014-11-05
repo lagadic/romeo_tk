@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 
 
   /** Initialization Visp Image, display and camera paramenters*/
-  vpImage<unsigned char> I(240,320);
+  vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
   vpCameraParameters cam;
@@ -277,9 +277,7 @@ int main(int argc, char* argv[])
         vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
         std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
 
-
         torsoMo = torsoMLWristPitch * oMe_LArm.inverse();
-
         std::cout << "torso M object :\n" << torsoMo << std::endl;
 
         vpVelocityTwistMatrix torsoVo(torsoMo);
@@ -322,7 +320,6 @@ int main(int argc, char* argv[])
         robot.stop(jointNames);
 
       }
-
 
 
     }

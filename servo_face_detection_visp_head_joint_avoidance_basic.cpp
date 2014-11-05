@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
   double area_zone_ref, area_zone_cur, area_zone_prev;
   vpColVector p; // Estimated parameters
 
-  vpImage<unsigned char> I(240,320);
+  vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
 
