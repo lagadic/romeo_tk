@@ -383,14 +383,7 @@ int main(int argc, char* argv[])
         //** Set task cVf matrix
         // get the torsoMe_head tranformation from NaoQi api
 
-        vpHomogeneousMatrix torsoMlcam_al;
-        std::vector<float> torsoMlcam_al_ = robot.getProxy()->getTransform("CameraLeft", 0, true); // get torsoMhead_roll which is equal to our torsoMe_head
-        unsigned int k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMlcam_al[i][j] = torsoMlcam_al_[k++];
-
-
+        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
         std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
 
         torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
@@ -403,13 +396,7 @@ int main(int argc, char* argv[])
         //** Set task fVe matrix
         // get the torsoMe_LArm tranformation from NaoQi api
 
-        std::vector<float> torsoMLWristPitch_ = robot.getProxy()->getTransform("LWristPitch", 0, true); // get torsoMLWristPitch of Aldebaran
-        vpHomogeneousMatrix torsoMLWristPitch;
-        k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMLWristPitch[i][j] = torsoMLWristPitch_[k++];
-
+        vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
         std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
 
 
@@ -435,20 +422,20 @@ int main(int argc, char* argv[])
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
 
-       robot.setVelocity(jointNames, q_dot);
+        robot.setVelocity(jointNames, q_dot);
 
         // Compute the distance in pixel between the target and the center of the image
-//        double distance = vpImagePoint::distance(cog_desired, cog_tot);
+        //        double distance = vpImagePoint::distance(cog_desired, cog_tot);
 
-//        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
-//        {
-//          /** Call the say method */
-//          tts.post.say(phraseToSay);
-//          speech = false;
+        //        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
+        //        {
+        //          /** Call the say method */
+        //          tts.post.say(phraseToSay);
+        //          speech = false;
 
-//        }
-//        else if (distance > 0.15*I.getWidth()) // 15 % of the image witdh
-//          speech = true;
+        //        }
+        //        else if (distance > 0.15*I.getWidth()) // 15 % of the image witdh
+        //          speech = true;
       }
       else {
         std::cout << "Stop the robot..." << std::endl;

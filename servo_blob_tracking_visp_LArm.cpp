@@ -257,13 +257,7 @@ int main(int argc, char* argv[])
         //** Set task cVf matrix
         // get the torsoMe_head tranformation from NaoQi api
         {
-          std::vector<float> torsoMhead_roll_ = robot.getProxy()->getTransform("HeadRoll", 0, true); // get torsoMhead_roll which is equal to our torsoMe_head
-          vpHomogeneousMatrix torsoMhead_roll;
-          unsigned int k=0;
-          for(unsigned int i=0; i< 4; i++)
-            for(unsigned int j=0; j< 4; j++)
-              torsoMhead_roll[i][j] = torsoMhead_roll_[k++];
-
+          vpHomogeneousMatrix torsoMhead_roll(robot.getProxy()->getTransform("HeadRoll", 0, true));
           std::cout << "Torso M head_roll:\n" << torsoMhead_roll << std::endl;
 
           // Introduce a matrix to pass from Aldebaran HeadRoll to our end effector frame on the head (the one used to model our Jacobian)
@@ -291,13 +285,7 @@ int main(int argc, char* argv[])
         //** Set task fVe matrix
         // get the torsoMe_LArm tranformation from NaoQi api
         {
-          std::vector<float> torsoMLWristPitch_ = robot.getProxy()->getTransform("LWristPitch", 0, true); // get torsoMLWristPitch of Aldebaran
-          vpHomogeneousMatrix torsoMLWristPitch;
-          unsigned int k=0;
-          for(unsigned int i=0; i< 4; i++)
-            for(unsigned int j=0; j< 4; j++)
-              torsoMLWristPitch[i][j] = torsoMLWristPitch_[k++];
-
+          vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
           std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
 
           vpHomogeneousMatrix LWristPitchMe_LArm;

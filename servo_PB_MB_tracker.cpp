@@ -376,14 +376,7 @@ int main(int argc, char* argv[])
         //** Set task cVf matrix
         // get the torsoMe_head tranformation from NaoQi api
 
-        vpHomogeneousMatrix torsoMlcam_al;
-        std::vector<float> torsoMlcam_al_ = robot.getProxy()->getTransform("CameraLeft", 0, true);
-        unsigned int k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMlcam_al[i][j] = torsoMlcam_al_[k++];
-
-
+        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
         std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
 
         torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
@@ -396,13 +389,7 @@ int main(int argc, char* argv[])
         //** Set task fVe matrix
         // get the torsoMe_LArm tranformation from NaoQi api
 
-        std::vector<float> torsoMLWristPitch_ = robot.getProxy()->getTransform("LWristPitch", 0, true); // get torsoMLWristPitch of Aldebaran
-        vpHomogeneousMatrix torsoMLWristPitch;
-        k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMLWristPitch[i][j] = torsoMLWristPitch_[k++];
-
+        vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
         std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
 
 

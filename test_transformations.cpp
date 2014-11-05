@@ -43,7 +43,6 @@ using namespace AL;
 
 
 
-
 int main(int argc, char* argv[])
 {
   std::string robotIp = "198.18.0.1";
@@ -55,7 +54,6 @@ int main(int argc, char* argv[])
   else {
     robotIp = argv[1];
   }
-
 
 
   /** Open the grabber for the acquisition of the images from the robot*/
@@ -85,9 +83,7 @@ int main(int argc, char* argv[])
   cam_alMe_camvisp[2][1] = -1.;
 
 
-
   // Motion
-
   std::vector<std::string> jointNames =  robot.getBodyNames("LArm");
   jointNames.pop_back(); // Delete last joints LHand, that we don't consider in the servo
   const unsigned int numJoints = jointNames.size();
@@ -96,7 +92,6 @@ int main(int argc, char* argv[])
 
   // Declarate Jacobian
   vpHomogeneousMatrix torsoMlcam_visp;
-  vpHomogeneousMatrix torsoMo;
   //Set the stiffness
   robot.setStiffness(jointNames, 1.f);
 
@@ -120,50 +115,39 @@ int main(int argc, char* argv[])
       vpDisplay::display(I);
 
 
-        // get the torsoMe_head tranformation from NaoQi api
-
-        vpHomogeneousMatrix torsoMlcam_al;
-        std::vector<float> torsoMlcam_al_ = robot.getProxy()->getTransform("CameraLeft", 0, true);
-        unsigned int k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMlcam_al[i][j] = torsoMlcam_al_[k++];
-
-        torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
-        std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
+      // get the torsoMlcam_al tranformation from NaoQi api
+      vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, false));
+      torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
+      std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
 
 
-        //############################################################################################################
-        //                                                  LARM
-        //############################################################################################################
-
-        // LWristPitch tranformation -----------------------------------------------------
-
-        std::vector<float> torsoMLWristPitch_ = robot.getProxy()->getTransform("LWristPitch", 0, true); // get torsoMLWristPitch of Aldebaran
-        vpHomogeneousMatrix torsoMLWristPitch;
-        k=0;
-        for(unsigned int i=0; i< 4; i++)
-          for(unsigned int j=0; j< 4; j++)
-            torsoMLWristPitch[i][j] = torsoMLWristPitch_[k++];
-
-        std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
-
-       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::none);
+      vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, false));
+      std::cout << "torsoMHeadRoll:\n" << torsoMHeadRoll << std::endl;
 
 
-       // -----------------------------------------------------------------------------------
+      vpHomogeneousMatrix HeadRollMcam_visp;
+      HeadRollMcam_visp = torsoMHeadRoll.inverse()* torsoMlcam_visp ;
+      std::cout << "HeadRoll M camera visp:\n" << HeadRollMcam_visp << std::endl;
 
-       // LElbowRoll tranformation -----------------------------------------------------
 
-       std::vector<float> torsoMLElbowRoll_ = robot.getProxy()->getTransform("LElbowRoll", 0, true); // get LElbowRoll of Aldebaran
-       vpHomogeneousMatrix torsoMLElbowRoll;
-       k=0;
-       for(unsigned int i=0; i< 4; i++)
-         for(unsigned int j=0; j< 4; j++)
-           torsoMLElbowRoll[i][j] = torsoMLElbowRoll_[k++];
 
-       std::cout << "Torso M LElbowRoll:\n" << torsoMLElbowRoll << std::endl;
+      //############################################################################################################
+      //                                                  LARM
+      //############################################################################################################
+      // LWristPitch tranformation -----------------------------------------------------
 
+
+      vpHomogeneousMatrix torsoMLWristPitch( robot.getProxy()->getTransform("LWristPitch", 0, true));
+      std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::none);
+
+
+      // -----------------------------------------------------------------------------------
+      // LElbowRoll tranformation -----------------------------------------------------
+
+
+      vpHomogeneousMatrix torsoMLElbowRoll(robot.getProxy()->getTransform("LElbowRoll", 0, true));
+      std::cout << "Torso M LElbowRoll:\n" << torsoMLElbowRoll << std::endl;
       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLElbowRoll, cam, 0.04, vpColor::none);
 
 
@@ -171,80 +155,49 @@ int main(int argc, char* argv[])
 
       // LElbowYaw tranformation -----------------------------------------------------
 
-      std::vector<float> torsoMLElbowYaw_ = robot.getProxy()->getTransform("LElbowYaw", 0, true); // get LElbowYaw of Aldebaran
-      vpHomogeneousMatrix torsoMLLElbowYaw;
-      k=0;
-      for(unsigned int i=0; i< 4; i++)
-        for(unsigned int j=0; j< 4; j++)
-          torsoMLLElbowYaw[i][j] = torsoMLElbowYaw_[k++];
-
+      vpHomogeneousMatrix torsoMLLElbowYaw(robot.getProxy()->getTransform("LElbowYaw", 0, true));
       std::cout << "Torso M LElbowYaw:\n" << torsoMLLElbowYaw << std::endl;
-
-     vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLLElbowYaw, cam, 0.04, vpColor::none);
-
-
-     // -----------------------------------------------------------------------------------
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLLElbowYaw, cam, 0.04, vpColor::none);
 
 
-
-     //############################################################################################################
-     //                                                  RARM
-     //############################################################################################################
-
-     // RWristPitch tranformation -----------------------------------------------------
-
-     std::vector<float> torsoMRWristPitch_ = robot.getProxy()->getTransform("RWristPitch", 0, true); // get torsoMRWristPitch of Aldebaran
-     vpHomogeneousMatrix torsoMRWristPitch;
-     k=0;
-     for(unsigned int i=0; i< 4; i++)
-       for(unsigned int j=0; j< 4; j++)
-         torsoMRWristPitch[i][j] = torsoMRWristPitch_[k++];
-
-     std::cout << "Torso M RWristPitch:\n" << torsoMRWristPitch << std::endl;
-
-    vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRWristPitch, cam, 0.04, vpColor::none);
+      // -----------------------------------------------------------------------------------
 
 
-    // -----------------------------------------------------------------------------------
+      //############################################################################################################
+      //                                                  RARM
+      //############################################################################################################
 
-    // RElbowRoll tranformation -----------------------------------------------------
+      // RWristPitch tranformation -----------------------------------------------------
 
-    std::vector<float> torsoMRElbowRoll_ = robot.getProxy()->getTransform("RElbowRoll", 0, true); // get RElbowRoll of Aldebaran
-    vpHomogeneousMatrix torsoMRElbowRoll;
-    k=0;
-    for(unsigned int i=0; i< 4; i++)
-      for(unsigned int j=0; j< 4; j++)
-        torsoMRElbowRoll[i][j] = torsoMRElbowRoll_[k++];
-
-    std::cout << "Torso M RElbowRoll:\n" << torsoMRElbowRoll << std::endl;
-
-   vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRElbowRoll, cam, 0.04, vpColor::none);
+      vpHomogeneousMatrix torsoMRWristPitch(robot.getProxy()->getTransform("RWristPitch", 0, true));
+      std::cout << "Torso M RWristPitch:\n" << torsoMRWristPitch << std::endl;
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRWristPitch, cam, 0.04, vpColor::none);
 
 
-   // -----------------------------------------------------------------------------------
+      // -----------------------------------------------------------------------------------
 
-   // RElbowYaw tranformation -----------------------------------------------------
+      // RElbowRoll tranformation -----------------------------------------------------
 
-   std::vector<float> torsoMRElbowYaw_ = robot.getProxy()->getTransform("RElbowYaw", 0, true); // get RElbowYaw of Aldebaran
-   vpHomogeneousMatrix torsoMRElbowYaw;
-   k=0;
-   for(unsigned int i=0; i< 4; i++)
-     for(unsigned int j=0; j< 4; j++)
-       torsoMRElbowYaw[i][j] = torsoMRElbowYaw_[k++];
-
-   std::cout << "Torso M RElbowYaw:\n" << torsoMRElbowYaw << std::endl;
-
-  vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRElbowYaw, cam, 0.04, vpColor::none);
+      vpHomogeneousMatrix torsoMRElbowRoll(robot.getProxy()->getTransform("RElbowRoll", 0, true));
+      std::cout << "Torso M RElbowRoll:\n" << torsoMRElbowRoll << std::endl;
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRElbowRoll, cam, 0.04, vpColor::none);
 
 
-  // -----------------------------------------------------------------------------------
+      // -----------------------------------------------------------------------------------
+
+      // RElbowYaw tranformation -----------------------------------------------------
 
 
+      vpHomogeneousMatrix torsoMRElbowYaw(robot.getProxy()->getTransform("RElbowYaw", 0, true));
+      std::cout << "Torso M RElbowYaw:\n" << torsoMRElbowYaw << std::endl;
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMRElbowYaw, cam, 0.04, vpColor::none);
 
 
-       vpDisplay::flush(I) ;
-       //vpTime::sleepMs(20);
+      // -----------------------------------------------------------------------------------
 
+
+      vpDisplay::flush(I) ;
+      //vpTime::sleepMs(20);
 
 
     }
