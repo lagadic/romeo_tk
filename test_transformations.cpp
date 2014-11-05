@@ -7,6 +7,7 @@
 
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
+#include <alproxies/alsystemproxy.h>
 
 // ViSP includes.
 #include <visp/vpDisplayX.h>
@@ -23,6 +24,7 @@
 #include <visp/vpMeterPixelConversion.h>
 #include <visp/vpPlot.h>
 #include <visp/vpFeatureBuilder.h>
+#include <visp/vpXmlParserCamera.h>
 
 #include <iostream>
 #include <string>
@@ -65,12 +67,34 @@ int main(int argc, char* argv[])
   robot.open();
 
 
+
   /** Initialization Visp Image, display and camera paramenters*/
   vpImage<unsigned char> I(240,320);
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
+  vpCameraParameters cam_ros;
+  cam_ros.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+
+
+  char filename[FILENAME_MAX];
   vpCameraParameters cam;
-  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+  vpXmlParserCamera p; // Create a XML parser
+  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
+  // Use a perspective projection model without distortion
+  projModel = vpCameraParameters::perspectiveProjWithDistortion;
+  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
+  // parameters of the camera named "myCamera" for the image sizes 640x480,
+  // for the projection model projModel. The size of the image is optional
+  // if camera parameters are given only for one image size.
+  sprintf(filename, "%s", "camera.xml");
+  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
+    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
+    std::cout << "Loading default camera parameters" << std::endl;
+    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
+  }
+
+  std::cout << "Camera parameters: " << cam << std::endl;
+
 
 
 
@@ -90,8 +114,10 @@ int main(int argc, char* argv[])
 
   std::cout << "The " << numJoints << " joints of the Arm:" << std::endl << jointNames << std::endl;
 
-  // Declarate Jacobian
+  // Homogeneus matrix from Torso to the Camera (using the sensor of the robot)
   vpHomogeneousMatrix torsoMlcam_visp;
+  // Homogeneus matrix from Torso to the Camera (using the estimated extrinsic paramenter)
+  vpHomogeneousMatrix torsoMlcam_visp_est;
   //Set the stiffness
   robot.setStiffness(jointNames, 1.f);
 
@@ -118,17 +144,28 @@ int main(int argc, char* argv[])
       // get the torsoMlcam_al tranformation from NaoQi api
       vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, false));
       torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
-      std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
 
 
       vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, false));
       std::cout << "torsoMHeadRoll:\n" << torsoMHeadRoll << std::endl;
 
 
+      // Compute torsoMlcam_visp using the estimated extrinsic camera paramenters
+      vpHomogeneousMatrix eMc;
+
+      std::ifstream f("eMc.dat") ;
+      eMc.load(f) ;
+      f.close() ;
+      std::cout << "eMc:\n" << eMc << std::endl;
+      torsoMlcam_visp_est = torsoMHeadRoll * eMc;
+
       vpHomogeneousMatrix HeadRollMcam_visp;
       HeadRollMcam_visp = torsoMHeadRoll.inverse()* torsoMlcam_visp ;
       std::cout << "HeadRoll M camera visp:\n" << HeadRollMcam_visp << std::endl;
 
+
+      std::cout << "torsoMlcam_visp_est:\n" << torsoMlcam_visp_est << std::endl;
+      std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
 
 
       //############################################################################################################
@@ -136,16 +173,21 @@ int main(int argc, char* argv[])
       //############################################################################################################
       // LWristPitch tranformation -----------------------------------------------------
 
-
       vpHomogeneousMatrix torsoMLWristPitch( robot.getProxy()->getTransform("LWristPitch", 0, true));
       std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
-      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::none);
+      vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::blue);
 
+      // Using estimated eMc
+      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::red);
+      // Using estimated eMc and cam_ros
+      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam_ros, 0.04, vpColor::yellow);
 
       // -----------------------------------------------------------------------------------
+
+
+
+
       // LElbowRoll tranformation -----------------------------------------------------
-
-
       vpHomogeneousMatrix torsoMLElbowRoll(robot.getProxy()->getTransform("LElbowRoll", 0, true));
       std::cout << "Torso M LElbowRoll:\n" << torsoMLElbowRoll << std::endl;
       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLElbowRoll, cam, 0.04, vpColor::none);
