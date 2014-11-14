@@ -69,6 +69,7 @@ int main(int argc, char* argv[])
 
 
   /** Initialization Visp Image, display and camera paramenters*/
+
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
@@ -95,6 +96,17 @@ int main(int argc, char* argv[])
 
   std::cout << "Camera parameters: " << cam << std::endl;
 
+  // Constant transformation Target Frame to LArm end-effector (LWristPitch)
+  vpHomogeneousMatrix oMe_LArm;
+  for(unsigned int i=0; i<3; i++)
+    oMe_LArm[i][i] = 0; // remove identity
+  oMe_LArm[0][0] = 1;
+  oMe_LArm[1][2] = 1;
+  oMe_LArm[2][1] = -1;
+
+  oMe_LArm[0][3] = -0.045;
+  oMe_LArm[1][3] = -0.04;
+  oMe_LArm[2][3] = -0.045;
 
 
 
@@ -178,9 +190,13 @@ int main(int argc, char* argv[])
       vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::blue);
 
       // Using estimated eMc
-      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::red);
+      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam, 0.07, vpColor::none);
       // Using estimated eMc and cam_ros
-      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam_ros, 0.04, vpColor::yellow);
+      //vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch, cam_ros, 0.04, vpColor::yellow);
+
+
+      // Target estimation from sensor
+      vpDisplay::displayFrame(I, torsoMlcam_visp_est.inverse()*torsoMLWristPitch*oMe_LArm.inverse(), cam, 0.04, vpColor::none);
 
       // -----------------------------------------------------------------------------------
 
