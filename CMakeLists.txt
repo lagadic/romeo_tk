@@ -35,6 +35,8 @@ qi_create_bin(test_transformations test_transformations.cpp)
 qi_create_bin(servo_PB_Grasp grasping/servo_PB_Grasp.cpp)
 qi_create_bin(servo_PB_Grasp_Tea grasping/servo_PB_Grasp_Tea.cpp)
 qi_create_bin(servo_PB_grasp_tracking_tea grasping/servo_PB_grasp_tracking_tea.cpp)
+qi_create_bin(servo_PB_grasp_tracking_tea_move_head grasping/servo_PB_grasp_tracking_tea_move_head.cpp)
+
 
 # General
 qi_create_bin(save_iMj save_iMj.cpp)
@@ -63,6 +65,8 @@ qi_use_lib(test_transformations visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_PB_Grasp visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_PB_Grasp_Tea visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_PB_grasp_tracking_tea visp_naoqi ALCOMMON ALPROXIES ALVISION)
+qi_use_lib(servo_PB_grasp_tracking_tea_move_head visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
 
 # General
 qi_use_lib(save_iMj visp_naoqi ALCOMMON ALPROXIES ALVISION)
