@@ -160,21 +160,21 @@ int main(int argc, char* argv[])
   /** Load transformation between teabox and desired position of the hand to grasp it*/
 
   vpHomogeneousMatrix oMe_d;
-  vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+  {
+    vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+    std::string name_oMe_d =  "oMh_Small_Tea_Box1";
 
-  std::string name_oMe_d =  "oMh_Small_Tea_Box1";
+    char filename_[FILENAME_MAX];
+    sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
 
-  char filename_[FILENAME_MAX];
-  sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
+    if (pm.parse(oMe_d,filename_, name_oMe_d) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+      std::cout << "Cannot found the Homogeneous matrix named " << name_oMe_d<< "." << std::endl;
+      return 0;
+    }
+    else
+      std::cout << "Homogeneous matrix " << name_oMe_d <<": " << std::endl << oMe_d << std::endl;
 
-  if (pm.parse(oMe_d,filename_, name_oMe_d) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
-    std::cout << "Cannot found the Homogeneous matrix named " << name_oMe_d<< "." << std::endl;
-    return 0;
   }
-  else
-    std::cout << "Homogeneous matrix " << name_oMe_d <<": " << std::endl << oMe_d << std::endl;
-
-
 
   /** Initialization Visp blob*/
   std::list<vpDot2> blob_list;
@@ -273,6 +273,24 @@ int main(int argc, char* argv[])
   tu.buildFrom(cdMc) ;
 
 
+  /** Load transformation between HeadRoll and CameraLeft*/
+  vpHomogeneousMatrix eMc;
+  {
+  vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+  std::string name_eMc =  "eMc_CameraLeft_with_distorsion";
+
+  char filename_[FILENAME_MAX];
+  sprintf(filename_, "%s", VISP_NAOQI_EXTRINSIC_CAMERA_FILE);
+
+  if (pm.parse(eMc,filename_, name_eMc) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+    std::cout << "Cannot found the Homogeneous matrix named " << name_eMc<< "." << std::endl;
+    return 0;
+  }
+  else
+    std::cout << "Homogeneous matrix " << name_eMc <<": " << std::endl << eMc << std::endl;
+
+  }
+
 
   /** Initialization Visual servoing */
   vpServo task; // Visual servoing task
@@ -359,7 +377,7 @@ int main(int argc, char* argv[])
   vpPlot graph(2, 800, 500, 400, 10, "Curves...");
   // Init the curve plotter
   graph.initGraph(0, numJoints); // q_dot
-  graph.initGraph(1, 2); // s-s*
+  graph.initGraph(1, 6); // s-s*
   graph.setTitle(0, "Joint velocities");
   graph.setTitle(1, "Error s-s*");
   for(unsigned int i=0; i<numJoints; i++)
@@ -435,11 +453,15 @@ int main(int argc, char* argv[])
         //** Set task cVf matrix
         // get the torsoMe_head tranformation from NaoQi api
 
-        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
+        //        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
+        //        std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
+        //        torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
+        //        std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
 
-        std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
-        torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
-        std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
+        vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
+
+
+        torsoMlcam_visp = torsoMHeadRoll *eMc;
 
 
         vpVelocityTwistMatrix cVtorso(torsoMlcam_visp.inverse());
@@ -548,7 +570,7 @@ int main(int argc, char* argv[])
 
   robot.getProxy()->setStiffnesses("LHand", 1.0f);
   angle = 1.0f;
-  robot.getProxy()->setAngles("LHand",angle,0.7);
+  robot.getProxy()->setAngles("LHand",angle,1.0);
 
 
   std::cout << "Click to Stop the demo" << std::endl;

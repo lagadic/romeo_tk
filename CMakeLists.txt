@@ -30,8 +30,13 @@ qi_create_bin(servo_visp_LArm_6dof servo_visp_LArm_6dof.cpp)
 qi_create_bin(servo_face_detection_visp_head_joint_avoidance_basic servo_face_detection_visp_head_joint_avoidance_basic.cpp)
 qi_create_bin(servo_PB_MB_tracker servo_PB_MB_tracker.cpp)
 qi_create_bin(test_transformations test_transformations.cpp)
-qi_create_bin(servo_PB_Grasp servo_PB_Grasp.cpp)
-qi_create_bin(servo_PB_Grasp_Tea servo_PB_Grasp_Tea.cpp)
+
+# Grasping
+qi_create_bin(servo_PB_Grasp grasping/servo_PB_Grasp.cpp)
+qi_create_bin(servo_PB_Grasp_Tea grasping/servo_PB_Grasp_Tea.cpp)
+qi_create_bin(servo_PB_grasp_tracking_tea grasping/servo_PB_grasp_tracking_tea.cpp)
+
+# General
 qi_create_bin(save_iMj save_iMj.cpp)
 
 # Here we say that our executable depends on
@@ -53,6 +58,11 @@ qi_use_lib(servo_visp_LArm_6dof visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_face_detection_visp_head_joint_avoidance_basic visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_PB_MB_tracker visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(test_transformations visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
+# Grasping
 qi_use_lib(servo_PB_Grasp visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_PB_Grasp_Tea visp_naoqi ALCOMMON ALPROXIES ALVISION)
+qi_use_lib(servo_PB_grasp_tracking_tea visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
+# General
 qi_use_lib(save_iMj visp_naoqi ALCOMMON ALPROXIES ALVISION)
