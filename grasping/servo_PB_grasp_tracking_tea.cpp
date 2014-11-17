@@ -417,32 +417,6 @@ int main(int argc, char* argv[])
 
       if (init_done && (tracking_status == true)) {
 
-//        // compute the initial pose using  a non linear minimisation method
-//        pose.clearPoint() ;
-
-//        kk = 0;
-
-//        for (std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
-//        {
-//          double x=0, y=0;
-//          cog = (*it).getCog();
-//          vpPixelMeterConversion::convertPoint(cam, cog, x, y)  ;
-//          point[kk].set_x(x) ;
-//          point[kk].set_y(y) ;
-
-
-//          pose.addPoint(point[kk]) ;
-
-//          kk++;
-//        }
-//        pose.computePose(vpPose::VIRTUAL_VS, cMo) ;
-
-
-
-//        vpDisplay::displayFrame(I, cMo, cam, 0.05, vpColor::none);
-//        vpDisplay::displayFrame(I, cdMo, cam, 0.05, vpColor::none);
-
-
         pose.clearPoint();
         pose_obj.clearPoint();
 
@@ -468,8 +442,7 @@ int main(int argc, char* argv[])
             kk++;
         }
 
-        // compute the initial pose using Dementhon method followed by a non linear
-        // minimisation method
+        // compute pose
         pose.computePose(vpPose::VIRTUAL_VS, cMh) ;
         //std::cout << "Position Hand: " << std::endl << cMh << std::endl ;
 
@@ -493,13 +466,6 @@ int main(int argc, char* argv[])
         oJo = oVe_LArm * eJe_LArm;
         task.set_eJe(oJo);
 
-        //** Set task cVf matrix
-        // get the torsoMe_head tranformation from NaoQi api
-
-        //        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
-        //        std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
-        //        torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
-        //        std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
 
         vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
 
