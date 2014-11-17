@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
   vpHomogeneousMatrix oMe_d;
   vpXmlParserHomogeneousMatrix pm; // Create a XML parser
 
-  std::string name_oMe_d =  "oMe_d_TeaBox";
+  std::string name_oMe_d =  "oMh_Small_Tea_Box1";
 
   char filename_[FILENAME_MAX];
   sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
@@ -295,7 +295,7 @@ int main(int argc, char* argv[])
 
 
 
-  task.setLambda(0.18);
+  task.setLambda(0.10);
 
 
   //  // Set the proportional gain
@@ -346,10 +346,6 @@ int main(int argc, char* argv[])
   vpHomogeneousMatrix torsoMo;
   //Set the stiffness
   robot.setStiffness(jointNames, 1.f);
-
-  vpHomogeneousMatrix Larm;
-  vpHomogeneousMatrix LTarget;
-
 
 
   double tinit = 0; // initial time in second
@@ -525,8 +521,10 @@ int main(int argc, char* argv[])
 
   std::cout << "Click to Graps" << std::endl;
   vpDisplay::getClick(I);
-
-  robot.getProxy()->closeHand("LHand");
+  //robot.getProxy()->closeHand("LHand");
+  robot.getProxy()->setStiffnesses("LHand", 1.0f);
+  AL::ALValue angle = 0.15;
+  robot.getProxy()->setAngles("LHand",angle,0.15);
 
   std::cout << "Click to take the object " << std::endl;
   vpDisplay::getClick(I);
@@ -539,13 +537,18 @@ int main(int argc, char* argv[])
   vpDisplay::getClick(I);
 
   handPos = robot.getProxy()->getPosition(nameChain, 0, false);
-  handPos[2] =  handPos[2] - 0.05;
+  handPos[2] =  handPos[2] - 0.06;
   robot.getProxy()->setPositions(nameChain,0,handPos,0.05,7);
 
   std::cout << "Click to Open the Hand" <<  std::endl;
   vpDisplay::getClick(I);
 
-  robot.getProxy()->openHand("LHand");
+  //robot.getProxy()->openHand("LHand");
+
+
+  robot.getProxy()->setStiffnesses("LHand", 1.0f);
+  angle = 1.0f;
+  robot.getProxy()->setAngles("LHand",angle,0.7);
 
 
   std::cout << "Click to Stop the demo" << std::endl;
