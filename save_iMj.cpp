@@ -1,7 +1,6 @@
 /**
  *
- * This example demonstrates how to get images from the robot remotely, how
- * to track a blob using all the four joints of the Romeo Head;
+ * TO DO
  *
  */
 

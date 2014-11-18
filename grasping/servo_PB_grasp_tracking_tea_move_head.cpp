@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
   vpHomogeneousMatrix oMe_d;
   {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_oMe_d =  "oMh_Small_Tea_Box1";
+    std::string name_oMe_d =  "oMh_Small_Tea_Box_target_head";
 
     char filename_[FILENAME_MAX];
     sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
@@ -327,7 +327,7 @@ int main(int argc, char* argv[])
   double xd = 0;
   double yd = 0;
   //Set the depth of the point in the camera frame.
-  double Zd = 1.8;
+  double Zd = 0.8;
   //Set the point feature thanks to the desired parameters.
   sd.buildFrom(xd, yd, Zd);
   vpFeaturePoint s; //The current point feature.
@@ -572,8 +572,12 @@ int main(int argc, char* argv[])
         task_head.set_eJe(eJe_head);
         task_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
+        //vpColVector sec_ter;
+        //sec_ter = 0.5 * task_head.getTaskJacobianPseudoInverse()*  task_head.getInteractionMatrix() * task.ge getTaskJacobian();
+
         q_dot_head = task_head.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 
+        //robot.setVelocity(jointNames_head, q_dot_head + sec_ter);
         robot.setVelocity(jointNames_head, q_dot_head);
 
         vpImagePoint cog_desired;
