@@ -31,10 +31,10 @@ qi_create_bin(servo_visp_LArm_6dof demos/arm_servoing/servo_visp_LArm_6dof.cpp)
 qi_create_bin(servo_PB_MB_tracker demos/arm_servoing/servo_PB_MB_tracker.cpp)
 
 # Grasping
-qi_create_bin(servo_PB_Grasp grasping/servo_PB_Grasp.cpp)
-qi_create_bin(servo_PB_Grasp_Tea grasping/servo_PB_Grasp_Tea.cpp)
-qi_create_bin(servo_PB_grasp_tracking_tea grasping/servo_PB_grasp_tracking_tea.cpp)
-qi_create_bin(servo_PB_grasp_tracking_tea_move_head grasping/servo_PB_grasp_tracking_tea_move_head.cpp)
+qi_create_bin(servo_PB_Grasp demos/grasping/servo_PB_Grasp.cpp)
+qi_create_bin(servo_PB_Grasp_Tea demos/grasping/servo_PB_Grasp_Tea.cpp)
+qi_create_bin(servo_PB_grasp_tracking_tea demos/grasping/servo_PB_grasp_tracking_tea.cpp)
+qi_create_bin(servo_PB_grasp_tracking_tea_move_head demos/grasping/servo_PB_grasp_tracking_tea_move_head.cpp)
 
 # Tests
 qi_create_bin(test_transformations tests/test_transformations.cpp)
