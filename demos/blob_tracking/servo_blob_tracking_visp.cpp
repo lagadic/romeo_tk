@@ -6,6 +6,8 @@
  * Copyright Aldebaran Robotics
  */
 
+/*! \example servo_blob_tracking_visp.cpp */
+
 // Aldebaran includes.
 #include <alproxies/alvideodeviceproxy.h>
 #include <alvision/alimage.h>
@@ -33,13 +35,7 @@
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
 
-
-
 using namespace AL;
-
-
-
-
 
 void computeCentroidBlob(const vpImage<unsigned char> &I,vpDot2 &blob,vpImagePoint &cog,bool &init_done )
 {
@@ -76,30 +72,37 @@ void computeCentroidBlob(const vpImage<unsigned char> &I,vpDot2 &blob,vpImagePoi
 
 
 
+/*!
 
-int main(int argc, char* argv[])
+  Connect to Romeo robot, grab, display images and start
+  blob tracking with ViSP.
+  More over the NeckYaw and NeckPitch joints of Romeo's head are controlled by
+  visual servoing to center the detected blob in the image.
+  If you want to connect on an other robot, run:
+
+  ./servo_face_detection_visp_head -ip <robot ip address>
+  Example:
+
+  ./servo_face_detection_visp_head -ip 169.254.168.230
+*/
+int main(int argc, const char* argv[])
 {
-    std::string robotIp = "198.18.0.1";
+  std::string opt_ip = "198.18.0.1";;
 
-    if (argc < 2) {
-        std::cerr << "Usage: almotion_setangles robotIp "
-                  << "(optional default \"198.18.0.1\")."<< std::endl;
+    for (unsigned int i=0; i<argc; i++) {
+      if (std::string(argv[i]) == "-ip")
+          opt_ip = argv[i+1];
     }
-    else {
-        robotIp = argv[1];
-    }
-
 
     vpNaoqiGrabber g;
-
+    if (! opt_ip.empty())
+      g.setRobotIp(opt_ip);
     g.open();
 
     vpNaoqiRobot robot;
-
+    if (! opt_ip.empty())
+      robot.setRobotIp(opt_ip);
     robot.open();
-
-
-
 
     /** Initialization Visp Image and display*/
     vpImage<unsigned char> I(g.getHeight(), g.getWidth());
