@@ -45,39 +45,70 @@
 using namespace AL;
 
 
-bool computeCentroidBlob(const vpImage<unsigned char> &I,std::list<vpDot2> &blob_list,vpImagePoint &cog_tot,bool &init_done )
+bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list<vpDot2> &blob_list,vpImagePoint &cog_tot,const unsigned int numpoints ,bool &init_done )
 {
   vpImagePoint cog;
   cog_tot.set_uv(0,0);
-  try
-  {
+  try{
     if (! init_done)
     {
-      vpDisplay::flush(I);
-      blob_list.clear();
-      blob_list.resize(8);
-
       vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
 
-      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
-      {
 
-        (*it).setGraphics(true);
-        (*it).setGraphicsThickness(2);
-        (*it).initTracking(I);
-        (*it).track(I);
+
+      vpMouseButton::vpMouseButtonType button;
+      vpImagePoint ip;
+      unsigned int counter = 0;
+
+      blob_list.clear();
+      blob_list.resize(8);
+      std::list<vpDot2>::iterator it=blob_list.begin();
+
+      while (counter < numpoints)
+      {
+        g.acquire(I);
+        vpDisplay::display(I);
+        vpDisplay::flush(I) ;
+        if (vpDisplay::getClick(I,ip, button, false))
+        {
+          (*it).setGraphics(true);
+          (*it).setGraphicsThickness(2);
+          (*it).initTracking(I, ip);
+          counter ++;
+          ++it;
+        }
+
+        unsigned int j = 0;
+
+        for(std::list<vpDot2>::iterator it_=blob_list.begin(); j < counter; ++it_)
+        {
+          (*it_).track(I);
+          j++;
+          }
         vpDisplay::flush(I);
-        cog = (*it).getCog();
-        cog_tot = cog_tot + cog;
 
       }
+
+      for(std::list<vpDot2>::iterator it_ = blob_list.begin(); it_ != blob_list.end(); ++it_)
+      {
+        cog = (*it).getCog();
+        cog_tot = cog_tot + cog;
+      }
+
 
       cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
       init_done = true;
       std::cout << "init done: " << init_done << std::endl;
+
     }
+
     else
+
     {
+      g.acquire(I);
+      vpDisplay::display(I);
+
+
       for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
       {
 
@@ -90,8 +121,57 @@ bool computeCentroidBlob(const vpImage<unsigned char> &I,std::list<vpDot2> &blob
 
       // Compute the center of gravity of the object
       cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
+
+
+
     }
   }
+
+  //  vpImagePoint cog;
+  //  cog_tot.set_uv(0,0);
+  //  try
+  //  {
+  //    if (! init_done)
+  //    {
+  //      vpDisplay::flush(I);
+  //      blob_list.clear();
+  //      blob_list.resize(8);
+
+  //      vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
+
+  //      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
+  //      {
+
+  //        (*it).setGraphics(true);
+  //        (*it).setGraphicsThickness(2);
+  //        (*it).initTracking(I);
+  //        (*it).track(I);
+  //        vpDisplay::flush(I);
+  //        cog = (*it).getCog();
+  //        cog_tot = cog_tot + cog;
+
+  //      }
+
+  //      cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
+  //      init_done = true;
+  //      std::cout << "init done: " << init_done << std::endl;
+  //    }
+  //    else
+  //    {
+  //      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
+  //      {
+
+  //        (*it).track(I);
+  //        cog = (*it).getCog();
+  //        cog_tot = cog_tot + cog;
+
+
+  //      }
+
+  //      // Compute the center of gravity of the object
+  //      cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
+  //    }
+  //  }
   catch(...)
   {
     init_done = false;
@@ -116,10 +196,10 @@ int main(int argc, char* argv[])
 
 
   /** Open Proxy for the speech*/
-  AL::ALTextToSpeechProxy tts(robotIp, 9559);
-  tts.setLanguage("English");
-  const std::string phraseToSay = "Yes";
-  bool speech = true;
+  //  AL::ALTextToSpeechProxy tts(robotIp, 9559);
+  //  tts.setLanguage("English");
+  //  const std::string phraseToSay = "Yes";
+  //  bool speech = true;
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
@@ -196,6 +276,7 @@ int main(int argc, char* argv[])
   /** Initialization Visp blob*/
   std::list<vpDot2> blob_list;
   vpImagePoint cog_tot(0,0);
+  unsigned const int numPoints = 8;
 
 
   bool init_done = false;
@@ -217,7 +298,7 @@ int main(int argc, char* argv[])
 
 
   // Detect the blobs on the object (in this case they will be 8 blobs)
-  computeCentroidBlob(I, blob_list, cog_tot, init_done);
+  computeCentroidBlob(g, I, blob_list, cog_tot, numPoints, init_done);
 
   vpHomogeneousMatrix cMo, cMh, cMhd ;
   vpImagePoint cog;
@@ -305,7 +386,7 @@ int main(int argc, char* argv[])
 
 
   vpTRACE("Display task information " ) ;
-  task.print() ;
+  //task.print() ;
 
   task.setLambda(0.10);
 
@@ -316,6 +397,7 @@ int main(int argc, char* argv[])
   //  task.setLambda(lambda) ;
 
   vpColVector q_dot_arm;
+  vpMatrix cJc;
 
   /** ____________________ Head Visual Servoing ____________________ */
 
@@ -352,6 +434,8 @@ int main(int argc, char* argv[])
   task_head.setLambda(0.2);
 
   vpColVector q_dot_head;
+
+  vpColVector sec_ter;
 
 
 
@@ -421,7 +505,6 @@ int main(int argc, char* argv[])
 
 
 
-
   double tinit = 0; // initial time in second
 
   robot.getProxy()->openHand("LHand");
@@ -456,12 +539,12 @@ int main(int argc, char* argv[])
 #else
     try
     {
-      g.acquire(I);
-      vpDisplay::display(I);
+      //g.acquire(I);
+      //vpDisplay::display(I);
 
 
 
-      bool tracking_status = computeCentroidBlob(I, blob_list, cog_tot, init_done);
+      bool tracking_status = computeCentroidBlob(g,I, blob_list, cog_tot,numPoints, init_done);
 
       if (! init_done)
         tinit = vpTime::measureTimeSecond();
@@ -572,18 +655,30 @@ int main(int argc, char* argv[])
         task_head.set_eJe(eJe_head);
         task_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
-        //vpColVector sec_ter;
-        //sec_ter = 0.5 * task_head.getTaskJacobianPseudoInverse()*  task_head.getInteractionMatrix() * task.ge getTaskJacobian();
-
         q_dot_head = task_head.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 
-        //robot.setVelocity(jointNames_head, q_dot_head + sec_ter);
+        vpHomogeneousMatrix eMc = torsoMLWristPitch.inverse() * torsoMlcam_visp;
+
+        vpVelocityTwistMatrix cVc(eMc.inverse());
+
+        cJc = cVc * eJe_LArm;
+
+        //        std::cout <<"cJc:" <<cJc << std::endl;
+        //        std::cout <<"task_head.getTaskJacobianPseudoInverse():" <<task_head.getTaskJacobianPseudoInverse() << std::endl;
+        //        std::cout <<"task_head.getInteractionMatrix():" <<task_head.getInteractionMatrix() << std::endl;
+
+        sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
+
+
+        std::cout <<"Second Term:" <<sec_ter << std::endl;
+
+        robot.setVelocity(jointNames_head, q_dot_head - sec_ter);
         robot.setVelocity(jointNames_head, q_dot_head);
 
         vpImagePoint cog_desired;
         vpMeterPixelConversion::convertPoint(cam, sd.get_x(), sd.get_y(), cog_desired);
         vpDisplay::displayCross(I, cog_desired, 10, vpColor::green, 2);
-
+        vpDisplay::displayCross(I, cog_tot, 10, vpColor::yellow, 3);
 
         vpDisplay::flush(I) ;
         vpTime::sleepMs(20);
