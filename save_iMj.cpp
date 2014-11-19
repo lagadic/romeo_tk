@@ -24,6 +24,7 @@
 #include <visp/vpFeatureBuilder.h>
 #include <visp/vpCameraParameters.h>
 #include <visp/vpXmlParserCamera.h>
+#include <visp/vpXmlParserHomogeneousMatrix.h>
 #include <visp/vpPose.h>
 
 #include <iostream>
@@ -33,8 +34,7 @@
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
-#include <visp_naoqi/vpXmlParserHomogeneousMatrix.h>
-#include<visp_naoqi/vpNaoqiConfig.h>
+#include <visp_naoqi/vpNaoqiConfig.h>
 #define SAVE 0
 
 #define USE_PLOTTER
