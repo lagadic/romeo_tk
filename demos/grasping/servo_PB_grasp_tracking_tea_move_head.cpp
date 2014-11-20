@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
 
   /** Load transformation between HeadRoll and CameraLeft*/
 
-   vpHomogeneousMatrix eMc = g.getCameraExtParameters();
+   vpHomogeneousMatrix eMc = g.get_eMc();
 
 
   /** ____________________ Initialization Motion ____________________ */

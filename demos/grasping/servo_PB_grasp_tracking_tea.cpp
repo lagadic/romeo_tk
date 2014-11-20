@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
   oMe_LArm[2][3] = -0.045;
 
   /** Load transformation between HeadRoll and CameraLeft*/
-   vpHomogeneousMatrix eMc = g.getCameraExtParameters();
+   vpHomogeneousMatrix eMc = g.get_eMc();
 
 
 
@@ -481,14 +481,17 @@ int main(int argc, char* argv[])
         std::cout << "q dot: " << q_dot.t() << " in deg/s: "
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
 
-        robot.setVelocity(jointNames, q_dot);
+       // robot.setVelocity(jointNames, q_dot);
+        robot.setVelocity_one_call(jointNames, q_dot);
+
+
 
 
         vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::green);
 
 
         vpDisplay::flush(I) ;
-        vpTime::sleepMs(20);
+        //vpTime::sleepMs(20);
 
 
       }
