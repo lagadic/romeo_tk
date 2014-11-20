@@ -84,7 +84,7 @@ bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list
         {
           (*it_).track(I);
           j++;
-          }
+        }
         vpDisplay::flush(I);
 
       }
@@ -111,12 +111,9 @@ bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list
 
       for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
       {
-
         (*it).track(I);
         cog = (*it).getCog();
         cog_tot = cog_tot + cog;
-
-
       }
 
       // Compute the center of gravity of the object
@@ -225,8 +222,8 @@ int main(int argc, char* argv[])
   // parameters of the camera named "myCamera" for the image sizes 640x480,
   // for the projection model projModel. The size of the image is optional
   // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", "camera.xml");
-  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
+  sprintf(filename, "%s", VISP_NAOQI_INTRINSIC_CAMERA_FILE);
+  if (p.parse(cam, filename, "CameraLeft", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
     std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
     std::cout << "Loading default camera parameters" << std::endl;
     cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
@@ -368,7 +365,7 @@ int main(int argc, char* argv[])
   t.buildFrom(cdMc) ;
   tu.buildFrom(cdMc) ;
 
-
+return 0;
 
   /** ____________________ Initialization Visual servoing ____________________ */
 
