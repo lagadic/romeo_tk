@@ -123,10 +123,18 @@ int main(int argc, char* argv[])
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
+
+
+  vpCameraParameters cam = g.getCameraParameters(vpCameraParameters::perspectiveProjWithDistortion);
+  std::cout << "Camera parameters: " << cam << std::endl;
+
 
   /** Create a new istance NaoqiRobot*/
   vpNaoqiRobot robot;
+
   robot.open();
 
 
@@ -135,24 +143,6 @@ int main(int argc, char* argv[])
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
 
-  char filename[FILENAME_MAX];
-  vpCameraParameters cam;
-  vpXmlParserCamera p; // Create a XML parser
-  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
-  // Use a perspective projection model without distortion
-  projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
-  // parameters of the camera named "myCamera" for the image sizes 640x480,
-  // for the projection model projModel. The size of the image is optional
-  // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", "camera.xml");
-  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
-    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
-    std::cout << "Loading default camera parameters" << std::endl;
-    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
-  }
-
-  std::cout << "Camera parameters: " << cam << std::endl;
 
 
   /** Load transformation between teabox and desired position of the hand to grasp it*/
@@ -334,22 +324,7 @@ int main(int argc, char* argv[])
   oMe_LArm[2][3] = -0.045;
 
   /** Load transformation between HeadRoll and CameraLeft*/
-  vpHomogeneousMatrix eMc;
-  {
-    vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_eMc =  "eMc_CameraLeft_with_distorsion";
-
-    char filename_[FILENAME_MAX];
-    sprintf(filename_, "%s", VISP_NAOQI_EXTRINSIC_CAMERA_FILE);
-
-    if (pm.parse(eMc,filename_, name_eMc) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
-      std::cout << "Cannot found the Homogeneous matrix named " << name_eMc<< "." << std::endl;
-      return 0;
-    }
-    else
-      std::cout << "Homogeneous matrix " << name_eMc <<": " << std::endl << eMc << std::endl;
-
-  }
+   vpHomogeneousMatrix eMc = g.getCameraExtParameters();
 
 
 
