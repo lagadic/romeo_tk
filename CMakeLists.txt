@@ -41,7 +41,7 @@ qi_create_bin(test_transformations tests/test_transformations.cpp)
 
 
 # General
-qi_create_bin(save_iMj save_iMj.cpp)
+qi_create_bin(learn_oMh learn_oMh.cpp)
 
 
 
@@ -89,4 +89,4 @@ qi_use_lib(servo_PB_grasp_tracking_tea_move_head visp_naoqi ALCOMMON ALPROXIES A
 qi_use_lib(test_transformations visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
 # General
-qi_use_lib(save_iMj visp_naoqi ALCOMMON ALPROXIES ALVISION)
+qi_use_lib(learn_oMh visp_naoqi ALCOMMON ALPROXIES ALVISION)
