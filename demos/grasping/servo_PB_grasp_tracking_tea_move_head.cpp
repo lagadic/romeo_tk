@@ -198,7 +198,14 @@ int main(int argc, char* argv[])
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
+
+  vpCameraParameters::vpCameraParametersProjType projModel = vpCameraParameters::perspectiveProjWithDistortion;
+  vpCameraParameters cam = g.getCameraParameters(projModel);
+  std::cout << "Camera parameters: " << cam << std::endl;
+
 
   /** Create a new istance NaoqiRobot*/
   vpNaoqiRobot robot;
@@ -209,27 +216,6 @@ int main(int argc, char* argv[])
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
-
-  char filename[FILENAME_MAX];
-  vpCameraParameters cam;
-  vpXmlParserCamera p; // Create a XML parser
-  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
-  // Use a perspective projection model without distortion
-  projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
-  // parameters of the camera named "myCamera" for the image sizes 640x480,
-  // for the projection model projModel. The size of the image is optional
-  // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", VISP_NAOQI_INTRINSIC_CAMERA_FILE);
-  if (p.parse(cam, filename, "CameraLeft", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
-    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
-    std::cout << "Loading default camera parameters" << std::endl;
-    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
-  }
-
-
-
-  std::cout << "Camera parameters: " << cam << std::endl;
 
 
   /** Load transformation between teabox and desired position of the hand to grasp it*/
@@ -354,7 +340,7 @@ int main(int argc, char* argv[])
   vpDisplay::flush(I) ;
   vpDisplay::getClick(I) ;
 
-
+return 0;
 
   // Sets the desired position of the visual feature
   vpHomogeneousMatrix cdMc ;
