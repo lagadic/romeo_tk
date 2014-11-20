@@ -202,8 +202,7 @@ int main(int argc, char* argv[])
   g.setCamera(0);
   g.open();
 
-  vpCameraParameters::vpCameraParametersProjType projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  vpCameraParameters cam = g.getCameraParameters(projModel);
+  vpCameraParameters cam = g.getCameraParameters(vpCameraParameters::perspectiveProjWithDistortion);
   std::cout << "Camera parameters: " << cam << std::endl;
 
 
@@ -340,7 +339,6 @@ int main(int argc, char* argv[])
   vpDisplay::flush(I) ;
   vpDisplay::getClick(I) ;
 
-return 0;
 
   // Sets the desired position of the visual feature
   vpHomogeneousMatrix cdMc ;
@@ -434,23 +432,8 @@ return 0;
   oMe_LArm[2][3] = -0.045;
 
   /** Load transformation between HeadRoll and CameraLeft*/
-  vpHomogeneousMatrix eMc;
-  {
-    vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_eMc =  "eMc_CameraLeft_with_distorsion";
 
-    char filename_[FILENAME_MAX];
-    sprintf(filename_, "%s", VISP_NAOQI_EXTRINSIC_CAMERA_FILE);
-
-    if (pm.parse(eMc,filename_, name_eMc) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
-      std::cout << "Cannot found the Homogeneous matrix named " << name_eMc<< "." << std::endl;
-      return 0;
-    }
-    else
-      std::cout << "Homogeneous matrix " << name_eMc <<": " << std::endl << eMc << std::endl;
-
-  }
-
+   vpHomogeneousMatrix eMc = g.getCameraExtParameters();
 
 
   /** ____________________ Initialization Motion ____________________ */
