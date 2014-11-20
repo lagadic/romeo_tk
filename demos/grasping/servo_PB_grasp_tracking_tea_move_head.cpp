@@ -122,51 +122,6 @@ bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list
     }
   }
 
-  //  vpImagePoint cog;
-  //  cog_tot.set_uv(0,0);
-  //  try
-  //  {
-  //    if (! init_done)
-  //    {
-  //      vpDisplay::flush(I);
-  //      blob_list.clear();
-  //      blob_list.resize(8);
-
-  //      vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
-
-  //      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
-  //      {
-
-  //        (*it).setGraphics(true);
-  //        (*it).setGraphicsThickness(2);
-  //        (*it).initTracking(I);
-  //        (*it).track(I);
-  //        vpDisplay::flush(I);
-  //        cog = (*it).getCog();
-  //        cog_tot = cog_tot + cog;
-
-  //      }
-
-  //      cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
-  //      init_done = true;
-  //      std::cout << "init done: " << init_done << std::endl;
-  //    }
-  //    else
-  //    {
-  //      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
-  //      {
-
-  //        (*it).track(I);
-  //        cog = (*it).getCog();
-  //        cog_tot = cog_tot + cog;
-
-
-  //      }
-
-  //      // Compute the center of gravity of the object
-  //      cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
-  //    }
-  //  }
   catch(...)
   {
     init_done = false;
@@ -222,7 +177,7 @@ int main(int argc, char* argv[])
   vpHomogeneousMatrix oMe_d;
   {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_oMe_d =  "oMh_Small_Tea_Box_target_head";
+    std::string name_oMe_d =  "oMh_Small_Tea_Box1";
 
     char filename_[FILENAME_MAX];
     sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
@@ -466,9 +421,6 @@ int main(int argc, char* argv[])
   robot.setStiffness(jointNames_head, 1.f);
 
 
-
-
-
   double tinit = 0; // initial time in second
 
   robot.getProxy()->openHand("LHand");
@@ -503,12 +455,8 @@ int main(int argc, char* argv[])
 #else
     try
     {
-      //g.acquire(I);
-      //vpDisplay::display(I);
 
-
-
-      bool tracking_status = computeCentroidBlob(g,I, blob_list, cog_tot,numPoints, init_done);
+      bool tracking_status = computeCentroidBlob(g, I, blob_list, cog_tot,numPoints, init_done);
 
       if (! init_done)
         tinit = vpTime::measureTimeSecond();
@@ -631,12 +579,12 @@ int main(int argc, char* argv[])
         //        std::cout <<"task_head.getTaskJacobianPseudoInverse():" <<task_head.getTaskJacobianPseudoInverse() << std::endl;
         //        std::cout <<"task_head.getInteractionMatrix():" <<task_head.getInteractionMatrix() << std::endl;
 
-        sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
+       // sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
 
 
         std::cout <<"Second Term:" <<sec_ter << std::endl;
 
-        robot.setVelocity(jointNames_head, q_dot_head - sec_ter);
+       // robot.setVelocity(jointNames_head, q_dot_head + sec_ter);
         robot.setVelocity(jointNames_head, q_dot_head);
 
         vpImagePoint cog_desired;
@@ -645,7 +593,7 @@ int main(int argc, char* argv[])
         vpDisplay::displayCross(I, cog_tot, 10, vpColor::yellow, 3);
 
         vpDisplay::flush(I) ;
-        vpTime::sleepMs(20);
+        //vpTime::sleepMs(20);
 
 
       }
@@ -681,7 +629,7 @@ int main(int argc, char* argv[])
 
   // Grasping
 
-  //robot.stop(jointNames);
+  robot.stop(jointNames);
 
   std::string nameChain = "LArm";
 
@@ -708,9 +656,6 @@ int main(int argc, char* argv[])
 
   std::cout << "Click to Open the Hand" <<  std::endl;
   vpDisplay::getClick(I);
-
-  //robot.getProxy()->openHand("LHand");
-
 
   robot.getProxy()->setStiffnesses("LHand", 1.0f);
   angle = 1.0f;
