@@ -52,9 +52,6 @@ bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list
   try{
     if (! init_done)
     {
-      vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
-
-
 
       vpMouseButton::vpMouseButtonType button;
       vpImagePoint ip;
@@ -85,6 +82,7 @@ bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list
           (*it_).track(I);
           j++;
         }
+        vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
         vpDisplay::flush(I);
 
       }
@@ -229,6 +227,8 @@ int main(int argc, char* argv[])
     cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
   }
 
+
+
   std::cout << "Camera parameters: " << cam << std::endl;
 
 
@@ -285,14 +285,12 @@ int main(int argc, char* argv[])
   {
     g.acquire(I);
     vpDisplay::display(I);
+    vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click to start", vpColor::red);
     vpDisplay::flush(I) ;
     if (vpDisplay::getClick(I, false))
       break;
-
-
   }
   std::cout << "Click into the blobs of the hand and then of the object (8 blobs in total)" << std::endl;
-
 
   // Detect the blobs on the object (in this case they will be 8 blobs)
   computeCentroidBlob(g, I, blob_list, cog_tot, numPoints, init_done);
@@ -352,6 +350,7 @@ int main(int argc, char* argv[])
   vpDisplay::displayFrame(I, cMh, cam, 0.05, vpColor::none);
   vpDisplay::displayFrame(I, cMo, cam, 0.05, vpColor::none);
   vpDisplay::displayFrame(I, cMhd, cam, 0.05, vpColor::none);
+  vpDisplay::displayCharString(I, vpImagePoint(30,10), "Click to start the Visual Servoing ", vpColor::red);
   vpDisplay::flush(I) ;
   vpDisplay::getClick(I) ;
 
@@ -365,7 +364,6 @@ int main(int argc, char* argv[])
   t.buildFrom(cdMc) ;
   tu.buildFrom(cdMc) ;
 
-return 0;
 
   /** ____________________ Initialization Visual servoing ____________________ */
 
