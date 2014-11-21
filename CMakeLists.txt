@@ -18,7 +18,6 @@ qi_create_bin(face_detection_visp demos/face_tracking/face_detection_visp.cpp)
 
 
 # Face Servoing
-qi_create_bin(servo_face_detection_visp demos/face_servoing/servo_face_detection_visp.cpp)
 qi_create_bin(servo_face_detection_visp_head demos/face_servoing/servo_face_detection_visp_head.cpp)
 qi_create_bin(servo_face_detection_visp_head_joint_avoidance_basic demos/face_servoing/servo_face_detection_visp_head_joint_avoidance_basic.cpp)
 
@@ -72,7 +71,6 @@ qi_use_lib(face_detection_visp visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
 
 # Face Servoing
-qi_use_lib(servo_face_detection_visp visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_face_detection_visp_head visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_face_detection_visp_head_joint_avoidance_basic visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
