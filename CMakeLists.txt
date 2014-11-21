@@ -10,7 +10,6 @@ find_package(visp_naoqi REQUIRED)
 
 
 # Blob Tracking
-qi_create_bin(servo_blob_tracking_visp demos/blob_tracking/servo_blob_tracking_visp.cpp)
 qi_create_bin(servo_blob_tracking_visp_all_head demos/blob_tracking/servo_blob_tracking_visp_all_head.cpp)
 
 
@@ -66,7 +65,6 @@ qi_use_lib(servo_PB_MB_tracker visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
 
 # Blob Tracking
-qi_use_lib(servo_blob_tracking_visp visp_naoqi ALCOMMON ALPROXIES ALVISION)
 qi_use_lib(servo_blob_tracking_visp_all_head visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
 # Face Tracking
