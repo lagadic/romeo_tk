@@ -90,6 +90,8 @@ int main(int argc, char* argv[])
 
     /** Open the grabber for the acquisition of the images from the robot*/
     vpNaoqiGrabber g;
+    g.setFramerate(15);
+    g.setCamera(0);
     g.open();
 
     /** Create a new istance NaoqiRobot*/
@@ -101,9 +103,7 @@ int main(int argc, char* argv[])
     vpImage<unsigned char> I(g.getHeight(), g.getWidth());
     vpDisplayX d(I);
     vpDisplay::setTitle(I, "ViSP viewer");
-    vpCameraParameters cam;
-    //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
-    cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+    vpCameraParameters cam = g.getCameraParameters();
 
     /** Initialization Visp blob*/
     vpDot2 blob;
@@ -111,11 +111,7 @@ int main(int argc, char* argv[])
     blob.setGraphicsThickness(2);
     vpImagePoint cog;
 
-
-
     bool init_done = false;
-
-
 
 
     /** Initialization Visual servoing task*/
@@ -152,14 +148,10 @@ int main(int argc, char* argv[])
     vpColVector q_dot;
 
     // Transformation HeadRoll to Camera Left
-    vpHomogeneousMatrix cMe;
-
-    cMe = robot.get_cMe("CameraLeft_aldebaran");
-
+    vpHomogeneousMatrix eMc = g.get_eMc();
 
 
     // Motion
-
     std::vector<std::string> jointNames =  robot.getBodyNames("Head");
     const unsigned int numJoints = jointNames.size();
 
@@ -203,7 +195,7 @@ int main(int argc, char* argv[])
 
                 eJe = robot.get_eJe("Head");
                 task.set_eJe(eJe);
-                task.set_cVe( vpVelocityTwistMatrix(cMe) );
+                task.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
                 q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 

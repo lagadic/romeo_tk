@@ -1,9 +1,8 @@
 /**
  *
  * This example demonstrates how to get images from the robot remotely and how
- * to display them on your screen using opencv.
+ * to detect and track a face using two joints of the Neck.
  *
- * Copyright Aldebaran Robotics
  */
 
 #include <iostream>
