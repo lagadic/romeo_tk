@@ -1,9 +1,8 @@
 /**
+ * This example demonstrates how to get images from the robot remotely, how
+ * to track a face using all the four joints of the Romeo Head avoiding
+ * the joints limits.
  *
- * This example demonstrates how to get images from the robot remotely and how
- * to display them on your screen using opencv.
- *
- * Copyright Aldebaran Robotics
  */
 
 /*! \example servo_face_detection_visp_head_joint_avoidance.cpp */
@@ -147,23 +146,9 @@ int main(int argc, const char* argv[])
   task.setLambda(-1) ;
 
   // Transformation HeadRoll to Camera Left
-  vpHomogeneousMatrix cMe;
+  vpHomogeneousMatrix eMc = g.get_eMc();
 
-  cMe[0][0] = -1.;
-  cMe[1][0] = 0.;
-  cMe[2][0] =  0.;
 
-  cMe[0][1] = 0.;
-  cMe[1][1] = -1.;
-  cMe[2][1] =  0.;
-
-  cMe[0][2] = 0.;
-  cMe[1][2] = 0.;
-  cMe[2][2] =  1.;
-
-  cMe[0][3] = 0.04;
-  cMe[1][3] = 0.09938;
-  cMe[2][3] =  0.11999;
 
   std::string chainName = "Head";
 
@@ -173,7 +158,7 @@ int main(int argc, const char* argv[])
   std::vector<float> jointVel(numJoints);
 
   for(unsigned int i=0; i< numJoints; i++)
-      jointVel[i] = 0.0f;
+    jointVel[i] = 0.0f;
 
   // Initialize the joint avoidance scheme from the joint limits
   vpColVector jointMin = robot.getJointMin(chainName);
@@ -244,7 +229,7 @@ int main(int argc, const char* argv[])
   plot.setColor(0, 1, vpColor::green);
   plot.setColor(0, 2, vpColor::blue);
   plot.setColor(0, 3, vpColor::orange);
- for (unsigned int i= numJoints; i < numJoints+4; i++)
+  for (unsigned int i= numJoints; i < numJoints+4; i++)
     plot.setColor(0, i, vpColor::black); // for Q and tQ [min,max]
   // Set the curves color
 
@@ -257,9 +242,9 @@ int main(int argc, const char* argv[])
   // Declate Jacobian
   vpMatrix eJe(6,numJoints);
 
-  vpCameraParameters cam;
-  //cam.initPersProjWithoutDistortion(323.2023246,323.6059094,169.0936523, 119.5883104);
-  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+  vpCameraParameters cam = g.getCameraParameters();
+  //cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+
   robot.setStiffness(chainName, 1.f);
 
   double tinit = 0; // initial time in second
@@ -386,7 +371,7 @@ int main(int argc, const char* argv[])
 
         eJe = robot.get_eJe("Head");
         task.set_eJe(eJe);
-        task.set_cVe( vpVelocityTwistMatrix(cMe) );
+        task.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
         vpColVector prim_task ;
         vpColVector e2(numJoints) ;
@@ -453,7 +438,7 @@ int main(int argc, const char* argv[])
           e2 = 0;
         }
 
-//        std::cout << "e2: " << e2.t() << std::endl;
+        //        std::cout << "e2: " << e2.t() << std::endl;
 
         vpColVector q_dot = -lambda * (prim_task + e2);
 

@@ -45,53 +45,83 @@
 using namespace AL;
 
 
-bool computeCentroidBlob(const vpImage<unsigned char> &I,std::list<vpDot2> &blob_list,vpImagePoint &cog_tot,bool &init_done )
+bool computeCentroidBlob(vpNaoqiGrabber &g ,vpImage<unsigned char> &I ,std::list<vpDot2> &blob_list,vpImagePoint &cog_tot,const unsigned int numpoints ,bool &init_done )
 {
   vpImagePoint cog;
   cog_tot.set_uv(0,0);
-  try
-  {
+  try{
     if (! init_done)
     {
-      vpDisplay::flush(I);
+
+      vpMouseButton::vpMouseButtonType button;
+      vpImagePoint ip;
+      unsigned int counter = 0;
+
       blob_list.clear();
       blob_list.resize(8);
+      std::list<vpDot2>::iterator it=blob_list.begin();
 
-      vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
-
-      for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
+      while (counter < numpoints)
       {
+        g.acquire(I);
+        vpDisplay::display(I);
+        vpDisplay::flush(I) ;
+        if (vpDisplay::getClick(I,ip, button, false))
+        {
+          (*it).setGraphics(true);
+          (*it).setGraphicsThickness(2);
+          (*it).initTracking(I, ip);
+          counter ++;
+          ++it;
+        }
 
-        (*it).setGraphics(true);
-        (*it).setGraphicsThickness(2);
-        (*it).initTracking(I);
-        (*it).track(I);
+        unsigned int j = 0;
+
+        for(std::list<vpDot2>::iterator it_=blob_list.begin(); j < counter; ++it_)
+        {
+          (*it_).track(I);
+          j++;
+        }
+        vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click on the 8 blobs (Hand and Object) ", vpColor::red);
         vpDisplay::flush(I);
-        cog = (*it).getCog();
-        cog_tot = cog_tot + cog;
 
       }
+
+      for(std::list<vpDot2>::iterator it_ = blob_list.begin(); it_ != blob_list.end(); ++it_)
+      {
+        cog = (*it).getCog();
+        cog_tot = cog_tot + cog;
+      }
+
 
       cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
       init_done = true;
       std::cout << "init done: " << init_done << std::endl;
+
     }
+
     else
+
     {
+      g.acquire(I);
+      vpDisplay::display(I);
+
+
       for(std::list<vpDot2>::iterator it=blob_list.begin(); it != blob_list.end(); ++it)
       {
-
         (*it).track(I);
         cog = (*it).getCog();
         cog_tot = cog_tot + cog;
-
-
       }
 
       // Compute the center of gravity of the object
       cog_tot = cog_tot * ( 1.0/ (blob_list.size()) );
+
+
+
     }
   }
+
   catch(...)
   {
     init_done = false;
@@ -116,14 +146,20 @@ int main(int argc, char* argv[])
 
 
   /** Open Proxy for the speech*/
-  AL::ALTextToSpeechProxy tts(robotIp, 9559);
-  tts.setLanguage("English");
-  const std::string phraseToSay = "Yes";
-  bool speech = true;
+  //  AL::ALTextToSpeechProxy tts(robotIp, 9559);
+  //  tts.setLanguage("English");
+  //  const std::string phraseToSay = "Yes";
+  //  bool speech = true;
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
+
+  vpCameraParameters cam = g.getCameraParameters(vpCameraParameters::perspectiveProjWithDistortion);
+  std::cout << "Camera parameters: " << cam << std::endl;
+
 
   /** Create a new istance NaoqiRobot*/
   vpNaoqiRobot robot;
@@ -135,32 +171,13 @@ int main(int argc, char* argv[])
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
 
-  char filename[FILENAME_MAX];
-  vpCameraParameters cam;
-  vpXmlParserCamera p; // Create a XML parser
-  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
-  // Use a perspective projection model without distortion
-  projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
-  // parameters of the camera named "myCamera" for the image sizes 640x480,
-  // for the projection model projModel. The size of the image is optional
-  // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", "camera.xml");
-  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
-    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
-    std::cout << "Loading default camera parameters" << std::endl;
-    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
-  }
-
-  std::cout << "Camera parameters: " << cam << std::endl;
-
 
   /** Load transformation between teabox and desired position of the hand to grasp it*/
 
   vpHomogeneousMatrix oMe_d;
   {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_oMe_d =  "oMh_Small_Tea_Box_target_head";
+    std::string name_oMe_d =  "oMh_Small_Tea_Box1";
 
     char filename_[FILENAME_MAX];
     sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
@@ -196,6 +213,7 @@ int main(int argc, char* argv[])
   /** Initialization Visp blob*/
   std::list<vpDot2> blob_list;
   vpImagePoint cog_tot(0,0);
+  unsigned const int numPoints = 8;
 
 
   bool init_done = false;
@@ -207,17 +225,15 @@ int main(int argc, char* argv[])
   {
     g.acquire(I);
     vpDisplay::display(I);
+    vpDisplay::displayCharString(I, vpImagePoint(10,10), "Click to start", vpColor::red);
     vpDisplay::flush(I) ;
     if (vpDisplay::getClick(I, false))
       break;
-
-
   }
   std::cout << "Click into the blobs of the hand and then of the object (8 blobs in total)" << std::endl;
 
-
   // Detect the blobs on the object (in this case they will be 8 blobs)
-  computeCentroidBlob(I, blob_list, cog_tot, init_done);
+  computeCentroidBlob(g, I, blob_list, cog_tot, numPoints, init_done);
 
   vpHomogeneousMatrix cMo, cMh, cMhd ;
   vpImagePoint cog;
@@ -274,9 +290,9 @@ int main(int argc, char* argv[])
   vpDisplay::displayFrame(I, cMh, cam, 0.05, vpColor::none);
   vpDisplay::displayFrame(I, cMo, cam, 0.05, vpColor::none);
   vpDisplay::displayFrame(I, cMhd, cam, 0.05, vpColor::none);
+  vpDisplay::displayCharString(I, vpImagePoint(30,10), "Click to start the Visual Servoing ", vpColor::red);
   vpDisplay::flush(I) ;
   vpDisplay::getClick(I) ;
-
 
 
   // Sets the desired position of the visual feature
@@ -286,7 +302,6 @@ int main(int argc, char* argv[])
   vpFeatureThetaU tu(vpFeatureThetaU::cdRc); // current feature
   t.buildFrom(cdMc) ;
   tu.buildFrom(cdMc) ;
-
 
 
   /** ____________________ Initialization Visual servoing ____________________ */
@@ -305,7 +320,7 @@ int main(int argc, char* argv[])
 
 
   vpTRACE("Display task information " ) ;
-  task.print() ;
+  //task.print() ;
 
   task.setLambda(0.10);
 
@@ -316,6 +331,7 @@ int main(int argc, char* argv[])
   //  task.setLambda(lambda) ;
 
   vpColVector q_dot_arm;
+  vpMatrix cJc;
 
   /** ____________________ Head Visual Servoing ____________________ */
 
@@ -353,6 +369,8 @@ int main(int argc, char* argv[])
 
   vpColVector q_dot_head;
 
+  vpColVector sec_ter;
+
 
 
 
@@ -369,23 +387,8 @@ int main(int argc, char* argv[])
   oMe_LArm[2][3] = -0.045;
 
   /** Load transformation between HeadRoll and CameraLeft*/
-  vpHomogeneousMatrix eMc;
-  {
-    vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-    std::string name_eMc =  "eMc_CameraLeft_with_distorsion";
 
-    char filename_[FILENAME_MAX];
-    sprintf(filename_, "%s", VISP_NAOQI_EXTRINSIC_CAMERA_FILE);
-
-    if (pm.parse(eMc,filename_, name_eMc) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
-      std::cout << "Cannot found the Homogeneous matrix named " << name_eMc<< "." << std::endl;
-      return 0;
-    }
-    else
-      std::cout << "Homogeneous matrix " << name_eMc <<": " << std::endl << eMc << std::endl;
-
-  }
-
+   vpHomogeneousMatrix eMc = g.get_eMc();
 
 
   /** ____________________ Initialization Motion ____________________ */
@@ -416,10 +419,6 @@ int main(int argc, char* argv[])
 
   //Set the stiffness
   robot.setStiffness(jointNames_head, 1.f);
-
-
-
-
 
 
   double tinit = 0; // initial time in second
@@ -456,12 +455,8 @@ int main(int argc, char* argv[])
 #else
     try
     {
-      g.acquire(I);
-      vpDisplay::display(I);
 
-
-
-      bool tracking_status = computeCentroidBlob(I, blob_list, cog_tot, init_done);
+      bool tracking_status = computeCentroidBlob(g, I, blob_list, cog_tot,numPoints, init_done);
 
       if (! init_done)
         tinit = vpTime::measureTimeSecond();
@@ -572,21 +567,33 @@ int main(int argc, char* argv[])
         task_head.set_eJe(eJe_head);
         task_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
-        //vpColVector sec_ter;
-        //sec_ter = 0.5 * task_head.getTaskJacobianPseudoInverse()*  task_head.getInteractionMatrix() * task.ge getTaskJacobian();
-
         q_dot_head = task_head.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 
-        //robot.setVelocity(jointNames_head, q_dot_head + sec_ter);
+        vpHomogeneousMatrix eMc = torsoMLWristPitch.inverse() * torsoMlcam_visp;
+
+        vpVelocityTwistMatrix cVc(eMc.inverse());
+
+        cJc = cVc * eJe_LArm;
+
+        //        std::cout <<"cJc:" <<cJc << std::endl;
+        //        std::cout <<"task_head.getTaskJacobianPseudoInverse():" <<task_head.getTaskJacobianPseudoInverse() << std::endl;
+        //        std::cout <<"task_head.getInteractionMatrix():" <<task_head.getInteractionMatrix() << std::endl;
+
+       // sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
+
+
+        std::cout <<"Second Term:" <<sec_ter << std::endl;
+
+       // robot.setVelocity(jointNames_head, q_dot_head + sec_ter);
         robot.setVelocity(jointNames_head, q_dot_head);
 
         vpImagePoint cog_desired;
         vpMeterPixelConversion::convertPoint(cam, sd.get_x(), sd.get_y(), cog_desired);
         vpDisplay::displayCross(I, cog_desired, 10, vpColor::green, 2);
-
+        vpDisplay::displayCross(I, cog_tot, 10, vpColor::yellow, 3);
 
         vpDisplay::flush(I) ;
-        vpTime::sleepMs(20);
+        //vpTime::sleepMs(20);
 
 
       }
@@ -622,7 +629,7 @@ int main(int argc, char* argv[])
 
   // Grasping
 
-  //robot.stop(jointNames);
+  robot.stop(jointNames);
 
   std::string nameChain = "LArm";
 
@@ -649,9 +656,6 @@ int main(int argc, char* argv[])
 
   std::cout << "Click to Open the Hand" <<  std::endl;
   vpDisplay::getClick(I);
-
-  //robot.getProxy()->openHand("LHand");
-
 
   robot.getProxy()->setStiffnesses("LHand", 1.0f);
   angle = 1.0f;
