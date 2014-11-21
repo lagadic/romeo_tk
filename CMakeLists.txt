@@ -90,3 +90,7 @@ qi_use_lib(test_transformations visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
 # General
 qi_use_lib(learn_oMh visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
+# Propagate in subdirs
+subdirs(tools/calibration/3d-grid)
+

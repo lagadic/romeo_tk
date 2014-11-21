@@ -5,6 +5,8 @@
  *
  */
 
+/*! \example servo_blob_tracking_visp_all_head.cpp */
+
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
 
@@ -31,7 +33,6 @@
 
 
 using namespace AL;
-
 
 void computeCentroidBlob(const vpImage<unsigned char> &I,vpDot2 &blob,vpImagePoint &cog,bool &init_done )
 {
@@ -68,8 +69,20 @@ void computeCentroidBlob(const vpImage<unsigned char> &I,vpDot2 &blob,vpImagePoi
 
 
 
+/*!
 
-int main(int argc, char* argv[])
+  Connect to Romeo robot, grab, display images and start
+  blob tracking with ViSP.
+  More over all the four joints of Romeo's head are controlled by visual servoing to center
+  the blob in the image.
+  If you want to connect on an other robot, run:
+
+  ./servo_face_detection_visp_head -ip <robot ip address>
+  Example:
+
+  ./servo_face_detection_visp_head -ip 169.254.168.230
+*/
+int main(int argc, const char* argv[])
 {
     std::string robotIp = "198.18.0.1";
 

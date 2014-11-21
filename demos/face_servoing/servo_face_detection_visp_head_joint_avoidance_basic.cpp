@@ -5,6 +5,8 @@
  *
  */
 
+/*! \example servo_face_detection_visp_head_joint_avoidance.cpp */
+
 #include <iostream>
 #include <string>
 
@@ -42,17 +44,35 @@ typedef enum {
   none
 } state_t;
 
+/*!
 
-int main(int argc, char* argv[])
+  Connect to Romeo robot, grab, display images using ViSP and start
+  face detection with OpenCV and tracking with ViSP when the detection fails.
+  More over all the four joints of Romeo's head are controlled by visual servoing to center
+  the detected head in the image. A joint avoidance scheme is also used here.
+  By default, this example connect to a robot with ip address: 198.18.0.1.
+  If you want to connect on an other robot, run:
+
+  ./servo_face_detection_visp_head_joint_avoidance -ip <robot ip address> -haar <haar cascade .xml file>
+
+  Example:
+
+  ./servo_face_detection_visp_head_joint_avoidance -ip 169.254.168.230 -haar ./haarcascade_frontalface_alt.xml
+ */
+int main(int argc, const char* argv[])
 {
+  std::string opt_ip = "198.18.0.1";;
+
   //-- 1. Load the cascades
   cv::CascadeClassifier face_cascade;
   /** Global variables */
-  cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/haarcascade_frontalface_alt.xml";
+  cv::String face_cascade_name = "./haarcascade_frontalface_alt.xml";
 
-  if (argc == 2)
-  {
-    face_cascade_name = cv::String(argv[1]);
+  for (unsigned int i=0; i<argc; i++) {
+    if (std::string(argv[i]) == "-ip")
+        opt_ip = argv[i+1];
+    else if (std::string(argv[i]) == "-haar")
+      face_cascade_name = cv::String(argv[i+1]);
   }
 
   if( !face_cascade.load( face_cascade_name ) ) {
@@ -62,11 +82,13 @@ int main(int argc, char* argv[])
   };
 
   vpNaoqiGrabber g;
-
+  if (! opt_ip.empty())
+    g.setRobotIp(opt_ip);
   g.open();
 
   vpNaoqiRobot robot;
-
+  if (! opt_ip.empty())
+    robot.setRobotIp(opt_ip);
   robot.open();
 
   vpTemplateTrackerWarpSRT warp;

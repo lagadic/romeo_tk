@@ -1,0 +1,59 @@
+Howto calibrate the intrinsic camera parameters with the 3d grid.
+
+Contact: Fabien Spindler (Fabien.Spindler@inria.fr)
+
+1/ Install ViSP
+
+- download ViSP and unzip in /local/ViSP/ViSP-2.9.0 for example
+
+% mkdir /local/ViSP/ViSP-2.9.0-build
+% cd /local/ViSP/ViSP-2.9.0-build
+% ccmake ../ViSP-2.9.0
+% make -j8
+
+2/ Build the calib-grid-3d project
+
+% pwd
+/local/airbus/calib-grid-3d
+% mkdir /local/airbus/calib-grid-3d-build
+% ccmake -DVISP_DIR=/local/ViSP/ViSP-2.9.0-build -DCMAKE_BUILD_TYPE=Release ../calib-grid-3d
+% make
+
+3/ Acquire a set of images of the calibration grid or use the data set provided in ./data/Dragonfly2-8mm/320x240  and ./data/Dragonfly2-8mm/640x480 folders.
+
+4/ Start the calibration
+
+To get the help:
+
+./calibrate3dGrid-Lagadic -h
+
+To calibrate from data set images
+
+./calibrate3dGrid-Lagadic -m ../calib-grid-3d/mire3p.dat -p ../calib-grid-3d/data/Dragonfly2-8mm/640x480/I%02d.pgm -f 1 -n 15 -g 0.9
+
+On each image
+- on the plane that contains the small dot, click on dot (3,3)
+- then on the 2 other planes counter clockwise click on dot (0,0) and dot (3,3)
+
+Camera parameters for perspective projection without distortion:
+  px = 1104.14822	 py = 1106.252363
+  u0 = 321.9232845	 v0 = 226.6409933
+
+Camera parameters for perspective projection with distortion:
+  px = 1088.962751	 py = 1088.431174
+  u0 = 322.8128876	 v0 = 236.6267674
+  kud = -0.2075309136
+  kdu = 0.2170583313
+
+
+./calibrate3dGrid-Lagadic -m ../calib-grid-3d/mire3p.dat -p ../calib-grid-3d/data/Dragonfly2-8mm/320x240/I%02d.pgm -f 1 -n 5 -g 0.9
+
+Camera parameters for perspective projection without distortion:
+  px = 562.605916	 py = 562.8873003
+  u0 = 158.3349034	 v0 = 114.7847641
+
+Camera parameters for perspective projection with distortion:
+  px = 545.1797357	 py = 544.665588
+  u0 = 161.6190771	 v0 = 117.9507108
+  kud = -0.2080985045
+  kdu = 0.2171808012

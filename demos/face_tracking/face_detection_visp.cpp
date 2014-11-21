@@ -37,13 +37,14 @@
  *
  *****************************************************************************/
 
+/*! \example face_detection_visp.cpp */
+
 /**
  *
  * This example demonstrates how to get images from the robot remotely and how
  * to detect a face.
  *
  */
-
 
 #include <iostream>
 #include <string>
@@ -73,17 +74,34 @@ typedef enum {
 } state_t;
 
 
+/*!
 
-int main(int argc, char* argv[])
+  Connect to Nao or Romeo robot, grab, display images using ViSP and start
+  face detection with OpenCV and tracking with ViSP when the detection fails.
+  By default, this example connect to a robot with ip address: 198.18.0.1.
+  If you want to connect on an other robot, run:
+
+  ./face_detection_visp -ip <robot ip address> -haar <haar cascade .xml file>
+
+  Example:
+
+  ./face_detection_visp -ip 169.254.168.230 -haar ./haarcascade_frontalface_alt.xml
+ */
+
+int main(int argc, const char* argv[])
 {
+  std::string opt_ip = "198.18.0.1";
+
   //-- 1. Load the cascades
   cv::CascadeClassifier face_cascade;
   /** Global variables */
-  cv::String face_cascade_name = "/local/soft/romeo/cpp/workspace/romeo_face_detection/romeo_face_detection/haarcascade_frontalface_alt.xml";
+  cv::String face_cascade_name = "./haarcascade_frontalface_alt.xml";
 
-  if (argc == 2)
-  {
-    face_cascade_name = cv::String(argv[1]);
+  for (unsigned int i=0; i<argc; i++) {
+    if (std::string(argv[i]) == "-ip")
+      opt_ip = argv[i+1];
+    else if (std::string(argv[i]) == "-haar")
+      face_cascade_name = cv::String(argv[i+1]);
   }
 
   if( !face_cascade.load( face_cascade_name ) ) {
@@ -93,8 +111,8 @@ int main(int argc, char* argv[])
   };
 
   vpNaoqiGrabber g;
-  g.setFramerate(15);
-  g.setCamera(0);
+  if (! opt_ip.empty())
+    g.setRobotIp(opt_ip);
   g.open();
 
   vpTemplateTrackerWarpSRT warp;
@@ -111,7 +129,6 @@ int main(int argc, char* argv[])
   vpTemplateTrackerZone zone_ref, zone_cur;
   double area_zone_ref, area_zone_cur, area_zone_prev;
   vpColVector p; // Estimated parameters
-
 
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
@@ -230,7 +247,6 @@ int main(int argc, char* argv[])
       if (vpDisplay::getClick(I, false))
         break;
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
-
     }
   }
   catch (const AL::ALError& e)
@@ -240,4 +256,3 @@ int main(int argc, char* argv[])
 
   return 0;
 }
-
