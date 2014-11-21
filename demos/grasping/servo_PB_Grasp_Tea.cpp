@@ -1,9 +1,11 @@
 /**
  *
  * This example demonstrates how to get images from the robot remotely, how
- * to track a blob using all the four joints of the Romeo Head;
+ * to detect a object with a target of four blobs on it and to graps it (from the side).
+ * For this demo we use a box of tea.
  *
  */
+
 
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
@@ -123,6 +125,8 @@ int main(int argc, char* argv[])
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
 
   /** Create a new istance NaoqiRobot*/
@@ -134,26 +138,8 @@ int main(int argc, char* argv[])
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
-  //  vpCameraParameters cam;
-  //  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
 
-  char filename[FILENAME_MAX];
-  vpCameraParameters cam;
-  vpXmlParserCamera p; // Create a XML parser
-  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
-  // Use a perspective projection model without distortion
-  projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
-  // parameters of the camera named "myCamera" for the image sizes 640x480,
-  // for the projection model projModel. The size of the image is optional
-  // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", "camera.xml");
-  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
-    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
-    std::cout << "Loading default camera parameters" << std::endl;
-    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
-  }
-
+  vpCameraParameters cam = g.getCameraParameters();
   std::cout << "Camera parameters: " << cam << std::endl;
 
 
@@ -274,22 +260,7 @@ int main(int argc, char* argv[])
 
 
   /** Load transformation between HeadRoll and CameraLeft*/
-  vpHomogeneousMatrix eMc;
-  {
-  vpXmlParserHomogeneousMatrix pm; // Create a XML parser
-  std::string name_eMc =  "eMc_CameraLeft_with_distorsion";
-
-  char filename_[FILENAME_MAX];
-  sprintf(filename_, "%s", VISP_NAOQI_EXTRINSIC_CAMERA_FILE);
-
-  if (pm.parse(eMc,filename_, name_eMc) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
-    std::cout << "Cannot found the Homogeneous matrix named " << name_eMc<< "." << std::endl;
-    return 0;
-  }
-  else
-    std::cout << "Homogeneous matrix " << name_eMc <<": " << std::endl << eMc << std::endl;
-
-  }
+  vpHomogeneousMatrix eMc = g.get_eMc();
 
 
   /** Initialization Visual servoing */
@@ -306,12 +277,8 @@ int main(int argc, char* argv[])
   task.setInteractionMatrixType(vpServo::CURRENT, vpServo::PSEUDO_INVERSE);
 
 
-
-
   vpTRACE("Display task information " ) ;
   task.print() ;
-
-
 
   task.setLambda(0.10);
 
@@ -337,15 +304,6 @@ int main(int argc, char* argv[])
   oMe_LArm[0][3] = -0.045;
   oMe_LArm[1][3] = -0.04;
   oMe_LArm[2][3] = -0.045;
-
-
-  // Introduce a matrix to pass from camera frame of Aldebaran to visp camera frame
-  vpHomogeneousMatrix cam_alMe_camvisp;
-  for(unsigned int i=0; i<3; i++)
-    cam_alMe_camvisp[i][i] = 0; // remove identity
-  cam_alMe_camvisp[0][2] = 1.;
-  cam_alMe_camvisp[1][0] = -1.;
-  cam_alMe_camvisp[2][1] = -1.;
 
 
   // Motion
@@ -452,17 +410,8 @@ int main(int argc, char* argv[])
 
         //** Set task cVf matrix
         // get the torsoMe_head tranformation from NaoQi api
-
-        //        vpHomogeneousMatrix torsoMlcam_al(robot.getProxy()->getTransform("CameraLeft", 0, true));
-        //        std::cout << "torso M camera ald :\n" << torsoMlcam_al << std::endl;
-        //        torsoMlcam_visp = torsoMlcam_al * cam_alMe_camvisp;
-        //        std::cout << "torso M camera visp:\n" << torsoMlcam_visp << std::endl;
-
         vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
-
-
         torsoMlcam_visp = torsoMHeadRoll *eMc;
-
 
         vpVelocityTwistMatrix cVtorso(torsoMlcam_visp.inverse());
         task.set_cVf( cVtorso );
@@ -473,7 +422,6 @@ int main(int argc, char* argv[])
         vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
         std::cout << "Torso M LWristPitch:\n" << torsoMLWristPitch << std::endl;
 
-
         torsoMo = torsoMLWristPitch * oMe_LArm.inverse();
         std::cout << "torso M object :\n" << torsoMo << std::endl;
 
@@ -481,7 +429,6 @@ int main(int argc, char* argv[])
         task.set_fVe( torsoVo );
 
         q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
-
 
 
 
@@ -501,10 +448,8 @@ int main(int argc, char* argv[])
 
 
         vpDisplay::displayFrame(I, torsoMlcam_visp.inverse()*torsoMLWristPitch, cam, 0.04, vpColor::green);
-
-
         vpDisplay::flush(I) ;
-        vpTime::sleepMs(20);
+
 
 
       }

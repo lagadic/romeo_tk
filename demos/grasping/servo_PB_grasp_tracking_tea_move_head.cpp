@@ -569,7 +569,7 @@ int main(int argc, char* argv[])
 
         q_dot_head = task_head.computeControlLaw(vpTime::measureTimeSecond() - tinit);
 
-        vpHomogeneousMatrix eMc = torsoMLWristPitch.inverse() * torsoMlcam_visp;
+        //vpHomogeneousMatrix eMc = torsoMLWristPitch.inverse() * torsoMlcam_visp;
 
         vpVelocityTwistMatrix cVc(eMc.inverse());
 

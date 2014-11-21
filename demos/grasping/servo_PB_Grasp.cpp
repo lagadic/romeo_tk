@@ -1,7 +1,8 @@
 /**
  *
  * This example demonstrates how to get images from the robot remotely, how
- * to track a blob using all the four joints of the Romeo Head;
+ * to detect a object with a target of four blobs on it and to graps it (from the top).
+ * For this demo we use a ball of 7cm of diameter.
  *
  */
 
@@ -122,6 +123,8 @@ int main(int argc, char* argv[])
 
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
 
   /** Create a new istance NaoqiRobot*/
@@ -133,31 +136,9 @@ int main(int argc, char* argv[])
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
-//  vpCameraParameters cam;
-//  cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
 
-  char filename[FILENAME_MAX];
-  vpCameraParameters cam;
-  vpXmlParserCamera p; // Create a XML parser
-  vpCameraParameters::vpCameraParametersProjType projModel; // Projection model
-  // Use a perspective projection model without distortion
-  projModel = vpCameraParameters::perspectiveProjWithDistortion;
-  // Parse the xml file "myXmlFile.xml" to find the intrinsic camera
-  // parameters of the camera named "myCamera" for the image sizes 640x480,
-  // for the projection model projModel. The size of the image is optional
-  // if camera parameters are given only for one image size.
-  sprintf(filename, "%s", "camera.xml");
-  if (p.parse(cam, filename, "Camera", projModel, I.getWidth(), I.getHeight()) != vpXmlParserCamera::SEQUENCE_OK) {
-    std::cout << "Cannot found camera parameters in file: " << filename << std::endl;
-    std::cout << "Loading default camera parameters" << std::endl;
-    cam.initPersProjWithoutDistortion(342.82, 342.60, 174.552518, 109.978367);
-  }
-
+  vpCameraParameters cam = g.getCameraParameters();
   std::cout << "Camera parameters: " << cam << std::endl;
-
-
-
-
 
 
   /** Initialization Visp blob*/
