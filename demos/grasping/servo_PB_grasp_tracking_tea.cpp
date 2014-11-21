@@ -482,7 +482,7 @@ int main(int argc, char* argv[])
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
 
        // robot.setVelocity(jointNames, q_dot);
-        robot.setVelocity_one_call(jointNames, q_dot);
+        robot.setVelocity(jointNames, q_dot);
 
 
 
