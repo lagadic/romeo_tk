@@ -76,8 +76,8 @@
 #include <visp/vpPixelMeterConversion.h>
 #include <visp/vpMeterPixelConversion.h>
 #include <visp/vpXmlParserCamera.h>
+#include <visp/vpXmlParserHomogeneousMatrix.h>
 
-#include <visp/vpXmlParserCamera.h>
 // List of allowed command line options
 #define GETOPTARGS  "di:p:m:hf:g:n:s:c:w:x:z:"
 
@@ -1345,13 +1345,114 @@ int main(int argc, const char ** argv)
   }
 #endif
 
+  //////////////////////////////////////
+  /*
+   * Tsai calibration*/
+
+  // Determine the location of the position file from the input image path
+  std::string parent = vpIoTools::getParent(opt_ppath);
+
+  int mtsai = 0;
+  if (opt_nimages > 2){
+    std::cout <<"identification de la matrice pince ->camera ? (yes=1) : "<< std::endl;
+    scanf("%d", &mtsai);
+  }
+
+  if (mtsai == 1) {
+    iter = opt_first;
+    niter = 0;
+    while (iter < opt_first + opt_nimages*opt_step) {
+      try {
+        if(table_use[niter] == true){
+
+          std::ostringstream s;
+          s << "M" << std::setw(4) << std::setfill('0') << niter << ".xml";
+          filename = vpIoTools::createFilePath(parent, s.str());
+
+          vpHomogeneousMatrix tMe;
+          vpXmlParserHomogeneousMatrix p;
+          if (p.parse(tMe, filename, "tMe") != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+            std::cout << "Cannot found the homogeneous matrix named tMe." << std::endl;
+          }
+
+          table_cal[niter].rMe = tMe;
+        }
+        iter += opt_step;
+        niter++;
+      }
+      catch(...){
+      }
+    }
+
+    unsigned int nbUse = 0 ; //number of used poses
+    for(unsigned int i=0;i<opt_nimages;i++){
+      if( table_use[i] == true) nbUse++;
+    }
+    std::vector<vpCalibration> table_usedCal;
+
+    int current = 0;
+
+    for(unsigned int i=0;i<opt_nimages;i++){
+      if( table_use[i] == true){
+        table_usedCal.push_back(table_cal[i]);
+        current++;
+      }
+    }
+
+    vpHomogeneousMatrix eMc, eMc_dist;
+    vpTranslationVector eTc;
+    vpRotationMatrix eRc;
+    vpCalibration::computeCalibrationTsai(table_usedCal,eMc,eMc_dist);
+
+    {
+      // Save the resulting tsai calibration
+      vpXmlParserHomogeneousMatrix p;
+
+      std::string filename = "eMc.xml";
+
+      std::cout << "Save Tsai calibration in: " << filename << std::endl;
+      if (p.save(eMc, filename, "eMc") != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+        std::cout << "Cannot save the homogeneous matrix" << std::endl;
+      }
+      if (p.save(eMc_dist, filename, "eMc_dist") != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+        std::cout << "Cannot save the homogeneous matrix" << std::endl;
+      }
+    }
+
+    std::cout<< "Without distortion : " <<std::endl;
+    eMc.extract(eTc);
+    eMc.extract(eRc);
+    std::cout<< "Matrice homogene : " <<std::endl;
+    std::cout<< eMc <<std::endl;
+
+    vpRxyzVector eVc(eRc);
+    for(int i = 0;i<3;i++){
+      eVc[i] = vpMath::deg(eVc[i]);
+    }
+    std::cout<< "rotations (dg)   : " << eVc[0]<<" "<<eVc[1]<< " "<<eVc[2]<<" "<<std::endl;
+    std::cout<< "translations (m) : " << eTc[0]<<" "<<eTc[1]<<" "<<eTc[2]<<" "<<std::endl;
+
+
+    std::cout<< "\nWith distortion : " <<std::endl;
+    eMc_dist.extract(eTc);
+    eMc_dist.extract(eRc);
+    std::cout<< "Matrice homogene : " <<std::endl;
+    std::cout<< eMc_dist <<std::endl;
+
+    vpRxyzVector eVc_dist(eRc);
+    for(int i = 0;i<3;i++){
+      eVc_dist[i] = vpMath::deg(eVc_dist[i]);
+    }
+    std::cout<< "rotations (dg)   : " << eVc_dist[0]<<" "<<eVc_dist[1]<< " "<<eVc_dist[2]<<" "<<std::endl;
+    std::cout<< "translations (m) : " << eTc[0]<<" "<<eTc[1]<<" "<<eTc[2]<<" "<<std::endl;
+  }
+  //end Tsai calibration
+  //////////////////////////////
+
   delete [] table_use;
   delete [] table_cal;
   return(0);
 }
-
-
-
 
 
 #else // (defined (VISP_HAVE_GTK) || defined(VISP_HAVE_GDI)...)
@@ -1363,9 +1464,3 @@ int
   return 0;
 }
 #endif // (defined (VISP_HAVE_GTK) || defined(VISP_HAVE_GDI)...)
-
-/*
- * Local variables:
- * c-basic-offset: 2
- * End:
- */

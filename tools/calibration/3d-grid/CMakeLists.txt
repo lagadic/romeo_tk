@@ -1,4 +1,12 @@
-include_directories(${VISP_INCLUDE_DIRS})
-add_executable(calibrate3dGrid-Lagadic calibrate3dGrid-Lagadic.cpp)
-target_link_libraries(calibrate3dGrid-Lagadic ${VISP_LIBRARIES})
+set(source
+  calibrate3dGrid-Lagadic.cpp
+  data-acquisition.cpp
+  )
+
+foreach(src ${source})
+  get_filename_component(binary ${src} NAME_WE)
+  qi_create_bin(${binary} ${src})
+  qi_use_lib(${binary} visp_naoqi ALCOMMON ALPROXIES ALVISION)
+endforeach()
+
 
