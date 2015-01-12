@@ -1,5 +1,6 @@
 set(source 
   learn_oMh.cpp
+  learn_oMh_internal_sensor.cpp
   ) 
 
 foreach(src ${source})
