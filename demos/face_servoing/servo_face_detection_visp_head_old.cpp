@@ -1,19 +1,22 @@
 /**
+ *
  * This example demonstrates how to get images from the robot remotely, how
- * to track a face using all the four joints of the Romeo Head avoiding
- * the joints limits.
+ * to track a face using all the four joints of the Romeo Head;
  *
  */
 
-/*! \example servo_face_detection_visp_head_joint_avoidance.cpp */
+/*! \example servo_face_detection_visp_head.cpp */
 
 #include <iostream>
 #include <string>
+
+#include <alproxies/altexttospeechproxy.h>
 
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+// ViSP includes.
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageConvert.h>
@@ -30,12 +33,9 @@
 #include <visp/vpCameraParameters.h>
 #include <visp/vpPixelMeterConversion.h>
 #include <visp/vpMeterPixelConversion.h>
-#include <visp/vpPlot.h>
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
-
-#define USE_PLOTTER
 
 typedef enum {
   detection,
@@ -49,15 +49,15 @@ typedef enum {
   Connect to Romeo robot, grab, display images using ViSP and start
   face detection with OpenCV and tracking with ViSP when the detection fails.
   More over all the four joints of Romeo's head are controlled by visual servoing to center
-  the detected head in the image. A joint avoidance scheme is also used here.
+  the detected head in the image.
   By default, this example connect to a robot with ip address: 198.18.0.1.
   If you want to connect on an other robot, run:
 
-  ./servo_face_detection_visp_head_joint_avoidance -ip <robot ip address> -haar <haar cascade .xml file>
+  ./servo_face_detection_visp_head --ip <robot ip address> --haar <haar cascade .xml file>
 
   Example:
 
-  ./servo_face_detection_visp_head_joint_avoidance -ip 169.254.168.230 -haar ./haarcascade_frontalface_alt.xml
+  ./servo_face_detection_visp_head --ip 169.254.168.230 --haar ./haarcascade_frontalface_alt.xml
  */
 int main(int argc, const char* argv[])
 {
@@ -69,9 +69,9 @@ int main(int argc, const char* argv[])
   cv::String face_cascade_name = "./haarcascade_frontalface_alt.xml";
 
   for (unsigned int i=0; i<argc; i++) {
-    if (std::string(argv[i]) == "-ip")
+    if (std::string(argv[i]) == "--ip")
         opt_ip = argv[i+1];
-    else if (std::string(argv[i]) == "-haar")
+    else if (std::string(argv[i]) == "--haar")
       face_cascade_name = cv::String(argv[i+1]);
   }
 
@@ -81,16 +81,27 @@ int main(int argc, const char* argv[])
     return -1;
   };
 
+  /** Open Proxy for the speech*/
+  AL::ALTextToSpeechProxy tts(opt_ip, 9559);
+  tts.setLanguage("English");
+  const std::string phraseToSay = "Hello!";
+  bool speech = true;
+
+   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
   if (! opt_ip.empty())
     g.setRobotIp(opt_ip);
+  g.setFramerate(15);
+  g.setCamera(0);
   g.open();
 
+  /** Create a new istance NaoqiRobot*/
   vpNaoqiRobot robot;
   if (! opt_ip.empty())
     robot.setRobotIp(opt_ip);
   robot.open();
 
+  /** Initialization settings face detection*/
   vpTemplateTrackerWarpSRT warp;
   vpTemplateTrackerSSDInverseCompositional tracker(&warp);
   tracker.setSampling(2,2);
@@ -106,14 +117,18 @@ int main(int argc, const char* argv[])
   double m_area_m_zone_ref, m_area_zone_cur, area_zone_prev;
   vpColVector p; // Estimated parameters
 
+  /** Initialization Visp Image, display and camera paramenters*/
   vpImage<unsigned char> I(g.getHeight(), g.getWidth());
   vpDisplayX d(I);
   vpDisplay::setTitle(I, "ViSP viewer");
+  vpCameraParameters cam = g.getCameraParameters();
 
   cv::Mat frame_gray;
 
   vpRect target;
+  int iter = 0;
 
+  /** Initialization Visual servoing task*/
   vpServo task; // Visual servoi    vpServo task; // Visual servoing task
   vpFeaturePoint sd; //The desired point feature.
   //Set the desired features x and y
@@ -140,130 +155,32 @@ int main(int argc, const char* argv[])
   // Add the 2D point feature to the task
   task.addFeature(s, sd);
 
-  // Set the gain
-  double lambda = 0.8;
-  // set to -1 to suppress the lambda used in the vpServo::computeControlLaw()
-  task.setLambda(-1) ;
+  vpAdaptiveGain lambda(2, 0.8, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+  task.setLambda(lambda);
+  //task.setLambda(0.8);
+
+  vpColVector q_dot;
 
   // Transformation HeadRoll to Camera Left
-  vpHomogeneousMatrix eMc = g.get_eMc();
+    vpHomogeneousMatrix eMc = g.get_eMc();
 
-
-
-  std::string chainName = "Head";
-
-  std::vector<std::string> jointNames =  robot.getBodyNames(chainName);
+  std::vector<std::string> jointNames =  robot.getBodyNames("Head");
   const unsigned int numJoints = jointNames.size();
-
-  std::vector<float> jointVel(numJoints);
-
-  for(unsigned int i=0; i< numJoints; i++)
-    jointVel[i] = 0.0f;
-
-  // Initialize the joint avoidance scheme from the joint limits
-  vpColVector jointMin = robot.getJointMin(chainName);
-  vpColVector jointMax = robot.getJointMax(chainName);
-
-  std::cout << "Joint limits: " << std::endl;
-  for (unsigned int i=0; i< numJoints; i++)
-    std::cout << " Joint " << i << " " << jointNames[i]
-                 << ": min=" << vpMath::deg(jointMin[i])
-                 << " max=" << vpMath::deg(jointMax[i]) << std::endl;
-
-  vpColVector Qmin(numJoints), tQmin(numJoints) ;
-  vpColVector Qmax(numJoints), tQmax(numJoints) ;
-  vpColVector Qmiddle(numJoints);
-  vpColVector data(numJoints + 4); // data to plot: q(t), Qmin, Qmax, tQmin and tQmax
-  vpColVector q(numJoints), qpre(numJoints); // joint positions
-
-  double rho = 0.25 ;
-  for (unsigned int i=0 ; i < numJoints ; i++)
-  {
-    Qmin[i] = jointMin[i] + 0.5*rho*(jointMax[i]-jointMin[i]) ;
-    Qmax[i] = jointMax[i] - 0.5*rho*(jointMax[i]-jointMin[i]) ;
-  }
-  Qmiddle = (Qmin + Qmax) /2.;
-  double rho1 = 0.1 ;
-
-  for (unsigned int i=0 ; i < numJoints ; i++) {
-    tQmin[i]=Qmin[i]+ 0.5*(rho1)*(Qmax[i]-Qmin[i]) ;
-    tQmax[i]=Qmax[i]- 0.5*(rho1)*(Qmax[i]-Qmin[i]) ;
-  }
-
-#ifdef USE_PLOTTER
-  int iter = 0;
-
-  // Create a window with two graphics
-  // - first graphic to plot q(t), Qmin, Qmax, tQmin and tQmax
-  // - second graphic to plot the cost function h_s
-  vpPlot plot(2, 700, 700, 100, 200, "Curves...");
-
-  // The first graphic contains 8 data to plot: q(t), Qmin, Qmax, tQmin and tQmax
-  plot.initGraph(0, 8);//data.size());
-  plot.initGraph(1, 4);//numJoints);
-  // For the first graphic :
-  // - along the x axis the expected values are between 0 and 200 and
-  //   the step is 1
-  // - along the y axis the expected values are between -1.2 and 1.2 and the
-  //   step is 0.1
-  //plot.initRange(0,0,200,1,-1.2,1.2,0.1);
-  plot.setTitle(0, "Joint behavior");
-  //plot.initRange(1,0,200,1,-0.01,0.01,0.05);
-  plot.setTitle(1, "Joint velocity");
-
-  // For the first graphic, set the curves legend
-  char legend[10];
-  for (unsigned int i=0; i < numJoints; i++) {
-    sprintf(legend, "q%d", i+1);
-    plot.setLegend(0, i, legend);
-    sprintf(legend, "q%d", i+1);
-    plot.setLegend(1, i, legend);
-  }
-  plot.setLegend(0, numJoints, "tQmin");
-  plot.setLegend(0, numJoints+1, "tQmax");
-  plot.setLegend(0, numJoints+2, "Qmin");
-  plot.setLegend(0, numJoints+3, "Qmax");
-
-  // Set the curves color
-  plot.setColor(0, 0, vpColor::red);
-  plot.setColor(0, 1, vpColor::green);
-  plot.setColor(0, 2, vpColor::blue);
-  plot.setColor(0, 3, vpColor::orange);
-  for (unsigned int i= numJoints; i < numJoints+4; i++)
-    plot.setColor(0, i, vpColor::black); // for Q and tQ [min,max]
-  // Set the curves color
-
-  plot.setColor(1, 0, vpColor::red);
-  plot.setColor(1, 1, vpColor::green);
-  plot.setColor(1, 2, vpColor::blue);
-  plot.setColor(1, 3, vpColor::orange);
-#endif // #ifdef USE_PLOTTER
 
   // Declate Jacobian
   vpMatrix eJe(6,numJoints);
 
-  vpCameraParameters cam = g.getCameraParameters();
-  //cam.initPersProjWithoutDistortion(342.82,342.60,174.552518, 109.978367);
+  robot.setStiffness(jointNames, 1.f);
 
-  robot.setStiffness(chainName, 1.f);
 
   double tinit = 0; // initial time in second
-  double t_0, t_1 = vpTime::measureTimeMs(), Tv;
 
   try
   {
     while(1) {
-      t_0 = vpTime::measureTimeMs(); // t_0: loop start time
-      // Update loop time in second
-      Tv = (double)(t_0 - t_1) / 1000.0;
-      // Update time for next iteration
-      t_1 = t_0;
-      double Tloop = Tv;
-
+      double t = vpTime::measureTimeMs();
       g.acquire(I);
       vpDisplay::display(I);
-
-      q = robot.getPosition(chainName);
 
       vpImageConvert::convert(I, frame_gray);
 
@@ -337,7 +254,7 @@ int main(int argc, const char* argv[])
             warp.warpZone(m_zone_ref, p, zone_cur);
             m_area_zone_cur = zone_cur.getArea();
 
-            //          std::cout << "Area ref: " << m_area_m_zone_ref << std::endl;
+            // std::cout << "Area ref: " << m_area_m_zone_ref << std::endl;
             std::cout << "Area tracked: " << m_area_zone_cur << std::endl;
 
             double size_percent = 0.6;
@@ -373,74 +290,8 @@ int main(int argc, const char* argv[])
         task.set_eJe(eJe);
         task.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
-        vpColVector prim_task ;
-        vpColVector e2(numJoints) ;
-        // Compute the visual servoing skew vector
-        prim_task = task.computeControlLaw() ;
-        std::cout << "prim_task : " << prim_task.t() << std::endl;
-
-        qpre = q ;
-        qpre += -lambda*prim_task*(4*Tloop)  ;
-
-        // Identify the joints near the limits
-        vpColVector pb(numJoints) ; pb = 0 ;
-        unsigned int npb =0 ;
-        for (unsigned int i=0 ; i < numJoints ;i++) {
-          if (q[i] < tQmin[i])
-            if (fabs(Qmin[i]-q[i]) > fabs(Qmin[i]-qpre[i])) {
-              pb[i] = 1 ; npb++ ;
-              std::cout << "Joint " << i << " near limit " << std::endl ;
-            }
-          if (q[i]>tQmax[i]) {
-            if (fabs(Qmax[i]-q[i]) > fabs(Qmax[i]-qpre[i])) {
-              pb[i] = 1 ; npb++ ;
-              std::cout << "Joint " << i << " near limit " << std::endl ;
-            }
-          }
-        }
-
-        try {
-          vpColVector a0 ;
-          vpMatrix J1 = task.getTaskJacobian();
-          std::cout << "J1: \n" << J1 << std::endl;
-          vpMatrix kernelJ1;
-          J1.kernel(kernelJ1);
-          std::cout << "kernelJ1: \n" << kernelJ1 << std::endl;
-
-          unsigned int dimKernelL = kernelJ1.getCols() ;
-          if (npb != 0) {
-            // Build linear system a0*E = S
-            vpMatrix E(npb, dimKernelL) ;
-            vpColVector S(npb) ;
-
-            unsigned int k=0 ;
-
-            for (unsigned int j=0 ; j < numJoints ; j++) // j is the joint
-              //if (pb[j]==1)	{
-              if (std::fabs(pb[j]-1) <= std::numeric_limits<double>::epsilon())	{
-                for (unsigned int i=0 ; i < dimKernelL ; i++)
-                  E[k][i] = kernelJ1[j][i] ;
-
-                S[k] = -prim_task[j]  ;
-                k++ ;
-              }
-            vpMatrix Ep ;
-            Ep = E.t()*(E*E.t()).pseudoInverse() ;
-            a0 = Ep*S ;
-
-            e2 = (kernelJ1*a0) ;
-          }
-          else {
-            e2 = 0;
-          }
-        }
-        catch(...) {
-          e2 = 0;
-        }
-
-        //        std::cout << "e2: " << e2.t() << std::endl;
-
-        vpColVector q_dot = -lambda * (prim_task + e2);
+        q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - tinit);
+        task.print();
 
         vpImagePoint cog_desired;
         vpMeterPixelConversion::convertPoint(cam, sd.get_x(), sd.get_y(), cog_desired);
@@ -449,27 +300,18 @@ int main(int argc, const char* argv[])
                   << vpMath::deg(q_dot[0]) << " " << vpMath::deg(q_dot[1]) << std::endl;
         robot.setVelocity(jointNames, q_dot);
 
+        // Compute the distance in pixel between the target and the center of the image
+        double distance = vpImagePoint::distance(cog_desired, cog);
+
+        if (distance < 0.03*I.getWidth() && speech) // 3 % of the image witdh
         {
-#ifdef USE_PLOTTER
-          // Add the material to plot curves
+          /** Call the say method */
+          tts.post.say(phraseToSay);
+          speech = false;
 
-          // q normalized between (entre -1 et 1)
-          for (unsigned int i=0 ; i < numJoints ; i++) {
-            data[i] = (q[i] - Qmiddle[i]) ;
-            data[i] /= (Qmax[i] - Qmin[i]) ;
-            data[i]*=2 ;
-          }
-          unsigned int joint = 2;
-          data[numJoints] = 2*(tQmin[joint]-Qmiddle[joint])/(Qmax[joint] - Qmin[joint]) ;
-          data[numJoints+1] = 2*(tQmax[joint]-Qmiddle[joint])/(Qmax[joint] - Qmin[joint]) ;
-          data[numJoints+2] = -1 ; data[numJoints+3] = 1 ;
-
-          plot.plot(0, iter, data); // plot q, Qmin, Qmax, tQmin, tQmax
-          plot.plot(1, iter, q_dot); // plot joint velocities applied to the robot
-          iter ++;
-#endif //#ifdef USE_PLOTTER
         }
-
+        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
+          speech = true;
       }
       else {
         std::cout << "Stop the robot..." << std::endl;
@@ -479,7 +321,7 @@ int main(int argc, const char* argv[])
       vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
         break;
-      std::cout << "Loop time: " << vpTime::measureTimeMs() - t_0 << " ms" << std::endl;
+      std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
     }
   }
@@ -490,7 +332,6 @@ int main(int argc, const char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
   robot.stop(jointNames);
-  g.cleanup();
   task.kill();
 
   return 0;

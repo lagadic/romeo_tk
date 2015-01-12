@@ -66,13 +66,7 @@
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 
-typedef enum {
-  detection,
-  init_tracking,
-  tracking,
-  none
-} state_t;
-
+#include <vpFaceTracker.h>
 
 /*!
 
@@ -90,158 +84,40 @@ typedef enum {
 
 int main(int argc, const char* argv[])
 {
-  std::string opt_ip = "198.18.0.1";
+  try {
+    std::string opt_ip = "198.18.0.1";
+    std::string opt_face_cascade_name = "./haarcascade_frontalface_alt.xml";
 
-  //-- 1. Load the cascades
-  cv::CascadeClassifier face_cascade;
-  /** Global variables */
-  cv::String face_cascade_name = "./haarcascade_frontalface_alt.xml";
+    for (unsigned int i=0; i<argc; i++) {
+      if (std::string(argv[i]) == "--ip")
+        opt_ip = argv[i+1];
+      else if (std::string(argv[i]) == "--haar")
+        opt_face_cascade_name = std::string(argv[i+1]);
+      else if (std::string(argv[i]) == "--help") {
+        std::cout << "Usage: " << argv[0] << " [--ip <robot address>] [--haar <haarcascade xml filename>] [--help]" << std::endl;
+        return 0;
+      }
+    }
 
-  for (unsigned int i=0; i<argc; i++) {
-    if (std::string(argv[i]) == "-ip")
-      opt_ip = argv[i+1];
-    else if (std::string(argv[i]) == "-haar")
-      face_cascade_name = cv::String(argv[i+1]);
-  }
+    vpNaoqiGrabber g;
+    if (! opt_ip.empty())
+      g.setRobotIp(opt_ip);
+    g.open();
 
-  if( !face_cascade.load( face_cascade_name ) ) {
-    std::cout << "--(!)Error loading default " << face_cascade_name << std::endl;
-    std::cout << "Usage : " << argv[0] << " <haarcascade_file.xml>" << std::endl;
-    return -1;
-  };
+    vpImage<unsigned char> I(g.getHeight(), g.getWidth());
+    vpDisplayX d(I);
+    vpDisplay::setTitle(I, "ViSP viewer");
 
-  vpNaoqiGrabber g;
-  if (! opt_ip.empty())
-    g.setRobotIp(opt_ip);
-  g.open();
+    vpFaceTracker face_tracker;
+    face_tracker.setFaceCascade(opt_face_cascade_name);
 
-  vpTemplateTrackerWarpSRT warp;
-  vpTemplateTrackerSSDInverseCompositional tracker(&warp);
-  tracker.setSampling(2,2);
-  tracker.setLambda(0.001);
-  tracker.setIterationMax(5);
-  tracker.setPyramidal(2, 1);
-
-  std::vector<cv::Rect> faces;
-  size_t larger_face_index = 0;
-
-  state_t state = detection;
-  vpTemplateTrackerZone zone_ref, zone_cur;
-  double area_zone_ref, area_zone_cur, area_zone_prev;
-  vpColVector p; // Estimated parameters
-
-  vpImage<unsigned char> I(g.getHeight(), g.getWidth());
-  vpDisplayX d(I);
-  vpDisplay::setTitle(I, "ViSP viewer");
-
-  cv::Mat frame_gray;
-
-  vpRect target;
-  int iter = 0;
-  try
-  {
     while(1) {
       double t = vpTime::measureTimeMs();
       g.acquire(I);
       vpDisplay::display(I);
-
-      vpImageConvert::convert(I, frame_gray);
-
-      std::cout << "state: " << state << std::endl;
-      //-- Detect faces
-      bool target_found = false;
-      if (1) {//state == detection) {
-        faces.clear();
-        face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
-        std::cout << "Detect " << faces.size() << " faces" << std::endl;
-        if (faces.size()) {
-
-          state = init_tracking;
-
-          // Display all the detected faces
-          int face_max_area = 0;
-          for( size_t i = 0; i < faces.size(); i++ ) {
-            if (faces[i].area() > face_max_area) {
-              face_max_area = faces[i].area();
-              larger_face_index = i;
-            }
-          }
-          target_found = true;
-          // Display the larger face
-          size_t i=larger_face_index;
-          target.set(faces[i].tl().x, faces[i].tl().y, faces[i].size().width, faces[i].size().height);
-          //                vpDisplay::displayRectangle(I, target, vpColor::green, false, 4);
-        }
-      }
-
-      //-- Track the face
-      if (state == init_tracking) {
-        vpDisplay::displayCharString(I, 10,10, "state: detection", vpColor::red);
-        size_t i=larger_face_index;
-        double scale = 0.05; // reduction factor
-        int x = faces[i].tl().x;
-        int y = faces[i].tl().y;
-        int width  = faces[i].size().width;
-        int height = faces[i].size().height;
-        std::vector<vpImagePoint> corners;
-        corners.push_back( vpImagePoint(y+scale*height    , x+scale*width) );
-        corners.push_back( vpImagePoint(y+scale*height    , x+(1-scale)*width) );
-        corners.push_back( vpImagePoint(y+(1-scale)*height, x+(1-scale)*width) );
-        corners.push_back( vpImagePoint(y+(1-scale)*height, x+scale*width) );
-        try {
-          tracker.resetTracker();
-          tracker.initFromPoints(I, corners, true);
-          tracker.track(I);
-          //tracker.display(I, vpColor::green);
-          zone_ref = tracker.getZoneRef();
-          area_zone_ref = zone_ref.getArea();
-          p = tracker.getp();
-          warp.warpZone(zone_ref, p, zone_cur);
-          area_zone_prev = area_zone_cur = zone_cur.getArea();
-          state = tracking;
-        }
-        catch(...) {
-          std::cout << "Exception init tracking" << std::endl;
-          state = detection;
-        }
-      }
-      else if (state == tracking) {
-        try {
-          vpDisplay::displayCharString(I, 10,10, "state: tracking", vpColor::red);
-          tracker.track(I);
-
-          //tracker.display(I, vpColor::blue);
-          {
-            // Instantiate and get the reference zone
-            p = tracker.getp();
-            warp.warpZone(zone_ref, p, zone_cur);
-            area_zone_cur = zone_cur.getArea();
-
-            //          std::cout << "Area ref: " << area_zone_ref << std::endl;
-            std::cout << "Area tracked: " << area_zone_cur << std::endl;
-
-            double size_percent = 0.6;
-            //if (area_zone_cur/area_zone_ref < size_percent || area_zone_cur/area_zone_ref > (1+size_percent)) {
-            if (area_zone_cur/area_zone_prev < size_percent || area_zone_cur/area_zone_prev > (1+size_percent)) {
-              std::cout << "reinit caused by size" << std::endl;
-              state = detection;
-            }
-            else {
-              target = zone_cur.getBoundingBox();
-              target_found = true;
-            }
-
-            area_zone_prev = area_zone_cur;
-          }
-        }
-        catch(...) {
-          std::cout << "Exception tracking" << std::endl;
-          state = detection;
-        }
-      }
-
-      if (target_found)
-        vpDisplay::displayRectangle(I, target, vpColor::red, false, 4);
+      bool face_found = face_tracker.track(I);
+      if (face_found)
+        vpDisplay::displayRectangle(I, face_tracker.getFace(), vpColor::red, false, 4);
 
       vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
@@ -249,10 +125,7 @@ int main(int argc, const char* argv[])
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
     }
   }
-  catch (const AL::ALError& e)
-  {
-    std::cerr << "Caught exception " << e.what() << std::endl;
+  catch(vpException &e) {
+    std::cout << e.getMessage() << std::endl;
   }
-
-  return 0;
 }

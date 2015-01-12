@@ -8,20 +8,32 @@ find_package(VISP REQUIRED)
 
 find_package(visp_naoqi REQUIRED)
 
+set(ROMEOTK_DATA_FOLDER ${PROJECT_SOURCE_DIR}/data)
+
+configure_file(${PROJECT_SOURCE_DIR}/src/common/vpRomeoTkConfig.h.cmake
+  ${CMAKE_BINARY_DIR}/include/vpRomeoTkConfig.h
+)
 
 # Propagate in subdirs
 subdirs(demos)
 subdirs(tests)
 subdirs(tools)
 
+include_directories(${PROJECT_SOURCE_DIR}/src/common ${CMAKE_BINARY_DIR}/include)
 
-## Create LIBRARY
-# Here we say that our executable depends on
-# - ALCOMMON (main naoqi lib)
-# - ALPROXIES (using specialized naoqi proxies)
-# - ALVISION (for vision definitions)
-# - OPENCV (face detection)
-#
-# It automatically links with the corresponding libraries and make their headers
-# available.
+qi_create_lib(romeo_tk
+  SRC
+    src/common/vpQRCodeTracker.h
+    src/common/vpQRCodeTracker.cpp
+    src/common/vpFaceTracker.h
+    src/common/vpFaceTracker.cpp
+    src/common/vpServoArm.h
+    src/common/vpServoArm.cpp
+    src/common/vpServoHead.h
+    src/common/vpServoHead.cpp
+    src/common/vpCartesianDisplacement.h
+)
 
+qi_use_lib(romeo_tk visp_naoqi VISP ALCOMMON ALPROXIES ALVISION)
+
+qi_stage_lib(romeo_tk)
