@@ -3,7 +3,7 @@ set(source
   servo_PB_Grasp_Tea.cpp
   servo_PB_grasp_tracking_tea.cpp
   servo_PB_grasp_tracking_tea_move_head.cpp
-
+  servo_PB_grasp_tracking_tea_move_head_init_sens.cpp
   ) 
 
 foreach(src ${source})
@@ -12,4 +12,7 @@ foreach(src ${source})
   qi_use_lib(${binary} visp_naoqi ALCOMMON ALPROXIES ALVISION)
 endforeach()
 
+#include_directories(${PROJECT_SOURCE_DIR}/demos/grasping)
+qi_create_bin(grasp_tea_mbt grasp_tea_mbt.cpp)
+qi_use_lib(grasp_tea_mbt romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
