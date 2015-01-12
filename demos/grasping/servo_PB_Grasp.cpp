@@ -6,6 +6,12 @@
  *
  */
 
+
+#include <iostream>
+#include <string>
+#include <list>
+#include <iterator>
+
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
 
@@ -13,7 +19,6 @@
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageConvert.h>
-
 #include <visp/vpDot2.h>
 #include <visp/vpImageIo.h>
 #include <visp/vpImagePoint.h>
@@ -26,15 +31,11 @@
 #include <visp/vpFeatureBuilder.h>
 #include <visp/vpCameraParameters.h>
 #include <visp/vpXmlParserCamera.h>
+#include <visp/vpPose.h>
 
-#include <iostream>
-#include <string>
-#include <list>
-#include <iterator>
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
-#include <visp/vpPose.h>
 
 #define SAVE 0
 
