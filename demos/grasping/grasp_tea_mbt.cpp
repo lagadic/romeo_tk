@@ -765,7 +765,7 @@ int main(int argc, const char* argv[])
       }
 
       // servo head to center qrcode
-      if (grasp_status != Finished) {
+      if (grasp_status >= LiftTeabox  && grasp_status != Finished) {
         if (status_qrcode_tracker) {
           static bool first_time = true;
           if (first_time) {
@@ -780,11 +780,11 @@ int main(int argc, const char* argv[])
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
           //servo_head.setLambda(0.4);
-          //static vpAdaptiveGain lambda(2, 0.4, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-          static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          static vpAdaptiveGain lambda(2, 0.4, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          //static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
           servo_head.setCurrentFeature( qrcode_cog_cur );
-          servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*5/8, I.getWidth()/2) );
+          servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*6/8, I.getWidth()/2) );
           vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::yellow, 3);
 
           vpColVector q_dot_head = servo_head.computeControlLaw(servo_time_init);
