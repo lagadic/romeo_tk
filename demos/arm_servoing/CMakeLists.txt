@@ -3,6 +3,7 @@ set(source
     servo_blob_tracking_visp_LArm_metapod.cpp
     servo_visp_LArm_6dof.cpp
     servo_PB_MB_tracker.cpp
+    servo_arm_qrcode.cpp
   ) 
 
 foreach(src ${source})
@@ -11,4 +12,5 @@ foreach(src ${source})
   qi_use_lib(${binary} visp_naoqi ALCOMMON ALPROXIES ALVISION)
 endforeach()
 
+qi_use_lib(servo_arm_qrcode romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
