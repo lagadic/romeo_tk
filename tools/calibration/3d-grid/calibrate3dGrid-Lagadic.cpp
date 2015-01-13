@@ -1355,7 +1355,11 @@ int main(int argc, const char ** argv)
   int mtsai = 0;
   if (opt_nimages > 2){
     std::cout <<"identification de la matrice pince ->camera ? (yes=1) : "<< std::endl;
-    scanf("%d", &mtsai);
+    int ret = scanf("%d", &mtsai);
+    if (ret != 1) {
+      std::cout << "Cannot get your choice" << std::endl;
+      return 0;
+    }
   }
 
   if (mtsai == 1) {

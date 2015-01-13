@@ -159,6 +159,8 @@ int main(int argc, const char* argv[])
 
     std::cout << "Extrinsic Camera parameters: " << g.get_eMc()<< std::endl;
 
+
+
     // Test with a vector of joints
     std::vector<std::string> jointNames;
     jointNames.push_back("NeckYaw");

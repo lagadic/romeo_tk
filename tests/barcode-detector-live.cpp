@@ -161,7 +161,7 @@ int main(int argc, const char** argv)
     g.acquire(I);
     vpDisplayX d(I);
 
-    vpDetectorBarCodeBase *detector;
+    vpDetectorBase *detector;
     if (opt_barcode == 0)
       detector = new vpDetectorQRCode;
     else

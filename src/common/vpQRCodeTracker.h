@@ -21,7 +21,7 @@ public:
   } state_t;
 
 protected:
-  vpDetectorBarCodeBase *m_detector;
+  vpDetectorBase *m_detector;
   vpTemplateTrackerWarpHomography m_warp;
   vpTemplateTrackerSSDInverseCompositional *m_tracker;
   vpTemplateTrackerZone m_zone_ref, zone_cur;
