@@ -74,8 +74,6 @@ typedef enum {
 
 /*!
   Move LArm in position to start a grapsing demo avoiding the table.
-
-
 */
 void moveLArmFromOrToRestPosition(const vpNaoqiRobot &robot, bool up)
 {
@@ -110,6 +108,7 @@ void moveLArmFromOrToRestPosition(const vpNaoqiRobot &robot, bool up)
     AL::ALValue axisMask   =  AL::ALValue::array (63);
 
     robot.getProxy()->positionInterpolations(chainName, space, path, axisMask, times);
+
   }
   catch(const std::exception&)
   {
@@ -317,9 +316,9 @@ int main(int argc, const char* argv[])
   vpHomogeneousMatrix eMc = g.get_eMc();
 
   // Initialize constant parameters
-  std::string learned_oMh_filename = "oMh_Tea_Box_offset.xml";
-  std::string name_oMh_open_loop =  "oMh_Tea_Box_open_loop";
-  std::string name_oMh_grasp =  "oMh_Tea_Box_grasp";
+  std::string learned_oMh_filename = "oMh_Tea_Box_offset.xml"; // This file contains the following two transf. matrix:
+  std::string name_oMh_open_loop =  "oMh_Tea_Box_open_loop"; // Offset position Hand w.r.t the object (Open loop)
+  std::string name_oMh_grasp =  "oMh_Tea_Box_grasp"; // Offset position Hand w.r.t the object to grasp it (Close loop)
 
   // Initialize the model based tracker
   vpMbEdgeKltTracker teabox_tracker;
@@ -425,6 +424,7 @@ int main(int argc, const char* argv[])
     plotter_time->initGraph(0, 1);
   }
 
+
   while(1) {
     double loop_time_start = vpTime::measureTimeMs();
     //std::cout << "Loop iteration: " << loop_iter << std::endl;
@@ -441,6 +441,17 @@ int main(int argc, const char* argv[])
     // track teabox
     if(state_teabox_tracker == Acquisition) {
       vpDisplay::displayText(I, vpImagePoint(10,10), "Click to start the teabox initialization", vpColor::red);
+
+      // Move the head in the default position
+    {
+      //AL::ALValue names_head       = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
+      AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-23), vpMath::rad(19.2), vpMath::rad(9), vpMath::rad(0) );
+      float fractionMaxSpeed  = 0.1f;
+      robot.getProxy()->setAngles(jointNames_head, angles_head, fractionMaxSpeed);
+     }
+
+
+
       if (click_done && button == vpMouseButton::button1) {
         state_teabox_tracker = InitTeaBoxTracking;
         click_done = false;
