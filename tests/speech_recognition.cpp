@@ -41,6 +41,7 @@
 #include <string>
 
 #include <alproxies/alspeechrecognitionproxy.h>
+#include <alproxies/altexttospeechproxy.h>
 #include <alproxies/almemoryproxy.h>
 
 #include <visp_naoqi/vpNaoqiRobot.h>
@@ -79,7 +80,18 @@ int main(int argc, const char* argv[])
 
 
     // Open Proxy for the speech
+    AL::ALTextToSpeechProxy tts(opt_ip, 9559);
+    tts.setLanguage("English");
+
+    std::string phraseToSay = "Hi, Do you want the box?";
+
+
+    int id = tts.post.say(phraseToSay);
+    tts.wait(id,2000);
+
+    // Open Proxy for the recognition speech
     AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
+    //asr.unsubscribe("Test_ASR");
     asr.setLanguage("English");
     std::vector<std::string> vocabulary;
     vocabulary.push_back("yes");
@@ -89,13 +101,42 @@ int main(int argc, const char* argv[])
     asr.setVocabulary(vocabulary,false);
 
 
-    AL::ALMemoryProxy memProxy(argv[1], 9559);
+    AL::ALMemoryProxy memProxy(opt_ip, 9559);
 
     // Start the speech recognition engine with user Test_ASR
     asr.subscribe("Test_ASR");
     std::cout << "Speech recognition engine started" << std::endl;
 
-    vpTime::sleepMs(10000);
+
+
+
+    while (1)
+    {
+      AL::ALValue result = memProxy.getData("WordRecognized");
+
+      if ( ((result[0]) == vocabulary[0]) && (double (result[1]) > 0.0 )) //YES
+      {
+        std::cout << "Recognized: " << result[0] << "with confidence of " << result[1] << std::endl;
+        phraseToSay = "Ok, I will do it.";
+        id = tts.post.say(phraseToSay);
+        tts.wait(id,2000);
+        break;
+
+      }
+      else if ( (result[0] == vocabulary[1]) && (double(result[1]) > 0.0 )) // NO
+      {
+        std::cout << "Recognized: " << result[0] << "with confidence of " << result[1] << std::endl;
+        phraseToSay = "Ok, bye bye.";
+        id = tts.post.say(phraseToSay);
+        tts.wait(id,2000);
+        break;
+
+      }
+
+     vpTime::sleepMs(500);
+    }
+
+
 
     asr.unsubscribe("Test_ASR");
 
