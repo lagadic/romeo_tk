@@ -3,6 +3,7 @@ set(source
   barcode-detector-live.cpp
   motion_romeo.cpp
   speech_recognition.cpp
+  detection-object-mbt.cpp
   )
 
 foreach(src ${source})
