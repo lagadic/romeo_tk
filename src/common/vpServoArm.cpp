@@ -15,7 +15,6 @@ vpServoArm::vpServoArm() : m_t(vpFeatureTranslation::cdMc), m_tu(vpFeatureThetaU
   //  // Set the proportional gain
   //  vpAdaptiveGain  lambda;
   //  lambda.initStandard(2, 0.2, 50);
-
   //  m_task.setLambda(lambda) ;
 }
 

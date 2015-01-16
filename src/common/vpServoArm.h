@@ -32,6 +32,10 @@ public:
   {
     return ( m_task.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init) );
   }
+  vpMatrix getTaskJacobian() {return m_task.getTaskJacobian();}
+  vpMatrix getTaskJacobianPseudoInverse() {return m_task.getTaskJacobianPseudoInverse();}
+  vpColVector getError(){return m_task.getError();}
+
   void set_eJe(const vpMatrix &eJe) { m_task.set_eJe(eJe);}
   void set_cVf(const vpVelocityTwistMatrix &cVf) { m_task.set_cVf(cVf);}
   void set_fVe(const vpVelocityTwistMatrix &fVe) { m_task.set_fVe(fVe);}
