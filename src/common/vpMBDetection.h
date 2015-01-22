@@ -1,0 +1,132 @@
+/****************************************************************************
+ *
+ * This file is part of the ViSP software.
+ * Copyright (C) 2005 - 2014 by INRIA. All rights reserved.
+ *
+ * This software is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * ("GPL") version 2 as published by the Free Software Foundation.
+ * See the file LICENSE.txt at the root directory of this source
+ * distribution for additional information about the GNU GPL.
+ *
+ * For using ViSP with software that can not be combined with the GNU
+ * GPL, please contact INRIA about acquiring a ViSP Professional
+ * Edition License.
+ *
+ * See http://team.inria.fr/lagadic/visp for more information.
+ *
+ * This software was developed at:
+ * INRIA Rennes - Bretagne Atlantique
+ * Campus Universitaire de Beaulieu
+ * 35042 Rennes Cedex
+ * France
+ * http://team.inria.fr/lagadic
+ *
+ * If you have questions regarding the use of this file, please contact
+ * INRIA at visp@inria.fr
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Description:
+ * This class allows to learn, detect and track an object. We use keypoints to detect and estimate the pose of a known object
+ * using his cad model. The first step consists in detecting and learning keypoints located on the faces of an object, while
+ * the second step makes the matching between the detected keypoints in the query image with those previously learned.
+ * The pair of matches are then used to estimate the pose of the object with the knowledge of the correspondences between the
+ * 2D and 3D coordinates.
+ *
+ * Authors:
+ * Giovanni Claudio
+ *
+ *****************************************************************************/
+#ifndef __vpMBDetection_h__
+#define __vpMBDetection_h__
+
+#include <iostream>
+
+
+// ViSP includes
+#include <visp/vpMbEdgeTracker.h>
+#include <visp/vpVideoReader.h>
+#include <visp/vpKeyPoint.h>
+#include <visp/vpImage.h>
+
+
+/*!
+  This class allows to learn, detect and track an object. We use keypoints to detect and estimate the pose of a known object
+  using his cad model. The first step consists in detecting and learning keypoints located on the faces of an object, while
+  the second step makes the matching between the detected keypoints in the query image with those previously learned.
+  The pair of matches are then used to estimate the pose of the object with the knowledge of the correspondences between the
+  2D and 3D coordinates.
+
+  The following example shows how to use this class.
+  \code
+   //To do
+  \endcode
+ */
+
+class vpMBDetection
+{
+public:
+  typedef enum {
+    detection,
+    tracking,
+    none
+  } state_t;
+
+
+protected:
+  std::string m_configuration_file;
+  vpMbEdgeTracker * m_tracker;
+  std::string m_model;
+  state_t m_state;
+  vpCameraParameters m_cam;
+  vpHomogeneousMatrix m_cMo;
+  vpKeyPoint * m_keypoint_learning;
+
+  //Detection:
+  vpKeyPoint * m_keypoint_detection;
+  bool m_init_detection;
+  bool m_manual_detection;
+  unsigned int m_counter_detection;
+  unsigned int m_num_iteration_detection;
+  vpMatrix m_stack_cMo_detection;
+  bool (*m_checkValiditycMo)(vpHomogeneousMatrix);
+
+
+public:
+  vpMBDetection(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam);
+  virtual ~vpMBDetection();
+
+  bool detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo);
+  void setForceDetection() {m_state = detection; }
+  vpHomogeneousMatrix get_cMo() const {return m_cMo;}
+  vpMbEdgeTracker * getTracker() const {return m_tracker;}
+  void initDetection(const std::string & name_file_learning_data);
+  bool isIdentity (const vpHomogeneousMatrix &A) const;
+  void learnObject(vpImage<unsigned char> &I);
+  void saveLearningData(const std::string & name_new_file_learning_data);
+  void setCameraParameters(const vpCameraParameters &cam) { m_cam = cam; }
+  void setManualDetection(){m_manual_detection = true;}
+  void setNumberDetectionIteration (unsigned int &num) { m_num_iteration_detection = num;}
+  void setValiditycMoFunction (bool (*funct)(vpHomogeneousMatrix)) { m_checkValiditycMo = funct;}
+  bool track(const vpImage<unsigned char> &I);
+
+  //bool detection(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo, const unsigned int num_detections, bool (*checkcMo)(vpHomogeneousMatrix));
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endif
