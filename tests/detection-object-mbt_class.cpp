@@ -18,7 +18,7 @@
 #include <vpMBDetection.h>
 
 #include <vpRomeoTkConfig.h>
-
+#include <visp/vpPlot.h>
 
 
 bool checkValiditycMo(vpHomogeneousMatrix cMo)
@@ -48,9 +48,18 @@ int main(int argc, char ** argv) {
 
     std::string opt_ip;
 
-    std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
-    std::string opt_model = opt_folder + "milkbox";
-    std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
+
+      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
+      std::string opt_model = opt_folder + "milkbox";
+     // std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
+       std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
+
+
+
+//      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
+//      std::string opt_model = opt_folder + "spraybox";
+//      std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
+
 
     bool opt_learning = false;
 
@@ -108,7 +117,7 @@ int main(int argc, char ** argv) {
         g.acquire(I);
         vpDisplay::display(I);
         vpDisplay::displayText(I, 10, 10, "Click when you are ready to learn", vpColor::red);
-        vpDisplay::flush(I);
+
 
         click_done = vpDisplay::getClick(I, button, false);
 
@@ -117,7 +126,7 @@ int main(int argc, char ** argv) {
           tracker_box.learnObject(I);
           vpDisplay::displayText(I, 30, 10, "Click left to continue with detection...", vpColor::red);
           vpDisplay::displayText(I, 30, 30, "Click right to stop...", vpColor::red);
-          vpDisplay::flush(I);
+
           vpDisplay::getClick(I, true);
         }
 
@@ -127,7 +136,7 @@ int main(int argc, char ** argv) {
           click_done = false;
           break;
         }
-
+        vpDisplay::flush(I);
       }
     }
     // END LEARNING
@@ -139,25 +148,65 @@ int main(int argc, char ** argv) {
     tracker_box.setValiditycMoFunction(checkValiditycMo);
 
 
+    unsigned int num_iteration_detection = 6;
+    tracker_box.setNumberDetectionIteration(num_iteration_detection);
     vpPoseVector r;
+
+    vpPlot A(2, 700, 700, 100, 200, "Curves...");;
+    A.initGraph(0,3);
+    A.initGraph(1,3);
+
+    for (size_t i=0; i<2; i++) {
+      A.setColor(i,0,vpColor::red);
+      A.setColor(i,1,vpColor::green);
+      A.setColor(i,2,vpColor::blue);
+      A.setLegend(i,0,"x");
+      A.setLegend(i,1,"y");
+      A.setLegend(i,2,"z");
+    }
+
+    unsigned int cpt = 0;
+
+    bool onlyDetection = false;
+    vpImagePoint cog;
+    tracker_box.setOnlyDetection(onlyDetection);
 
     while(1) {
       g.acquire(I);
       vpDisplay::display(I);
       click_done = vpDisplay::getClick(I, button, false);
+      vpDisplay::displayText(I, 12, 100,"Click RIGHT: quit", vpColor::cyan);
+      vpDisplay::displayText(I, 25, 10, "LEFT: detection, CENTRAL: manual detection.", vpColor::cyan);
       try {
         if (tracker_box.track(I))
         {
-        cMo = tracker_box.get_cMo();
-        r.buildFrom(cMo);
-        std::cout << "Pose:" << std::endl;
-        std::cout << r.t() << std::endl;
+          cMo = tracker_box.get_cMo();
+          r.buildFrom(cMo);
+          std::cout << "Pose:" << std::endl;
+          std::cout << r.t() << std::endl;
+
+          tracker_box.getTracker()->display(I, cMo, cam, vpColor::red, 2);
+          vpDisplay::displayFrame(I, cMo, cam, 0.025, vpColor::none, 3);
+
+          for (size_t i=0; i<3; i++) {
+            A.plot(0,i,cpt,r[i]); // trans
+            A.plot(1,i,cpt,vpMath::deg(r[i+3])); // rot
+
+          }
+          cpt ++;
+        }
+
+        if (onlyDetection)
+        {
+          cog = tracker_box.get_cog();
+          vpDisplay::displayCross(I, cog, 10, vpColor::green, 2);
+
         }
 
       }
       catch(...) {
       }
-      vpDisplay::flush(I);
+
 
       if (click_done && button == vpMouseButton::button3) {
         click_done = false;
@@ -174,11 +223,8 @@ int main(int argc, char ** argv) {
         tracker_box.setManualDetection();
         tracker_box.setForceDetection();
       }
-
+      vpDisplay::flush(I);
     }
-
-
-
 
     if (0)
     {

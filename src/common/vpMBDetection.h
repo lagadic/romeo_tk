@@ -46,7 +46,7 @@
 
 
 // ViSP includes
-#include <visp/vpMbEdgeTracker.h>
+#include <visp/vpMbEdgeKltTracker.h>
 #include <visp/vpVideoReader.h>
 #include <visp/vpKeyPoint.h>
 #include <visp/vpImage.h>
@@ -77,7 +77,8 @@ public:
 
 protected:
   std::string m_configuration_file;
-  vpMbEdgeTracker * m_tracker;
+  vpMbEdgeKltTracker * m_tracker;
+  //vpMbEdgeTracker * m_tracker;
   std::string m_model;
   state_t m_state;
   vpCameraParameters m_cam;
@@ -86,8 +87,11 @@ protected:
 
   //Detection:
   vpKeyPoint * m_keypoint_detection;
+  vpImagePoint m_cog;
   bool m_init_detection;
   bool m_manual_detection;
+  bool m_only_detection;
+  bool m_status_single_detection;
   unsigned int m_counter_detection;
   unsigned int m_num_iteration_detection;
   vpMatrix m_stack_cMo_detection;
@@ -99,15 +103,19 @@ public:
   virtual ~vpMBDetection();
 
   bool detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo);
-  void setForceDetection() {m_state = detection; }
+
   vpHomogeneousMatrix get_cMo() const {return m_cMo;}
   vpMbEdgeTracker * getTracker() const {return m_tracker;}
+  vpImagePoint get_cog() const {return m_cog;}
+  bool getDetectionStatus() const {return m_status_single_detection;}
   void initDetection(const std::string & name_file_learning_data);
   bool isIdentity (const vpHomogeneousMatrix &A) const;
   void learnObject(vpImage<unsigned char> &I);
   void saveLearningData(const std::string & name_new_file_learning_data);
+  void setForceDetection() {m_state = detection; }
   void setCameraParameters(const vpCameraParameters &cam) { m_cam = cam; }
   void setManualDetection(){m_manual_detection = true;}
+  void setOnlyDetection(const bool only_detection){m_only_detection = only_detection;}
   void setNumberDetectionIteration (unsigned int &num) { m_num_iteration_detection = num;}
   void setValiditycMoFunction (bool (*funct)(vpHomogeneousMatrix)) { m_checkValiditycMo = funct;}
   bool track(const vpImage<unsigned char> &I);

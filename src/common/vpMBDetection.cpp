@@ -50,14 +50,15 @@
   */
 vpMBDetection::vpMBDetection(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam)
   : m_tracker(NULL), m_keypoint_learning(NULL), m_keypoint_detection (NULL), m_init_detection (false),m_state(detection),
-    m_num_iteration_detection(5), m_counter_detection(0), m_manual_detection (0), m_checkValiditycMo(NULL)
+    m_num_iteration_detection(6), m_counter_detection(0), m_manual_detection (0), m_checkValiditycMo(NULL), m_only_detection(false), m_status_single_detection(false)
 
 {
   m_model = model;
   m_cam = cam;
 
   //Initiaze tracker
-  m_tracker = new vpMbEdgeTracker;
+  m_tracker = new vpMbEdgeKltTracker;
+  //m_tracker = new vpMbEdgeTracker;
 
   if(vpIoTools::checkFilename(m_model + ".xml")) {
     m_tracker->loadConfigFile(m_model + ".xml");
@@ -69,7 +70,7 @@ vpMBDetection::vpMBDetection(const std::string &model, const std::string &config
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
-  m_tracker->setDisplayFeatures(true);
+  //m_tracker->setDisplayFeatures(true);
 
   //Initalize Detection
   m_configuration_file = configuration_file_folder + "detection-config.xml";
@@ -97,8 +98,16 @@ void vpMBDetection::learnObject(vpImage<unsigned char> &I)
 {
 
   //Keypoint declaration and initialization
-  m_tracker->initClick(I, m_model + ".init", true);
-  //m_tracker->track(I);
+//  static bool firstTime = false;
+//  if (firstTime == false) {
+    m_tracker->initClick(I, m_model + ".init", true);
+//    firstTime = true;
+//  }
+//  else {
+//    m_tracker->resetTracker();
+//    m_tracker->initClick(I, m_model + ".init", true);
+//  }
+ // m_tracker->track(I);
 
   //Keypoints reference detection
   double elapsedTime;
@@ -171,11 +180,13 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
 {
 
   bool status_tracking = false;
+  m_status_single_detection = false;
+  bool verbose = 0;
 
   if (m_state == detection ) {
 
     std::cout << "DETECTION PHASE"<< std::endl ;
-    vpDisplay::displayText(I, 10, 10, "Detection and localization in process...", vpColor::red);
+    //vpDisplay::displayText(I, 10, 10, "Detection and localization in process...", vpColor::red);
     if (!m_init_detection)
     {
       std::cout << "ERROR: You need to call before vpMBDetection::initDetection(const std::string &name_file_learning_data).";
@@ -200,8 +211,11 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
 
             //Tracker set pose
             m_tracker->setPose(I, cMo_temp);
-            std::cout << "Detection ok" << std::endl;
-            std::cout << "Pose: " <<std::endl << cMo_temp << std::endl;
+            if (verbose)
+            {
+              std::cout << "Detection ok" << std::endl;
+              std::cout << "Pose: " <<std::endl << cMo_temp << std::endl;
+            }
 
             //Display
             m_tracker->display(I, cMo_temp, m_cam, vpColor::red, 2);
@@ -210,7 +224,22 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
             vpPoseVector cPo;
             cPo.buildFrom(cMo_temp);
             m_stack_cMo_detection.stackMatrices(cPo.t());
-            m_counter_detection ++;
+            if (m_only_detection)
+            {
+              unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
+              vpImagePoint iPref, iPcur, cog(0, 0);
+              for (unsigned int i = 0; i < nbMatch; i++)
+              {
+                m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
+                cog +=iPcur;
+              }
+
+              m_cog = cog/nbMatch;
+              m_status_single_detection = true;
+
+            }
+            else
+              m_counter_detection ++;
 
           }
         }
@@ -226,16 +255,45 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
         for (unsigned int i = 0; i<6; i++)
           cMo_[i] = vpColVector::median( m_stack_cMo_detection.getCol(i));
 
-        std::cout<< "Result: " << std::endl << cMo_<<std::endl;
+        std::cout<< "Median: " << std::endl << cMo_<<std::endl;
+        unsigned int pose_ok_counter = 0;
+        vpColVector translation_median = cMo_.getCol(0,0,3);
 
-        vpHomogeneousMatrix cMo;
-        cMo.buildFrom(cMo_);
+        std::cout<< "translation_median " << translation_median <<std::endl;
+        //vpDisplay::getClick(I);
 
-        m_tracker->setPose(I,cMo);
-        m_counter_detection = 0;
-        m_stack_cMo_detection.init();
+        for (unsigned int i = 0; i < m_stack_cMo_detection.getRows()-1 ;i++ )
+        {
 
-        m_state = tracking;
+          double distance_from_median = sqrt((translation_median.t() - m_stack_cMo_detection.getRow(i,0,3)).sumSquare());
+          std::cout<< "Distance " << i << ":" << std::endl << distance_from_median<<std::endl;
+
+          if ( distance_from_median < 0.5) //0.005 )//&& (theta_error_grasp < vpMath::rad(3)) )
+          {
+            pose_ok_counter++;
+            std::cout<< "Ok for pose number: " << i <<std::endl;
+          }
+        }
+        std::cout<< "Pose counter ok: " << std::endl << pose_ok_counter<<std::endl;
+
+
+        if (pose_ok_counter >= int (0.75 * double (m_num_iteration_detection)) )
+        {
+
+          //std::cout<< "Ok starting track. Reached: " <<  int (0.75 * double (m_num_iteration_detection)) <<std::endl;
+          vpHomogeneousMatrix cMo;
+          cMo.buildFrom(cMo_);
+
+          m_tracker->setPose(I,cMo);
+          m_counter_detection = 0;
+          m_stack_cMo_detection.init();
+
+          m_state = tracking;
+
+        }
+
+        else
+          m_counter_detection = 0;
 
       }
 
@@ -251,9 +309,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
 
   if (m_state == tracking ) {
 
-    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
-    vpDisplay::displayText(I,12, 100,"Click RIGHT: quit", vpColor::cyan);
-    vpDisplay::displayText(I, 25, 10, "LEFT: detection, CENTRAL: manual detection.", vpColor::cyan);
+//    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
 
     try
     {
@@ -262,8 +318,8 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
       //printPose("cMo teabox: ", cMo_teabox);
       if (!m_checkValiditycMo(m_cMo))
         std::cout << "OK";
-      m_tracker->display(I, m_cMo, m_cam, vpColor::red, 2);
-      vpDisplay::displayFrame(I, m_cMo, m_cam, 0.025, vpColor::none, 3);
+     // m_tracker->display(I, m_cMo, m_cam, vpColor::red, 2);
+      //vpDisplay::displayFrame(I, m_cMo, m_cam, 0.025, vpColor::none, 3);
       status_tracking = true;
 
     }
