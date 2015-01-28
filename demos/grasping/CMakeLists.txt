@@ -16,3 +16,6 @@ endforeach()
 qi_create_bin(grasp_tea_mbt grasp_tea_mbt.cpp)
 qi_use_lib(grasp_tea_mbt romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 
+
+qi_create_bin(grasp_box grasp_box.cpp)
+qi_use_lib(grasp_box romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
