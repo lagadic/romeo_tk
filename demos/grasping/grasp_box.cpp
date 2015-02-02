@@ -5,6 +5,10 @@
 
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
+#include <almath/tools/almath.h>
+#include <almath/tools/altransformhelpers.h>
+#include <almath/types/alrotation3d.h>
+#include <almath/types/altransform.h>
 
 // ViSP includes.
 #include <visp/vpDisplayX.h>
@@ -20,7 +24,6 @@
 #include <visp/vpPlot.h>
 #include <visp/vpPoint.h>
 
-
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
 #include <visp_naoqi/vpNaoqiConfig.h>
@@ -34,7 +37,6 @@
 #include <vpRomeoTkConfig.h>
 
 #define SAVE 0
-
 #define USE_PLOTTER
 #define L 0.015
 
@@ -77,7 +79,6 @@ bool checkValiditycMo(vpHomogeneousMatrix cMo)
   double y = cMo[1][3];
   double z = cMo[2][3];
 
-
   //std::cout << "x: " << x <<". Limits: -0.40 > y > 0.40" << std::endl;
   //std::cout << "y: " << y <<". Limits: -0.50 > y > 0.50" << std::endl;
   //std::cout << "z: " << z <<". Limits: 0.10 > y > 0.40" << std::endl;
@@ -89,36 +90,82 @@ bool checkValiditycMo(vpHomogeneousMatrix cMo)
     return true;
 }
 
+void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<float> &handMbox_desired)
+{
+
+  try
+  {
+
+    vpPoseVector handMbox_desired_ (handMbox_desired);
+    AL::ALValue pos3;
+    pos3.arraySetSize(6);
+
+    // Transform in Yall Pitch and Yaw
+    AL::Math::Rotation3D rot;
+    AL::Math::Transform transform(handMbox_desired);
+    rot = AL::Math::rotation3DFromTransform(transform);
 
 
+    for (unsigned int i = 0; i<3;i++)
+    {
+      pos3[i] = handMbox_desired_[i];
+      pos3[i+3] = rot.toVector()[i];
+    }
+
+    AL::ALValue pos1 = AL::ALValue::array(0.2852230966091156, 0.3805413246154785, -0.17208018898963928, -1.4664039611816406, 0.28257742524147034, 0.17258954048156738);
+    AL::ALValue time1 = 1.0f;
+    AL::ALValue pos2 = AL::ALValue::array(0.3599576950073242, 0.3060062527656555, 0.01953596994280815, -1.1513646841049194, -0.18644022941589355, -0.1889418214559555);
+    AL::ALValue time2 = 2.0f;
+    AL::ALValue time3 = 5.6f;
+
+    AL::ALValue path;
+    path.arrayPush(pos1);
+    path.arrayPush(pos2);
+    path.arrayPush(pos3);
 
 
+    AL::ALValue times;
+    times.arrayPush(time1);
+    times.arrayPush(time2);
+    times.arrayPush(time3);
+
+    AL::ALValue chainName  = AL::ALValue::array ("LArm");
+    AL::ALValue space      = AL::ALValue::array (0); // Torso
+    AL::ALValue axisMask   = AL::ALValue::array (63);
+
+    robot.getProxy()->post.positionInterpolations(chainName, space, path, axisMask, times);
+
+  }
+  catch(const std::exception&)
+  {
+    throw vpRobotException (vpRobotException::badValue,
+                            "servo apply the motion");
+  }
+
+  return;
+
+}
 
 /*!
-  Move LArm in position to start a grapsing demo avoiding the table.
+  Move LArm to rest position avoiding the table.
 */
-void moveLArmFromOrToRestPosition(const vpNaoqiRobot &robot, bool up)
+void moveLArmToRestPosition(const vpNaoqiRobot &robot)
 {
   try
   {
     AL::ALValue pos0 = AL::ALValue::array(0.12116464972496033, 0.2008720338344574, -0.3022586703300476, -2.055604934692383, 1.1719822883605957, -0.6304683089256287);
     AL::ALValue time0 = 2.0f;
     AL::ALValue pos1 = AL::ALValue::array(0.2852230966091156, 0.3805413246154785, -0.17208018898963928, -1.4664039611816406, 0.28257742524147034, 0.17258954048156738);
-    AL::ALValue time1 = 3.5f;
+    AL::ALValue time1 = 3.0f;
     AL::ALValue pos2 = AL::ALValue::array(0.3599576950073242, 0.3060062527656555, 0.01953596994280815, -1.1513646841049194, -0.18644022941589355, -0.1889418214559555);
-    AL::ALValue time2 = 5.5f;
+    AL::ALValue time2 = 4.5f;
+
 
     AL::ALValue path;
-    if (up) {
-      path.arrayPush(pos0);
-      path.arrayPush(pos1);
-      path.arrayPush(pos2);
-    }
-    else {
-      path.arrayPush(pos2);
-      path.arrayPush(pos1);
-      path.arrayPush(pos0);
-    }
+    path.arrayPush(pos2);
+    path.arrayPush(pos1);
+    path.arrayPush(pos0);
+
 
     AL::ALValue times;
     times.arrayPush(time0);
@@ -185,9 +232,10 @@ bool learnDesiredLHandGraspingPosition(const vpNaoqiRobot &robot, const vpHomoge
 }
 
 
-bool moveToDesiredLHandPosition(const vpNaoqiRobot &robot, const vpHomogeneousMatrix &cMo,
-                                const vpHomogeneousMatrix &eMc, const std::string &in_filename, const std::string &transform_name)
+vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHomogeneousMatrix &cMo,
+                                           const vpHomogeneousMatrix &eMc, const std::string &in_filename, const std::string &transform_name)
 {
+
   // Load transformation between teabox and desired position of the hand (from sensors) to initializate the tracker
   vpHomogeneousMatrix oMe_lhand;
 
@@ -198,7 +246,7 @@ bool moveToDesiredLHandPosition(const vpNaoqiRobot &robot, const vpHomogeneousMa
 
   if (pm.parse(oMe_lhand, in_filename, transform_name) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
     std::cout << "Cannot found the Homogeneous matrix named " << transform_name<< "." << std::endl;
-    return false;
+    exit(0);
   }
   else
     std::cout << "Homogeneous matrix " << transform_name <<": " << std::endl << oMe_lhand << std::endl;
@@ -212,18 +260,59 @@ bool moveToDesiredLHandPosition(const vpNaoqiRobot &robot, const vpHomogeneousMa
   {
     // Hack: TODO remove when naoqi fixed
     vpHomogeneousMatrix Mhack;
-    Mhack[1][3] = -0.025; // add Y - 0.025 offset
+    Mhack[1][3] = -0.030; // add Y - 0.025 offset
     tMh_desired = tMh_desired * Mhack;
   }
 
-  std::vector<float> tMh_desired_;
-  tMh_desired.convert(tMh_desired_);
+  //  std::vector<float> tMh_desired_;
+  //  tMh_desired.convert(tMh_desired_);
 
-  float velocity = 0.2;
-  int axis_mask = 63; // Control position and orientation
-  robot.getProxy()->setTransform("LArm", 0, tMh_desired_, velocity, axis_mask);
-  return true;
+  return tMh_desired;
+
+
 }
+
+
+//bool moveToDesiredLHandPosition(const vpNaoqiRobot &robot, const vpHomogeneousMatrix &cMo,
+//                                const vpHomogeneousMatrix &eMc, const std::string &in_filename, const std::string &transform_name)
+//{
+//  // Load transformation between teabox and desired position of the hand (from sensors) to initializate the tracker
+//  vpHomogeneousMatrix oMe_lhand;
+
+//  vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+
+//  //  char filename_[FILENAME_MAX];
+//  //  sprintf(filename_, "%s", VISP_NAOQI_GENERAL_M_FILE);
+
+//  if (pm.parse(oMe_lhand, in_filename, transform_name) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+//    std::cout << "Cannot found the Homogeneous matrix named " << transform_name<< "." << std::endl;
+//    return false;
+//  }
+//  else
+//    std::cout << "Homogeneous matrix " << transform_name <<": " << std::endl << oMe_lhand << std::endl;
+
+//  vpHomogeneousMatrix torsoMHeadRoll_(robot.getProxy()->getTransform("HeadRoll", 0, true));
+//  vpHomogeneousMatrix torsoMlcam_visp_init = torsoMHeadRoll_ * eMc;
+
+//  vpHomogeneousMatrix tMh_desired;
+//  tMh_desired = (oMe_lhand.inverse() * cMo.inverse() * torsoMlcam_visp_init.inverse()).inverse();
+
+//  {
+//    // Hack: TODO remove when naoqi fixed
+//    vpHomogeneousMatrix Mhack;
+//    Mhack[1][3] = -0.025; // add Y - 0.025 offset
+//    tMh_desired = tMh_desired * Mhack;
+//  }
+
+//  std::vector<float> tMh_desired_;
+//  tMh_desired.convert(tMh_desired_);
+
+//  float velocity = 0.2;
+//  int axis_mask = 63; // Control position and orientation
+//  robot.getProxy()->setTransform("LArm", 0, tMh_desired_, velocity, axis_mask);
+//  return true;
+//}
+
 
 
 void printPose(const std::string &text, const vpHomogeneousMatrix &cMo)
@@ -247,16 +336,14 @@ int main(int argc, const char* argv[])
   std::string opt_ip = "198.18.0.1";;
   std::string opt_face_cascade_name = std::string(ROMEOTK_DATA_FOLDER) + "/face/haarcascade_frontalface_alt.xml";
 
-  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/milkbox";
-  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
-  //std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
-  std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
+  //  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/milkbox";
+  //  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
+  //  //std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
+  //  std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
 
-  //  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
-  //  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/spraybox";
-  //  std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
-
-
+  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
+  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/spraybox";
+  std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
 
 
   bool opt_learn_open_loop_position = false;
@@ -356,13 +443,7 @@ int main(int argc, const char* argv[])
   std::string name_oMh_open_loop =  "oMh_Tea_Box_open_loop"; // Offset position Hand w.r.t the object (Open loop)
   std::string name_oMh_grasp =  "oMh_Tea_Box_grasp"; // Offset position Hand w.r.t the object to grasp it (Close loop)
 
-  // Initialize the model based tracker
-  //  vpMbEdgeKltTracker teabox_tracker;
-  //  teabox_tracker.loadConfigFile(opt_model + ".xml");
-  //  teabox_tracker.setOgreVisibilityTest(false);
-  //  teabox_tracker.loadModel(opt_model + ".cao");
-  //  teabox_tracker.setDisplayFeatures(true);
-  //  teabox_tracker.setCameraParameters(cam);
+  // Initialization detection and localiztion teabox
   vpMbLocalization teabox_tracker(opt_model, configuration_file_folder, cam);
   teabox_tracker.initDetection(opt_learning_data_file_name);
   teabox_tracker.setValiditycMoFunction(checkValiditycMo);
@@ -487,8 +568,8 @@ int main(int argc, const char* argv[])
 
       // Move the head in the default position
       {
-        //AL::ALValue names_head       = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
-        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-23), vpMath::rad(19.2), vpMath::rad(9), vpMath::rad(0) );
+        //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll" );
+        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(19.2), vpMath::rad(9), vpMath::rad(0) );
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_head, angles_head, fractionMaxSpeed);
       }
@@ -632,7 +713,7 @@ int main(int argc, const char* argv[])
       if (opt_model.find("milkbox"))
         teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*7/8 );
       else if (opt_model.find("spraybox"))
-        teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6.5/8 );
+        teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6/8 );
       else
         teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*7/8 );
 
@@ -695,16 +776,28 @@ int main(int argc, const char* argv[])
         vpDisplay::displayText(I, vpImagePoint(25,10), "Middle click to move left arm from current position in open loop", vpColor::red);
       }
       if (click_done) {
+
+        vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_filename, name_oMh_open_loop);
+        std::vector<float> handMbox_desired_;
+        handMbox_desired.convert(handMbox_desired_);
+
+
+
+
         switch(button) {
-        case vpMouseButton::button1:
-          moveLArmFromOrToRestPosition(robot, true); // move up
-        case vpMouseButton::button2:
-          if (! moveToDesiredLHandPosition(robot, cMo_teabox, eMc, learned_oMh_filename, name_oMh_open_loop)) {
-            std::cout << "Cannot move to the open loop position, maybe " << name_oMh_open_loop << " doesn't exits in " << learned_oMh_filename << std::endl;
-            return 0;
-          }
+
+        case vpMouseButton::button1:{
+          moveLArmFromRestPosition(robot, handMbox_desired_ ); // move up
           click_done = false;
-          break;
+        }break;
+
+        case vpMouseButton::button2:{
+          float velocity = 0.2;
+          int axis_mask = 63; // Control position and orientation
+          robot.getProxy()->setTransform("LArm", 0, handMbox_desired_, velocity, axis_mask);
+          click_done = false;
+        }break;
+
         default:
           break;
         }
@@ -883,7 +976,7 @@ int main(int argc, const char* argv[])
           //static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
           servo_head.setCurrentFeature( qrcode_cog_cur );
-          servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*6/8, I.getWidth()/2) );
+          servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*6/8, I.getWidth()*2/8) );
           vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::yellow, 3);
 
           vpColVector q_dot_head = servo_head.computeControlLaw(servo_time_init);
@@ -1217,7 +1310,7 @@ int main(int argc, const char* argv[])
       case MoveArmToRestPosition: {
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to move arm to rest", vpColor::red);
         if (click_done && button == vpMouseButton::button1)  {
-          moveLArmFromOrToRestPosition(robot, false); // move down to rest
+          moveLArmToRestPosition(robot); // move down to rest
           click_done = false;
           interaction_status = WaitForEnd;
         }
