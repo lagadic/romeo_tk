@@ -83,7 +83,7 @@ int main(int argc, const char* argv[])
     AL::ALTextToSpeechProxy tts(opt_ip, 9559);
     tts.setLanguage("English");
 
-    std::string phraseToSay = "Hi, Do you want the box?";
+    std::string phraseToSay = "Hi Do you want the box?";
 
 
     int id = tts.post.say(phraseToSay);
@@ -91,7 +91,7 @@ int main(int argc, const char* argv[])
 
     // Open Proxy for the recognition speech
     AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
-    //asr.unsubscribe("Test_ASR");
+   // asr.unsubscribe("Test_ASR");
     asr.setLanguage("English");
     std::vector<std::string> vocabulary;
     vocabulary.push_back("yes");
@@ -117,7 +117,7 @@ int main(int argc, const char* argv[])
       if ( ((result[0]) == vocabulary[0]) && (double (result[1]) > 0.0 )) //YES
       {
         std::cout << "Recognized: " << result[0] << "with confidence of " << result[1] << std::endl;
-        phraseToSay = "Ok, I will do it.";
+        phraseToSay = "Ok, I am going to do it.";
         id = tts.post.say(phraseToSay);
         tts.wait(id,2000);
         break;
@@ -130,7 +130,6 @@ int main(int argc, const char* argv[])
         id = tts.post.say(phraseToSay);
         tts.wait(id,2000);
         break;
-
       }
 
      vpTime::sleepMs(500);

@@ -15,7 +15,7 @@
 #include <visp/vpImage.h>
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
-#include <vpMBDetection.h>
+#include <vpMbLocalization.h>
 
 #include <vpRomeoTkConfig.h>
 #include <visp/vpPlot.h>
@@ -49,16 +49,16 @@ int main(int argc, char ** argv) {
     std::string opt_ip;
 
 
-      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
-      std::string opt_model = opt_folder + "milkbox";
-     // std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
-       std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
+//      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
+//      std::string opt_model = opt_folder + "milkbox";
+//     // std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
+//       std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
 
 
 
-//      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
-//      std::string opt_model = opt_folder + "spraybox";
-//      std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
+      std::string opt_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
+      std::string opt_model = opt_folder + "spraybox";
+      std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
 
 
     bool opt_learning = false;
@@ -102,7 +102,7 @@ int main(int argc, char ** argv) {
     vpHomogeneousMatrix cMo;
     vpPoseVector cPo;
 
-    vpMBDetection tracker_box(opt_model, opt_folder, cam);
+    vpMbLocalization tracker_box(opt_model, opt_folder, cam);
 
     bool click_done = false;
     vpMouseButton::vpMouseButtonType button;
