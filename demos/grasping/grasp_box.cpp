@@ -337,13 +337,12 @@ int main(int argc, const char* argv[])
   std::string opt_face_cascade_name = std::string(ROMEOTK_DATA_FOLDER) + "/face/haarcascade_frontalface_alt.xml";
 
   //  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/milkbox";
-  //  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
+  //  std::string config_detection_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
   //  //std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
   //  std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
 
-  std::string configuration_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/";
-  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/spraybox/spraybox";
-  std::string opt_learning_data_file_name = "spraybox/teabox_learning_data_test.bin";
+  std::string opt_box_name = "tabascobox";
+  std::string  opt_data_folder = std::string(ROMEOTK_DATA_FOLDER);
 
 
   bool opt_learn_open_loop_position = false;
@@ -356,15 +355,38 @@ int main(int argc, const char* argv[])
   bool opt_record_video = false;
   StateTeaboxTracker_t state_teabox_tracker = Acquisition; //TakeTea; //Acquisition; //TakeTea;
 
+  // Learning folder in /tmp/$USERNAME
+  std::string username;
+  // Get the user login name
+  vpIoTools::getUserName(username);
+
+  // Create a log filename to save velocities...
+  std::string learning_folder;
+#if defined(_WIN32)
+  learning_folder ="C:/temp/" + username;
+#else
+  learning_folder ="/tmp/" + username;
+#endif
+  // Test if the output path exist. If no try to create it
+  if (vpIoTools::checkDirectory(learning_folder) == false) {
+    try {
+      // Create the dirname
+      vpIoTools::makeDirectory(learning_folder);
+    }
+    catch (vpException &e) {
+      std::cout << "Cannot create " << learning_folder << std::endl;
+      std::cout << "Error: " << e.getMessage() <<std::endl;
+      return 0;
+    }
+  }
+
   for (unsigned int i=0; i<argc; i++) {
     if (std::string(argv[i]) == "--ip")
       opt_ip = argv[i+1];
-    else if (std::string(argv[i]) == "--model")
-      opt_model = std::string(argv[i+1]);
-    else if (std::string(argv[i]) == "--detection-configuration-file-folder")
-      configuration_file_folder = std::string(argv[i+1]);
-    else if (std::string(argv[i]) == "--learning-data-file-name")
-      opt_learning_data_file_name = std::string(argv[i+1]);
+    else if (std::string(argv[i]) == "--box-name")
+      opt_box_name = std::string(argv[i+1]);
+    else if (std::string(argv[i]) == "--data-folder")
+      opt_data_folder = std::string(argv[i+1]);
     else if (std::string(argv[i]) == "--learn-open-loop-position")
       opt_learn_open_loop_position = true;
     else if (std::string(argv[i]) == "--learn-grasp-position")
@@ -384,9 +406,10 @@ int main(int argc, const char* argv[])
     else if (std::string(argv[i]) == "--haar")
       opt_face_cascade_name = std::string(argv[i+1]);
     else if (std::string(argv[i]) == "--help") {
-      std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--model <path to mbt cao model>]" << std::endl;
+      std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--box-name]" << std::endl;
       std::cout << "       [--haar <haarcascade xml filename>] [--no-interaction] [--learn-open-loop-position] " << std::endl;
       std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] "<< std::endl;
+      std::cout << "       [--data-folder] "<< std::endl;
       std::cout << "       [--opt-language-english] [--opt-record-video] [--help]" << std::endl;
       return 0;
     }
@@ -397,6 +420,12 @@ int main(int argc, const char* argv[])
     std::cout << "Use --haar <haarcascade xml filename> or --no-interaction to disable face detection " << std::endl;
     return 0;
   }
+
+  std::string box_folder = opt_data_folder + "/objects/" + opt_box_name  + "/";
+
+  std::string config_detection_file_folder = box_folder + "detection/";
+  std::string opt_model = box_folder + "model/" + opt_box_name;
+  std::string opt_learning_data_file_name = config_detection_file_folder + "learning/" + "learning_data.bin";
 
   vpFaceTracker *face_tracker;
   if (opt_interaction) {
@@ -439,12 +468,14 @@ int main(int argc, const char* argv[])
   vpHomogeneousMatrix eMc = g.get_eMc();
 
   // Initialize constant parameters
-  std::string learned_oMh_filename = "oMh_Tea_Box_offset.xml"; // This file contains the following two transf. matrix:
-  std::string name_oMh_open_loop =  "oMh_Tea_Box_open_loop"; // Offset position Hand w.r.t the object (Open loop)
-  std::string name_oMh_grasp =  "oMh_Tea_Box_grasp"; // Offset position Hand w.r.t the object to grasp it (Close loop)
+  std::string learned_oMh_filename = "grasping_pose.xml"; // This file contains the following two transf. matrix:
+  std::string learned_oMh_path = box_folder + "grasping/LArm"; // This file contains the following two transf. matrix:
+
+  std::string name_oMh_open_loop =  "oMh_open_loop"; // Offset position Hand w.r.t the object (Open loop)
+  std::string name_oMh_grasp =  "oMh_close_loop"; // Offset position Hand w.r.t the object to grasp it (Close loop)
 
   // Initialization detection and localiztion teabox
-  vpMbLocalization teabox_tracker(opt_model, configuration_file_folder, cam);
+  vpMbLocalization teabox_tracker(opt_model, config_detection_file_folder, cam);
   teabox_tracker.initDetection(opt_learning_data_file_name);
   teabox_tracker.setValiditycMoFunction(checkValiditycMo);
   bool onlyDetection = true;
@@ -473,7 +504,8 @@ int main(int argc, const char* argv[])
   vpHomogeneousMatrix oMe_LArm;
   vpHomogeneousMatrix cdMo_learned;
 
-  std::string filename_transform = std::string(ROMEOTK_DATA_FOLDER) + "/transformation.xml";
+  std::string filename_transform = opt_data_folder + "/transformation.xml";
+
   std::string name_transform = "qrcode_M_e_LArm";
   {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
@@ -490,7 +522,7 @@ int main(int argc, const char* argv[])
   if (! opt_learn_grasp_position && ! opt_learn_open_loop_position) {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
 
-    if (pm.parse(oMh_Tea_Box_grasp, learned_oMh_filename, name_oMh_grasp) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+    if (pm.parse(oMh_Tea_Box_grasp, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_grasp) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
       std::cout << "Cannot found the homogeneous matrix named " << name_oMh_grasp<< "." << std::endl;
       return 0;
     }
@@ -567,6 +599,8 @@ int main(int argc, const char* argv[])
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click: automatic detection, Central: manual", vpColor::red);
 
       // Move the head in the default position
+
+      if(!opt_learn_grasp_position && !opt_learn_open_loop_position)
       {
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll" );
         AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(19.2), vpMath::rad(9), vpMath::rad(0) );
@@ -748,9 +782,9 @@ int main(int argc, const char* argv[])
       vpDisplay::displayText(I, vpImagePoint(25,10), "and left click to learn the pose", vpColor::red);
       if (click_done && button == vpMouseButton::button1) {
         vpHomogeneousMatrix teaboxMh_offset;
-        if (learnDesiredLHandOpenLoopPosition(robot, cMo_teabox, eMc, learned_oMh_filename, name_oMh_open_loop, teaboxMh_offset)) {
+        if (learnDesiredLHandOpenLoopPosition(robot, cMo_teabox, eMc, learning_folder + "/" + learned_oMh_filename, name_oMh_open_loop, teaboxMh_offset)) {
           printPose("The learned open loop pose: ", teaboxMh_offset);
-          std::cout << "is saved in " << learned_oMh_filename << std::endl;
+          std::cout << "is saved in " << learning_folder + "/" + learned_oMh_filename << std::endl;
           return 0;
         }
       }
@@ -761,9 +795,9 @@ int main(int argc, const char* argv[])
       vpDisplay::displayText(I, vpImagePoint(25,10), "and left click to learn the pose", vpColor::red);
       if (click_done && button == vpMouseButton::button1) {
         vpHomogeneousMatrix teaboxMh_grasp;
-        if (learnDesiredLHandGraspingPosition(robot, cMo_teabox, cMo_qrcode, learned_oMh_filename, name_oMh_grasp, teaboxMh_grasp)) {
+        if (learnDesiredLHandGraspingPosition(robot, cMo_teabox, cMo_qrcode, learning_folder + "/" + learned_oMh_filename, name_oMh_grasp, teaboxMh_grasp)) {
           printPose("The learned grasping pose: ", teaboxMh_grasp);
-          std::cout << "is saved in " << learned_oMh_filename << std::endl;
+          std::cout << "is saved in " << learning_folder + "/" + learned_oMh_filename << std::endl;
           return 0;
         }
       }
@@ -777,7 +811,7 @@ int main(int argc, const char* argv[])
       }
       if (click_done) {
 
-        vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_filename, name_oMh_open_loop);
+        vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_open_loop);
         std::vector<float> handMbox_desired_;
         handMbox_desired.convert(handMbox_desired_);
 
@@ -906,8 +940,8 @@ int main(int argc, const char* argv[])
           double theta_error_grasp;
           vpColVector u_error_grasp;
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
-
-          if ( (sqrt(t_error_grasp.sumSquare()) < 0.005) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
+          std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+          if ( (sqrt(t_error_grasp.sumSquare()) < 0.006) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
           {
             robot.stop(jointNames_larm);
             state_teabox_tracker = TakeTea;
