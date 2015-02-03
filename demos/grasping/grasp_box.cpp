@@ -2,6 +2,7 @@
 #include <string>
 #include <list>
 #include <iterator>
+#include <time.h>
 
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
@@ -61,11 +62,28 @@ typedef enum {
   LearnDesiredLHandOpenLoopPosition,
   LearnDesiredLHandGraspPosition,
   MoveToDesiredLHandPosition,
+  LearnBoxDetection,
   WaitGrasping, // wait for a click to start grasping
   Grasping,
   TakeTea,
   Interaction
 } StateTeaboxTracker_t;
+
+
+
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+
+
 
 
 /*!
@@ -338,11 +356,11 @@ int main(int argc, const char* argv[])
 
   //  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/milkbox";
   //  std::string config_detection_file_folder = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/";
-  //  //std::string opt_learning_data_file_name = "teabox_learning_data_test.bin";
-  //  std::string opt_learning_data_file_name = "milkbox/milk_learning_data.bin";
+  //  //std::string learning_data_file_name = "teabox_learning_data_test.bin";
+  //  std::string learning_data_file_name = "milkbox/milk_learning_data.bin";
 
   std::string opt_box_name = "tabascobox";
-  std::string  opt_data_folder = std::string(ROMEOTK_DATA_FOLDER);
+  std::string opt_data_folder = std::string(ROMEOTK_DATA_FOLDER);
 
 
   bool opt_learn_open_loop_position = false;
@@ -353,6 +371,7 @@ int main(int argc, const char* argv[])
   bool opt_interaction = true;
   bool opt_language_english = false;
   bool opt_record_video = false;
+  bool opt_learning_detection = false;
   StateTeaboxTracker_t state_teabox_tracker = Acquisition; //TakeTea; //Acquisition; //TakeTea;
 
   // Learning folder in /tmp/$USERNAME
@@ -360,7 +379,7 @@ int main(int argc, const char* argv[])
   // Get the user login name
   vpIoTools::getUserName(username);
 
-  // Create a log filename to save velocities...
+  // Create a log filename to save new files...
   std::string learning_folder;
 #if defined(_WIN32)
   learning_folder ="C:/temp/" + username;
@@ -380,6 +399,8 @@ int main(int argc, const char* argv[])
     }
   }
 
+
+
   for (unsigned int i=0; i<argc; i++) {
     if (std::string(argv[i]) == "--ip")
       opt_ip = argv[i+1];
@@ -391,6 +412,8 @@ int main(int argc, const char* argv[])
       opt_learn_open_loop_position = true;
     else if (std::string(argv[i]) == "--learn-grasp-position")
       opt_learn_grasp_position = true;
+    else if (std::string(argv[i]) == "--learn-detection-box")
+      opt_learning_detection = true;
     else if (std::string(argv[i]) == "--plot-time")
       opt_plotter_time = true;
     else if (std::string(argv[i]) == "--plot-arm")
@@ -409,7 +432,7 @@ int main(int argc, const char* argv[])
       std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--box-name]" << std::endl;
       std::cout << "       [--haar <haarcascade xml filename>] [--no-interaction] [--learn-open-loop-position] " << std::endl;
       std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] "<< std::endl;
-      std::cout << "       [--data-folder] "<< std::endl;
+      std::cout << "       [--data-folder] [--learn-detection-box]"<< std::endl;
       std::cout << "       [--opt-language-english] [--opt-record-video] [--help]" << std::endl;
       return 0;
     }
@@ -421,11 +444,16 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
-  std::string box_folder = opt_data_folder + "/objects/" + opt_box_name  + "/";
-
+  std::string objects_folder = "objects/" + opt_box_name  + "/";
+  std::string box_folder = opt_data_folder +"/" + objects_folder;
   std::string config_detection_file_folder = box_folder + "detection/";
+  std::string objects_folder_det_learning = config_detection_file_folder + "learning/";
   std::string opt_model = box_folder + "model/" + opt_box_name;
-  std::string opt_learning_data_file_name = config_detection_file_folder + "learning/" + "learning_data.bin";
+  std::string learning_detection_file = "learning_data.bin";
+  std::string learning_data_file_name = objects_folder_det_learning + learning_detection_file;
+
+  std::cout << learning_data_file_name << std::endl;
+
 
   vpFaceTracker *face_tracker;
   if (opt_interaction) {
@@ -476,7 +504,7 @@ int main(int argc, const char* argv[])
 
   // Initialization detection and localiztion teabox
   vpMbLocalization teabox_tracker(opt_model, config_detection_file_folder, cam);
-  teabox_tracker.initDetection(opt_learning_data_file_name);
+  teabox_tracker.initDetection(learning_data_file_name);
   teabox_tracker.setValiditycMoFunction(checkValiditycMo);
   bool onlyDetection = true;
   teabox_tracker.setOnlyDetection(onlyDetection);
@@ -502,7 +530,7 @@ int main(int argc, const char* argv[])
 
   // Constant transformation Target Frame to LArm end-effector (LWristPitch)
   vpHomogeneousMatrix oMe_LArm;
-  vpHomogeneousMatrix cdMo_learned;
+  //vpHomogeneousMatrix cdMo_learned;
 
   std::string filename_transform = opt_data_folder + "/transformation.xml";
 
@@ -595,7 +623,7 @@ int main(int argc, const char* argv[])
     // track teabox
     if(state_teabox_tracker == Acquisition) {
 
-      if (! opt_record_video)
+      if (! opt_record_video && !opt_learning_detection)
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click: automatic detection, Central: manual", vpColor::red);
 
       // Move the head in the default position
@@ -608,24 +636,33 @@ int main(int argc, const char* argv[])
         robot.getProxy()->setAngles(jointNames_head, angles_head, fractionMaxSpeed);
       }
 
-      if ( teabox_tracker.track(I))
+
+      if (opt_learning_detection)
       {
-        cMo_teabox =  teabox_tracker.get_cMo();
-        teabox_tracker.getTracker()->display(I, cMo_teabox, cam, vpColor::red, 2);
-        vpDisplay::displayFrame(I, cMo_teabox, cam, 0.025, vpColor::none, 3);
+        state_teabox_tracker = LearnBoxDetection;
       }
 
-      if (click_done && button == vpMouseButton::button1) {
-        onlyDetection = false;
-        state_teabox_tracker = WaitTeaBoxTracking;
-        teabox_tracker.setOnlyDetection(onlyDetection); // Stop only detection
-        click_done = false;
-      }
+      else{
+        if ( teabox_tracker.track(I) )
+        {
+          cMo_teabox =  teabox_tracker.get_cMo();
+          teabox_tracker.getTracker()->display(I, cMo_teabox, cam, vpColor::red, 2);
+          vpDisplay::displayFrame(I, cMo_teabox, cam, 0.025, vpColor::none, 3);
+        }
 
-      if (click_done && button == vpMouseButton::button2) {
-        teabox_tracker.setManualDetection();
-        state_teabox_tracker = TeaBoxTracking;
-        click_done = false;
+
+        if (click_done && button == vpMouseButton::button1 ) {
+          onlyDetection = false;
+          state_teabox_tracker = WaitTeaBoxTracking;
+          teabox_tracker.setOnlyDetection(onlyDetection); // Stop only detection
+          click_done = false;
+        }
+
+        if (click_done && button == vpMouseButton::button2 ) {
+          teabox_tracker.setManualDetection();
+          state_teabox_tracker = TeaBoxTracking;
+          click_done = false;
+        }
       }
     }
 
@@ -656,9 +693,9 @@ int main(int argc, const char* argv[])
 
     }
 
-    if (state_teabox_tracker == TeaBoxTracking || state_teabox_tracker == MoveToDesiredLHandPosition
-        || state_teabox_tracker == LearnDesiredLHandOpenLoopPosition || state_teabox_tracker == LearnDesiredLHandGraspPosition
-        || state_teabox_tracker == WaitGrasping || state_teabox_tracker == Grasping ) {
+    if ( (state_teabox_tracker == TeaBoxTracking || state_teabox_tracker == MoveToDesiredLHandPosition
+          || state_teabox_tracker == LearnDesiredLHandOpenLoopPosition || state_teabox_tracker == LearnDesiredLHandGraspPosition
+          || state_teabox_tracker == WaitGrasping || state_teabox_tracker == Grasping) && !opt_learning_detection) {
       try {
         if ( teabox_tracker.track(I))
         {
@@ -692,7 +729,7 @@ int main(int argc, const char* argv[])
     //      qrcode_tracker.setForceDetection(false);
     status_qrcode_tracker = qrcode_tracker.track(I);
 
-    if (status_qrcode_tracker) { // display the tracking results
+    if (status_qrcode_tracker && !opt_learning_detection) { // display the tracking results
       cMo_qrcode = qrcode_tracker.get_cMo();
       //printPose("cMo qrcode: ", cMo_qrcode);
       // The qrcode frame is only displayed when PBVS is active or learning
@@ -802,6 +839,52 @@ int main(int argc, const char* argv[])
         }
       }
     }
+
+
+    if (state_teabox_tracker == LearnBoxDetection)
+    {
+
+      vpDisplay::displayText(I, 10, 10, "Click left to continue with detection...", vpColor::red);
+      vpDisplay::displayText(I, 30, 10, "Click central to save...", vpColor::red);
+
+      if (click_done && button == vpMouseButton::button1) {
+        click_done = false;
+        teabox_tracker.learnObject(I);
+
+      }
+
+      else if (click_done && button == vpMouseButton::button2)
+      {
+
+        //std::string path_folder = learning_folder + "/" + objects_folder + "learning/";
+        std::string path_folder = learning_folder + "/learning_" + opt_box_name + "_" + currentDateTime() + "/";
+        // Test if the output path exist. If no try to create it
+        if (vpIoTools::checkDirectory(path_folder) == false) {
+          try {
+            // Create the dirname
+            vpIoTools::makeDirectory(path_folder);
+          }
+          catch (vpException &e) {
+            std::cout << "Cannot create " << path_folder << std::endl;
+            std::cout << "Error: " << e.getMessage() <<std::endl;
+            return 0;
+          }
+        }
+
+
+
+        std::string path_file = path_folder + learning_detection_file;
+        teabox_tracker.saveLearningData(path_file);
+        std::cout << "Learning data are saved in " << path_file << std::endl;
+        click_done = false;
+        return 0;
+      }
+
+    }
+
+
+
+
 
     if (state_teabox_tracker == MoveToDesiredLHandPosition && status_teabox_tracker && teabox_servo_converged) {
       if (! opt_record_video)
