@@ -1,0 +1,25 @@
+V1
+# points
+8
+0     0      0       # pt 0
+0     0     -0.132   # pt 1
+0.054 0     -0.132   # pt 2
+0.054 0      0       # pt 3
+0     0.03   0       # pt 4
+0.054 0.03   0       # pt 5
+0.054 0.03  -0.132   # pt 6
+0     0.03  -0.132   # pt 7
+# lines
+0
+# faces from lines
+0
+# faces from point
+6
+4 0 1 2 3 # left face
+4 0 3 5 4 # top face
+4 4 5 6 7
+4 1 7 6 2
+4 0 4 7 1 # rear face
+4 6 5 3 2 # front face
+# cercles
+0
