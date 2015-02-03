@@ -39,8 +39,8 @@
  * Giovanni Claudio
  *
  *****************************************************************************/
-#ifndef __vpMBDetection_h__
-#define __vpMBDetection_h__
+#ifndef __vpMbLocalization_h__
+#define __vpMbLocalization_h__
 
 #include <iostream>
 
@@ -65,7 +65,7 @@
   \endcode
  */
 
-class vpMBDetection
+class vpMbLocalization
 {
 public:
   typedef enum {
@@ -99,8 +99,8 @@ protected:
 
 
 public:
-  vpMBDetection(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam);
-  virtual ~vpMBDetection();
+  vpMbLocalization(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam);
+  virtual ~vpMbLocalization();
 
   bool detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo);
 

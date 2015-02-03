@@ -40,7 +40,7 @@
  *
  *****************************************************************************/
 
-# include <vpMBDetection.h>
+# include <vpMbLocalization.h>
 
 
 /*!
@@ -48,7 +48,7 @@
   - number iteration detection: 5
   - automatic detection (m_manual_detection = false)
   */
-vpMBDetection::vpMBDetection(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam)
+vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam)
   : m_tracker(NULL), m_keypoint_learning(NULL), m_keypoint_detection (NULL), m_init_detection (false),m_state(detection),
     m_num_iteration_detection(6), m_counter_detection(0), m_manual_detection (0), m_checkValiditycMo(NULL), m_only_detection(false), m_status_single_detection(false)
 
@@ -94,20 +94,20 @@ vpMBDetection::vpMBDetection(const std::string &model, const std::string &config
   The learning data will be saved in a binary format.
   * \param I : image to process.
  */
-void vpMBDetection::learnObject(vpImage<unsigned char> &I)
+void vpMbLocalization::learnObject(vpImage<unsigned char> &I)
 {
 
   //Keypoint declaration and initialization
-//  static bool firstTime = false;
-//  if (firstTime == false) {
-    m_tracker->initClick(I, m_model + ".init", true);
-//    firstTime = true;
-//  }
-//  else {
-//    m_tracker->resetTracker();
-//    m_tracker->initClick(I, m_model + ".init", true);
-//  }
- // m_tracker->track(I);
+  //  static bool firstTime = false;
+  //  if (firstTime == false) {
+  m_tracker->initClick(I, m_model + ".init", true);
+  //    firstTime = true;
+  //  }
+  //  else {
+  //    m_tracker->resetTracker();
+  //    m_tracker->initClick(I, m_model + ".init", true);
+  //  }
+  // m_tracker->track(I);
 
   //Keypoints reference detection
   double elapsedTime;
@@ -142,7 +142,7 @@ void vpMBDetection::learnObject(vpImage<unsigned char> &I)
   * \param name_file
  */
 
-void vpMBDetection::saveLearningData(const std::string &name_new_file_learning_data)
+void vpMbLocalization::saveLearningData(const std::string &name_new_file_learning_data)
 {
   const std::string name = name_new_file_learning_data;
   m_keypoint_learning->saveLearningData( name, true);
@@ -153,7 +153,7 @@ void vpMBDetection::saveLearningData(const std::string &name_new_file_learning_d
   This function check if the matrix A is an identity matrix or not
   * \param A Homogeneus matrix to check
  */
-bool vpMBDetection::isIdentity(const vpHomogeneousMatrix & A) const
+bool vpMbLocalization::isIdentity(const vpHomogeneousMatrix & A) const
 {
   bool flag = 1;
   for (unsigned int i = 0; i < A.getRows(); i++)
@@ -176,7 +176,7 @@ bool vpMBDetection::isIdentity(const vpHomogeneousMatrix & A) const
   This function will detect and track an object. If the tracking fails the algorithm will try to detect again the box.
   \param I : Image to process.
  */
-bool vpMBDetection::track(const vpImage<unsigned char> &I)
+bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 {
 
   bool status_tracking = false;
@@ -189,7 +189,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
     //vpDisplay::displayText(I, 10, 10, "Detection and localization in process...", vpColor::red);
     if (!m_init_detection)
     {
-      std::cout << "ERROR: You need to call before vpMBDetection::initDetection(const std::string &name_file_learning_data).";
+      std::cout << "ERROR: You need to call before vpMbLocalization::initDetection(const std::string &name_file_learning_data).";
       return false;
     }
 
@@ -205,7 +205,8 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
         //Matching and pose estimation
         if(m_keypoint_detection->matchPoint(I, m_cam, cMo_temp, error, elapsedTime))
         {
-          std::cout <<"elaspedtime: " << elapsedTime << std::endl;
+          if (verbose)
+            std::cout <<"elaspedtime: " << elapsedTime << std::endl;
           if (!isIdentity(cMo_temp) && m_checkValiditycMo(cMo_temp))
           {
 
@@ -218,7 +219,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
             }
 
             //Display
-            m_tracker->display(I, cMo_temp, m_cam, vpColor::red, 2);
+            m_tracker->display(I, cMo_temp, m_cam, vpColor::cyan, 1);
             vpDisplay::displayFrame(I, cMo_temp, m_cam, 0.025, vpColor::none, 3);
 
             vpPoseVector cPo;
@@ -309,7 +310,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
 
   if (m_state == tracking ) {
 
-//    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
+    //    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
 
     try
     {
@@ -318,7 +319,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
       //printPose("cMo teabox: ", cMo_teabox);
       if (!m_checkValiditycMo(m_cMo))
         std::cout << "OK";
-     // m_tracker->display(I, m_cMo, m_cam, vpColor::red, 2);
+      // m_tracker->display(I, m_cMo, m_cam, vpColor::red, 2);
       //vpDisplay::displayFrame(I, m_cMo, m_cam, 0.025, vpColor::none, 3);
       status_tracking = true;
 
@@ -343,7 +344,7 @@ bool vpMBDetection::track(const vpImage<unsigned char> &I)
   * \param I
   * \param cMo
  */
-bool vpMBDetection::detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo)
+bool vpMbLocalization::detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo)
 {
   double error, elapsedTime;
   return m_keypoint_detection->matchPoint(I, m_cam, cMo, error, elapsedTime);
@@ -351,14 +352,14 @@ bool vpMBDetection::detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix 
 /*!
   Init the detection loading the learning data.
  */
-void vpMBDetection::initDetection(const std::string &name_file_learning_data)
+void vpMbLocalization::initDetection(const std::string &name_file_learning_data)
 {
   m_keypoint_detection->loadLearningData(name_file_learning_data, true);
   m_init_detection = true;
 }
 
 
-vpMBDetection::~vpMBDetection()
+vpMbLocalization::~vpMbLocalization()
 {
   delete m_tracker;
   delete m_keypoint_learning;
