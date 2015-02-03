@@ -47,9 +47,11 @@
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpExponentialMap.h>
+#include <visp/vpXmlParserHomogeneousMatrix.h>
 
 #include <visp_naoqi/vpNaoqiRobot.h>
 #include <visp_naoqi/vpNaoqiGrabber.h>
+#include <vpRomeoTkConfig.h>
 
 
 void moveArmCartesianPosition(/*const*/ vpNaoqiRobot &robot, const vpColVector &cart_delta_pos,
@@ -120,24 +122,45 @@ int main(int argc, const char* argv[])
 
     vpColVector cart_delta_pos(6);
     cart_delta_pos = 0;
-    cart_delta_pos[2] = -0.10;
+    cart_delta_pos[2] = 0.03;
 
     vpHomogeneousMatrix oMe_LArm;
-    for(unsigned int i=0; i<3; i++)
-      oMe_LArm[i][i] = 0; // remove identity
-    oMe_LArm[0][2] =  1;
-    oMe_LArm[1][0] = -1;
-    oMe_LArm[2][1] = -1;
 
-    oMe_LArm[0][3] = -0.04;
-    oMe_LArm[1][3] =  0.045;
-    oMe_LArm[2][3] = -0.045;
+    std::string filename_transform = std::string(ROMEOTK_DATA_FOLDER) + "/transformation.xml";
+    //std::string name_transform = "qrcode_M_e_LArm";
+
+    std::string name_transform = "qrcode_M_e_LArm_bakfrom2015_01_26";
+     {
+      vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+
+      if (pm.parse(oMe_LArm, filename_transform, name_transform) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+        std::cout << "Cannot found the homogeneous matrix named " << name_transform << "." << std::endl;
+        return 0;
+      }
+      else
+        std::cout << "Homogeneous matrix " << name_transform <<": " << std::endl << oMe_LArm << std::endl;
+    }
+
+
+
+
+
+
+//    for(unsigned int i=0; i<3; i++)
+//      oMe_LArm[i][i] = 0; // remove identity
+//    oMe_LArm[0][2] =  1;
+//    oMe_LArm[1][0] = -1;
+//    oMe_LArm[2][1] = -1;
+
+//    oMe_LArm[0][3] = -0.04;
+//    oMe_LArm[1][3] =  0.045;
+//    oMe_LArm[2][3] = -0.045;
 
     vpVelocityTwistMatrix oVe_LArm(oMe_LArm);
 
 
 
-    moveArmCartesianPosition(robot, cart_delta_pos, "LArm", 5, oVe_LArm);
+    moveArmCartesianPosition(robot, cart_delta_pos, "LArm", 5.0, oVe_LArm);
 
     return 0;
 

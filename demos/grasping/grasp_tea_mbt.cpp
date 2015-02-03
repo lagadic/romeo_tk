@@ -1,10 +1,3 @@
-/**
- *
- * This example demonstrates how to get images from the robot remotely, how
- * to track a blob using all the four joints of the Romeo Head;
- *
- */
-
 #include <iostream>
 #include <string>
 #include <list>
@@ -431,7 +424,7 @@ int main(int argc, const char* argv[])
     g.acquire(I);
     vpDisplay::display(I);
 
-    vpImageIo::write(I, "milkbox.ppm");
+    //vpImageIo::write(I, "milkbox.ppm");
 
     if (! opt_record_video)
       vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Right click to quit", vpColor::red);
@@ -449,7 +442,6 @@ int main(int argc, const char* argv[])
       float fractionMaxSpeed  = 0.1f;
       robot.getProxy()->setAngles(jointNames_head, angles_head, fractionMaxSpeed);
      }
-
 
 
       if (click_done && button == vpMouseButton::button1) {

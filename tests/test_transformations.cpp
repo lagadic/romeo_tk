@@ -25,6 +25,8 @@
 #include <visp/vpPlot.h>
 #include <visp/vpFeatureBuilder.h>
 #include <visp/vpXmlParserCamera.h>
+#include <visp/vpXmlParserHomogeneousMatrix.h>
+#include <visp/vpPose.h>
 
 #include <iostream>
 #include <string>
@@ -33,7 +35,12 @@
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
-#include <visp/vpPose.h>
+
+
+
+
+#include <vpRomeoTkConfig.h>
+
 
 #define SAVE 0
 
@@ -98,15 +105,33 @@ int main(int argc, char* argv[])
 
   // Constant transformation Target Frame to LArm end-effector (LWristPitch)
   vpHomogeneousMatrix oMe_LArm;
-  for(unsigned int i=0; i<3; i++)
-    oMe_LArm[i][i] = 0; // remove identity
-  oMe_LArm[0][0] = 1;
-  oMe_LArm[1][2] = 1;
-  oMe_LArm[2][1] = -1;
+//  for(unsigned int i=0; i<3; i++)
+//    oMe_LArm[i][i] = 0; // remove identity
+//  oMe_LArm[0][0] = 1;
+//  oMe_LArm[1][2] = 1;
+//  oMe_LArm[2][1] = -1;
 
-  oMe_LArm[0][3] = -0.045;
-  oMe_LArm[1][3] = -0.04;
-  oMe_LArm[2][3] = -0.045;
+//  oMe_LArm[0][3] = -0.045;
+//  oMe_LArm[1][3] = -0.04;
+//  oMe_LArm[2][3] = -0.045;
+
+
+  std::string filename_transform = std::string(ROMEOTK_DATA_FOLDER) + "/transformation.xml";
+  std::string name_transform = "qrcode_M_e_LArm";
+  {
+    vpXmlParserHomogeneousMatrix pm; // Create a XML parser
+
+    if (pm.parse(oMe_LArm, filename_transform, name_transform) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
+      std::cout << "Cannot found the homogeneous matrix named " << name_transform << "." << std::endl;
+      return 0;
+    }
+    else
+      std::cout << "Homogeneous matrix " << name_transform <<": " << std::endl << oMe_LArm << std::endl;
+  }
+
+
+
+
 
 
 
@@ -163,11 +188,13 @@ int main(int argc, char* argv[])
 
 
       // Compute torsoMlcam_visp using the estimated extrinsic camera paramenters
-      vpHomogeneousMatrix eMc;
 
-      std::ifstream f("eMc.dat") ;
-      eMc.load(f) ;
-      f.close() ;
+//      std::ifstream f("eMc.dat") ;
+//      eMc.load(f) ;
+//      f.close() ;
+
+      vpHomogeneousMatrix eMc = g.get_eMc();
+
       std::cout << "eMc:\n" << eMc << std::endl;
       torsoMlcam_visp_est = torsoMHeadRoll * eMc;
 
