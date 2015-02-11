@@ -202,8 +202,26 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
         double error, elapsedTime;
         vpHomogeneousMatrix cMo_temp;
 
+        if (m_only_detection)
+        {
+          unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
+
+          vpImagePoint iPref, iPcur, cog(0, 0);
+          for (unsigned int i = 0; i < nbMatch; i++)
+          {
+            m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
+            cog +=iPcur;
+          }
+
+          m_keypoint_detection->display(I);
+
+          m_cog = cog/nbMatch;
+          m_status_single_detection = true;
+
+        }
+
         //Matching and pose estimation
-        if(m_keypoint_detection->matchPoint(I, m_cam, cMo_temp, error, elapsedTime))
+        else if(m_keypoint_detection->matchPoint(I, m_cam, cMo_temp, error, elapsedTime))
         {
           if (verbose)
             std::cout <<"elaspedtime: " << elapsedTime << std::endl;
@@ -225,21 +243,22 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
             vpPoseVector cPo;
             cPo.buildFrom(cMo_temp);
             m_stack_cMo_detection.stackMatrices(cPo.t());
-            if (m_only_detection)
-            {
-              unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
-              vpImagePoint iPref, iPcur, cog(0, 0);
-              for (unsigned int i = 0; i < nbMatch; i++)
-              {
-                m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
-                cog +=iPcur;
-              }
+//            if (m_only_detection)
+//            {
+//              unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
 
-              m_cog = cog/nbMatch;
-              m_status_single_detection = true;
+//              vpImagePoint iPref, iPcur, cog(0, 0);
+//              for (unsigned int i = 0; i < nbMatch; i++)
+//              {
+//                m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
+//                cog +=iPcur;
+//              }
 
-            }
-            else
+//              m_cog = cog/nbMatch;
+//              m_status_single_detection = true;
+
+//            }
+            //else
               m_counter_detection ++;
 
           }
