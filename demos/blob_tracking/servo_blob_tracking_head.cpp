@@ -5,7 +5,7 @@
  *
  */
 
-/*! \example servo_blob_tracking_visp_all_head.cpp */
+/*! \example servo_blob_tracking_head.cpp */
 
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>

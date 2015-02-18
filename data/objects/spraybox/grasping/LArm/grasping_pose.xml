@@ -11,13 +11,13 @@
     <name>oMh_open_loop</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>0.130848</tx>
-      <ty>0.024861</ty>
-      <tz>-0.062395</tz>
+      <tx>0.150943</tx>
+      <ty>0.000456</ty>
+      <tz>-0.068502</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>0.244644</theta_ux>
-      <theta_uy>-2.176968</theta_uy>
-      <theta_uz>2.189205</theta_uz>
+      <theta_ux>-0.154819</theta_ux>
+      <theta_uy>-1.958450</theta_uy>
+      <theta_uz>1.778981</theta_uz>
     </values>
   </homogeneous_transformation>
   <!--Homogeneous Matrix-->
@@ -26,13 +26,13 @@
     <name>oMh_close_loop</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>0.129407</tx>
-      <ty>-0.029198</ty>
-      <tz>-0.041713</tz>
+      <tx>0.132508</tx>
+      <ty>-0.036532</ty>
+      <tz>-0.035236</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>0.321275</theta_ux>
-      <theta_uy>-2.482717</theta_uy>
-      <theta_uz>1.185032</theta_uz>
+      <theta_ux>0.165746</theta_ux>
+      <theta_uy>-2.657632</theta_uy>
+      <theta_uz>0.803135</theta_uz>
     </values>
   </homogeneous_transformation>
 </root>
