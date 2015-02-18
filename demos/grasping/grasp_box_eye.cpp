@@ -1158,6 +1158,8 @@ int main(int argc, const char* argv[])
             robot.stop(joint_names_arm_head);
             state_teabox_tracker = TakeTea;
             grasp_servo_converged = true;
+            g.setCameraParameter(AL::kCameraAutoExpositionID, 1);
+            g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 1);
             //            if (click_done && button == vpMouseButton::button1 && cpt_iter_servo_grasp > 150) {
             //              click_done = false;
             //            }
