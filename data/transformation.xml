@@ -11,30 +11,13 @@
     <name>qrcode_M_e_LArm</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>-0.035372</tx>
-      <ty>0.029306</ty>
-      <tz>0.035007</tz>
+      <tx>-0.040563</tx>
+      <ty>0.038155</ty>
+      <tz>0.022402</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.407473</theta_ux>
-      <theta_uy>-0.351011</theta_uy>
-      <theta_uz>0.085571</theta_uz>
-    </values>
-  </homogeneous_transformation>
-
-
-  <!--Homogeneous Matrix-->
-  <homogeneous_transformation>
-    <!--Name of the homogeneous matrix-->
-    <name>e_M_LArm_qrcode.bak</name>
-    <values>
-      <!--Translation vector with values in meters-->
-      <tx>0.027620</tx>
-      <ty>-0.047557</ty>
-      <tz>0.017635</tz>
-      <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.176438</theta_ux>
-      <theta_uy>-1.306378</theta_uy>
-      <theta_uz>0.802121</theta_uz>
+      <theta_ux>0.845801</theta_ux>
+      <theta_uy>-0.213441</theta_uy>
+      <theta_uz>0.361544</theta_uz>
     </values>
   </homogeneous_transformation>
 </root>

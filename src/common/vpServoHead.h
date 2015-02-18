@@ -42,6 +42,9 @@ public:
   {
     return ( m_task_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init) );
   }
+
+
+
   void set_eJe(const vpMatrix &eJe) { m_task_head.set_eJe(eJe);}
   void set_cVe(const vpVelocityTwistMatrix &cVe) { m_task_head.set_cVe(cVe);}
   void setCameraParameters(const vpCameraParameters &cam) {m_cam = cam;}
