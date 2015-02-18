@@ -1126,12 +1126,6 @@ int main(int argc, const char* argv[])
             plotter_arm->plot(1, cpt_iter_servo_grasp, q_dot_larm);
           }
 
-          if (cpt_iter_servo_grasp > 100) {
-            if (opt_record_video)
-              vpDisplay::displayText(I, vpImagePoint(10,10), "Click to continue", vpColor::red);
-            else
-              vpDisplay::displayText(I, vpImagePoint(10,10), "Cannot converge. Click to continue", vpColor::red);
-          }
 
           vpTranslationVector t_error_grasp = cdMc.getTranslationVector();
           vpRotationMatrix R_error_grasp;
@@ -1142,6 +1136,23 @@ int main(int argc, const char* argv[])
           vpColVector u_error_grasp;
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
           std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+
+          vpColVector q_dot_arm_head = q_dot_larm;
+
+          q_dot_arm_head.stack(q_dot_tot);
+
+          robot.setVelocity(joint_names_arm_head,q_dot_arm_head);
+
+
+          if (cpt_iter_servo_grasp > 100) {
+            if (opt_record_video)
+              vpDisplay::displayText(I, vpImagePoint(10,10), "Click to continue", vpColor::red);
+            else
+              vpDisplay::displayText(I, vpImagePoint(10,10), "Cannot converge. Click to continue", vpColor::red);
+          }
+
+
+
           if ( (sqrt(t_error_grasp.sumSquare()) < 0.006) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
           {
             robot.stop(joint_names_arm_head);
@@ -1156,11 +1167,10 @@ int main(int argc, const char* argv[])
               click_done = false;
           }
 
-          vpColVector q_dot_arm_head = q_dot_larm;
 
-          q_dot_arm_head.stack(q_dot_tot);
 
-          robot.setVelocity(joint_names_arm_head,q_dot_arm_head);
+
+
 
         }
         cpt_iter_servo_grasp ++;
