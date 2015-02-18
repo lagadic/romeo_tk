@@ -76,8 +76,7 @@ const std::string currentDateTime() {
     struct tm  tstruct;
     char       buf[80];
     tstruct = *localtime(&now);
-    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
-    // for more information about date/time format
+
     strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
 
     return buf;
@@ -134,7 +133,7 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
     AL::ALValue time1 = 1.0f;
     AL::ALValue pos2 = AL::ALValue::array(0.3599576950073242, 0.3060062527656555, 0.01953596994280815, -1.1513646841049194, -0.18644022941589355, -0.1889418214559555);
     AL::ALValue time2 = 2.0f;
-    AL::ALValue time3 = 5.6f;
+    AL::ALValue time3 = 6.0f;
 
     AL::ALValue path;
     path.arrayPush(pos1);
@@ -278,7 +277,7 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
   {
     // Hack: TODO remove when naoqi fixed
     vpHomogeneousMatrix Mhack;
-    Mhack[1][3] = -0.030; // add Y - 0.025 offset
+    Mhack[1][3] = -0.025; // add Y - 0.025 offset
     tMh_desired = tMh_desired * Mhack;
   }
 
@@ -372,7 +371,7 @@ int main(int argc, const char* argv[])
   bool opt_language_english = false;
   bool opt_record_video = false;
   bool opt_learning_detection = false;
-  StateTeaboxTracker_t state_teabox_tracker = Acquisition; //TakeTea; //Acquisition; //TakeTea;
+  StateTeaboxTracker_t state_teabox_tracker = Acquisition; //Interaction;// Acquisition; //TakeTea;
 
   // Learning folder in /tmp/$USERNAME
   std::string username;
@@ -422,7 +421,7 @@ int main(int argc, const char* argv[])
       opt_plotter_qrcode_pose = true;
     else if (std::string(argv[i]) == "--no-interaction")
       opt_interaction = false;
-    else if (std::string(argv[i]) == "--opt-language-english")
+    else if (std::string(argv[i]) == "--english")
       opt_language_english = true;
     else if (std::string(argv[i]) == "--opt-record-video")
       opt_record_video = true;
@@ -433,7 +432,7 @@ int main(int argc, const char* argv[])
       std::cout << "       [--haar <haarcascade xml filename>] [--no-interaction] [--learn-open-loop-position] " << std::endl;
       std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] "<< std::endl;
       std::cout << "       [--data-folder] [--learn-detection-box]"<< std::endl;
-      std::cout << "       [--opt-language-english] [--opt-record-video] [--help]" << std::endl;
+      std::cout << "       [--english] [--opt-record-video] [--help]" << std::endl;
       return 0;
     }
   }
@@ -493,7 +492,9 @@ int main(int argc, const char* argv[])
   vpDisplay::setTitle(I, "Right camera view");
 
   // Initialize constant transformations
-  vpHomogeneousMatrix eMc = g.get_eMc();
+  vpHomogeneousMatrix eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion);
+
+  std::cout << "eMc: " << eMc << std::endl;
 
   // Initialize constant parameters
   std::string learned_oMh_filename = "grasping_pose.xml"; // This file contains the following two transf. matrix:
@@ -574,6 +575,9 @@ int main(int argc, const char* argv[])
   vpColVector q_dot_head(jointNames_head.size(), 0);
   vpColVector q_dot_larm(jointNames_larm.size(), 0);
 
+  //Open the Hand
+  robot.getProxy()->setAngles("LHand", 1., 1.);
+
   // Common
   vpMouseButton::vpMouseButtonType button;
   unsigned long loop_iter = 0;
@@ -607,10 +611,20 @@ int main(int argc, const char* argv[])
     plotter_time->initGraph(0, 1);
   }
 
+  cv::Mat cvI;
   while(1) {
     double loop_time_start = vpTime::measureTimeMs();
     //std::cout << "Loop iteration: " << loop_iter << std::endl;
+//    if (color_detection) {
+//      g.acquire(cvI);
+//      vpImageConvert::convert(cvI, I);
+//    }
+//    else {
+//      g.acquire(cvI);
+//    }
+
     g.acquire(I);
+
     vpDisplay::display(I);
 
     //vpImageIo::write(I, "milkbox.ppm");
@@ -884,8 +898,6 @@ int main(int argc, const char* argv[])
 
 
 
-
-
     if (state_teabox_tracker == MoveToDesiredLHandPosition && status_teabox_tracker && teabox_servo_converged) {
       if (! opt_record_video)
       {
@@ -897,9 +909,6 @@ int main(int argc, const char* argv[])
         vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_open_loop);
         std::vector<float> handMbox_desired_;
         handMbox_desired.convert(handMbox_desired_);
-
-
-
 
         switch(button) {
 
@@ -1146,11 +1155,12 @@ int main(int argc, const char* argv[])
       case LiftTeabox: {
         // Open loop upward motion of the hand
         vpColVector cart_delta_pos(6, 0);
-        cart_delta_pos[2] = -0.12;
+        cart_delta_pos[1] = -0.12;
         double delta_t = 5;
 
         static vpCartesianDisplacement moveCartesian;
-        if (moveCartesian.computeVelocity(robot, cart_delta_pos, delta_t, "LArm", oVe_LArm)) {
+        vpVelocityTwistMatrix V;
+        if (moveCartesian.computeVelocity(robot, cart_delta_pos, delta_t, "LArm", V)) {
           robot.setVelocity(moveCartesian.getJointNames(), moveCartesian.getJointVelocity());
         }
         else {
@@ -1320,6 +1330,7 @@ int main(int argc, const char* argv[])
 
           q_dot_head = servo_head.computeControlLaw(servo_time_init);
           robot.setVelocity(jointNames_head, q_dot_head);
+
 
           // Compute the distance in pixel between the target and the center of the image
           double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);

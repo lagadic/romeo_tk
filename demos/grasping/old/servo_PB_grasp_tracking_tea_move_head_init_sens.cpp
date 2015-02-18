@@ -1,10 +1,12 @@
 /**
  *
  * This example demonstrates how to get images from the robot remotely, how
- * to track a blob using all the four joints of the Romeo Head;
+ * to detect a object with a target of four blobs on it and to graps it (from the side).
+ * For this demo we use a box of tea and we track simultaneously all the 8 blobs (4 on the object and 4 on the hands).
+ * The head is moving in order to center the cog of the 8 blobs on the image. The Arm start from rest and goes in open
+ * loop near the object.
  *
  */
-
 // Aldebaran includes.
 #include <alproxies/altexttospeechproxy.h>
 
