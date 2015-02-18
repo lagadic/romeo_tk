@@ -1,5 +1,5 @@
 set(source 
-  servo_blob_tracking_visp_all_head.cpp
+  servo_blob_tracking_head.cpp
   ) 
 
 foreach(src ${source})
