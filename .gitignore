@@ -2,3 +2,4 @@
 CMakeLists.txt.user*
 build-toolchain_romeo*
 *.dat
+*.0.pos

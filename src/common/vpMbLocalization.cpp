@@ -185,7 +185,8 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 
   if (m_state == detection ) {
 
-    std::cout << "DETECTION PHASE"<< std::endl ;
+    if (verbose)
+      std::cout << "DETECTION PHASE"<< std::endl ;
     //vpDisplay::displayText(I, 10, 10, "Detection and localization in process...", vpColor::red);
     if (!m_init_detection)
     {
@@ -202,30 +203,12 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
         double error, elapsedTime;
         vpHomogeneousMatrix cMo_temp;
 
-        if (m_only_detection)
-        {
-          unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
-
-          vpImagePoint iPref, iPcur, cog(0, 0);
-          for (unsigned int i = 0; i < nbMatch; i++)
-          {
-            m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
-            cog +=iPcur;
-          }
-
-          m_keypoint_detection->display(I);
-
-          m_cog = cog/nbMatch;
-          m_status_single_detection = true;
-
-        }
-
         //Matching and pose estimation
-        else if(m_keypoint_detection->matchPoint(I, m_cam, cMo_temp, error, elapsedTime))
+        if(m_keypoint_detection->matchPoint(I, m_cam, cMo_temp, error, elapsedTime))
         {
           if (verbose)
             std::cout <<"elaspedtime: " << elapsedTime << std::endl;
-          if (!isIdentity(cMo_temp) && m_checkValiditycMo(cMo_temp))
+          if (!isIdentity(cMo_temp) )//&& m_checkValiditycMo(cMo_temp))
           {
 
             //Tracker set pose
@@ -243,22 +226,21 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
             vpPoseVector cPo;
             cPo.buildFrom(cMo_temp);
             m_stack_cMo_detection.stackMatrices(cPo.t());
-//            if (m_only_detection)
-//            {
-//              unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
+            if (m_only_detection)
+            {
+              unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
+              vpImagePoint iPref, iPcur, cog(0, 0);
+              for (unsigned int i = 0; i < nbMatch; i++)
+              {
+                m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
+                cog +=iPcur;
+              }
 
-//              vpImagePoint iPref, iPcur, cog(0, 0);
-//              for (unsigned int i = 0; i < nbMatch; i++)
-//              {
-//                m_keypoint_detection->getMatchedPoints(i, iPref, iPcur);
-//                cog +=iPcur;
-//              }
+              m_cog = cog/nbMatch;
+              m_status_single_detection = true;
 
-//              m_cog = cog/nbMatch;
-//              m_status_single_detection = true;
-
-//            }
-            //else
+            }
+            else
               m_counter_detection ++;
 
           }
@@ -275,26 +257,26 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
         for (unsigned int i = 0; i<6; i++)
           cMo_[i] = vpColVector::median( m_stack_cMo_detection.getCol(i));
 
-        std::cout<< "Median: " << std::endl << cMo_<<std::endl;
+        //std::cout<< "Median: " << std::endl << cMo_<<std::endl;
         unsigned int pose_ok_counter = 0;
         vpColVector translation_median = cMo_.getCol(0,0,3);
 
-        std::cout<< "translation_median " << translation_median <<std::endl;
-        //vpDisplay::getClick(I);
+        //std::cout<< "translation_median " << translation_median <<std::endl;
+
 
         for (unsigned int i = 0; i < m_stack_cMo_detection.getRows()-1 ;i++ )
         {
 
           double distance_from_median = sqrt((translation_median.t() - m_stack_cMo_detection.getRow(i,0,3)).sumSquare());
-          std::cout<< "Distance " << i << ":" << std::endl << distance_from_median<<std::endl;
+          //std::cout<< "Distance " << i << ":" << std::endl << distance_from_median<<std::endl;
 
           if ( distance_from_median < 0.5) //0.005 )//&& (theta_error_grasp < vpMath::rad(3)) )
           {
             pose_ok_counter++;
-            std::cout<< "Ok for pose number: " << i <<std::endl;
+            //std::cout<< "Ok for pose number: " << i <<std::endl;
           }
         }
-        std::cout<< "Pose counter ok: " << std::endl << pose_ok_counter<<std::endl;
+        //std::cout<< "Pose counter ok: " << std::endl << pose_ok_counter<<std::endl;
 
 
         if (pose_ok_counter >= int (0.75 * double (m_num_iteration_detection)) )
@@ -336,8 +318,8 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
       m_tracker->track(I);
       m_tracker->getPose(m_cMo);
       //printPose("cMo teabox: ", cMo_teabox);
-      if (!m_checkValiditycMo(m_cMo))
-        std::cout << "OK";
+      //if (!m_checkValiditycMo(m_cMo))
+      // std::cout << "OK";
       // m_tracker->display(I, m_cMo, m_cam, vpColor::red, 2);
       //vpDisplay::displayFrame(I, m_cMo, m_cam, 0.025, vpColor::none, 3);
       status_tracking = true;
