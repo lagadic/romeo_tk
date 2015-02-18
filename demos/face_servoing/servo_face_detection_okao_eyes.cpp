@@ -29,7 +29,10 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  * Description:
- * This example demonstrates how to control the robot remotely in position and velocity.
+ *   Connect to Romeo robot, grab, display images using ViSP and start face detection with Okao library running on the robot.
+ *   More over all the four joints of Romeo's head plus the two joint of the Left eye are controlled by visual servoing to center
+ *   the detected head in the image.
+ *   By default, this example connect to a robot with ip address: 198.18.0.1.
  *
  * Authors:
  * Giovanni Claudio
