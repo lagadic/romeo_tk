@@ -1,6 +1,10 @@
-
-romeo_face_detection
+Romeo_tk
 ====================
+
+# Installation
+
+## Prerequisites
+* [Install Aldebaran SDK C++](http://jokla.me/install-sdk-c-naoqi/) 
 
 # Howto build in debug
 
