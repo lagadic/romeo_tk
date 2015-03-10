@@ -16,6 +16,8 @@ Romeo_tk
 
 `$ qibuild make -c toolchain_romeo`
 
+where `toolchain_romeo` is the name of the toolchain you created previously, `-Dvisp_naoqi_DIR` has to point to the folder /sdk/cmake in the build folder of the project visp_naoqi, `-DVISP_DIR` points to the build directory of ViSP
+
 * If you want to build in release run:
 
 `$ qibuild configure --release -c toolchain_romeo -Dvisp_naoqi_DIR=/change_with_your_path/visp_naoqi/build-toolchain_romeo/sdk/cmake -DVISP_DIR=/change_with_your_path/ViSP/ViSP-build-release`
