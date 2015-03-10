@@ -7,7 +7,7 @@ Romeo_tk
 * [Install Aldebaran SDK C++](http://jokla.me/install-sdk-c-naoqi/)
 * [Install VispNaoqi](http://jokla.me/visp_naoqi/)
 
-## Howto build romeo_tk
+## How to build romeo_tk
 
 * Clone the repository: `git clone http://www.github.com/lagadic/romeo_tk.git`
 * Go via terminal in the folder romeo_tk:
