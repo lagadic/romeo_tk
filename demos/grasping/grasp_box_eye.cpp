@@ -407,6 +407,10 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
+
+  if (opt_learning_detection)
+    opt_no_color_tracking = true;
+
   StateTeaboxTracker_t state_teabox_tracker;
   if (opt_no_color_tracking)
     state_teabox_tracker = Acquisition;
@@ -501,7 +505,6 @@ int main(int argc, const char* argv[])
   double servo_head_time_init = 0;
   double servo_arm_time_init = 0;
   std::vector<std::string> jointNames_head =  robot.getBodyNames("Head");
-
 
   std::vector<std::string> jointNames = robot.getBodyNames("Head");
   //jointNames.pop_back(); // We don't consider  the last joint of the head = HeadRoll
@@ -682,7 +685,7 @@ int main(int argc, const char* argv[])
         bool static firstTime = true;
 
         if (firstTime) {
-          tts.post.say(" \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\  \\rspd=80\\  \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
+          tts.post.say(" \\rspd=75\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
           firstTime = false;
         }
 
@@ -742,7 +745,7 @@ int main(int argc, const char* argv[])
 
       // Move the head in the default position
 
-      if(!opt_learn_grasp_position && !opt_learn_open_loop_position && opt_no_color_tracking)
+      if(!opt_learn_grasp_position && !opt_learn_open_loop_position && opt_no_color_tracking )
       {
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
         AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(17), vpMath::rad(3.7), vpMath::rad(0), 2.0 , 2.0, 2.0, 2.0  );
@@ -1079,12 +1082,12 @@ int main(int argc, const char* argv[])
           servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*5/8, I.getWidth()/2) );
           vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::yellow, 3);
 
-          vpColVector q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
+          q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
 
-          // Add mirroring eyes
-          q_dot_tot = q_dot_head;
-          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
-          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
+          //          // Add mirroring eyes
+          //          q_dot_tot = q_dot_head;
+          //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
+          //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
 
           //robot.setVelocity(jointNames_tot, q_dot_tot);
         }
@@ -1137,6 +1140,21 @@ int main(int argc, const char* argv[])
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
           std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
 
+          vpVelocityTwistMatrix cVo(cMo_qrcode);
+          vpMatrix cJe = cVo * oJo;
+
+          // Compute the feed-forward terms
+          vpColVector sec_ter = 0.5 * ((servo_head.m_task_head.getTaskJacobianPseudoInverse() *  (servo_head.m_task_head.getInteractionMatrix() * cJe)) * q_dot_larm);
+          std::cout <<"Second Term:" <<sec_ter << std::endl;
+
+          q_dot_head = q_dot_head + sec_ter;
+
+          // Add mirroring eyes
+          q_dot_tot = q_dot_head;
+          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
+          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
+
+
           vpColVector q_dot_arm_head = q_dot_larm;
 
           q_dot_arm_head.stack(q_dot_tot);
@@ -1168,10 +1186,6 @@ int main(int argc, const char* argv[])
             if (click_done && button == vpMouseButton::button1)
               click_done = false;
           }
-
-
-
-
 
 
         }
