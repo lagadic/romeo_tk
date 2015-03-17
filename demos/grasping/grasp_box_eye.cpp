@@ -37,6 +37,7 @@
 #include <vpCartesianDisplacement.h>
 #include <vpRomeoTkConfig.h>
 #include <vpColorDetection.h>
+#include <vpJointLimitAvoidance.h>
 
 #define SAVE 0
 #define USE_PLOTTER
@@ -133,8 +134,8 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
     AL::ALValue pos1 = AL::ALValue::array(0.2852230966091156, 0.3805413246154785, -0.17208018898963928, -1.4664039611816406, 0.28257742524147034, 0.17258954048156738);
     AL::ALValue time1 = 1.0f;
     AL::ALValue pos2 = AL::ALValue::array(0.3599576950073242, 0.3060062527656555, 0.01953596994280815, -1.1513646841049194, -0.18644022941589355, -0.1889418214559555);
-    AL::ALValue time2 = 2.0f;
-    AL::ALValue time3 = 6.0f;
+    AL::ALValue time2 = 2.5f;
+    AL::ALValue time3 = 5.0f;
 
     AL::ALValue path;
     path.arrayPush(pos1);
@@ -192,7 +193,7 @@ void moveLArmToRestPosition(const vpNaoqiRobot &robot)
 
     AL::ALValue chainName  = AL::ALValue::array ("LArm");
     AL::ALValue space      = AL::ALValue::array (0); // Torso
-    AL::ALValue axisMask   =  AL::ALValue::array (63);
+    AL::ALValue axisMask   = AL::ALValue::array (63);
 
     robot.getProxy()->positionInterpolations(chainName, space, path, axisMask, times);
 
@@ -208,13 +209,20 @@ void moveLArmToRestPosition(const vpNaoqiRobot &robot)
 
 bool learnDesiredLHandOpenLoopPosition(const vpNaoqiRobot &robot, const vpHomogeneousMatrix &cMo,
                                        const vpHomogeneousMatrix &eMc, const std::string &out_filename,
-                                       const std::string &transform_name, vpHomogeneousMatrix &oMh_sens)
+                                       const std::string &transform_name, vpHomogeneousMatrix &oMh_sens, const bool r_eye)
 {
   // Trasformation from Torso to Hand sensor
   vpHomogeneousMatrix tMh_sens (robot.getProxy()->getTransform("LArm",0,true));
 
+  std::string name_last_joint;
+  if (r_eye)
+    name_last_joint = "REyePitch";
+  else
+    name_last_joint = "LEyePitch";
+
+
   // Trasformation from Torso to LEyePitch
-  vpHomogeneousMatrix torsoLEyePitch(robot.getProxy()->getTransform("LEyePitch", 0, true));
+  vpHomogeneousMatrix torsoLEyePitch(robot.getProxy()->getTransform(name_last_joint, 0, true));
 
   vpHomogeneousMatrix torsoMlcam = torsoLEyePitch * eMc;
 
@@ -251,7 +259,7 @@ bool learnDesiredLHandGraspingPosition(const vpNaoqiRobot &robot, const vpHomoge
 
 
 vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHomogeneousMatrix &cMo,
-                                           const vpHomogeneousMatrix &eMc, const std::string &in_filename, const std::string &transform_name)
+                                           const vpHomogeneousMatrix &eMc, const std::string &in_filename, const std::string &transform_name, const bool r_eye)
 {
 
   // Load transformation between teabox and desired position of the hand (from sensors) to initializate the tracker
@@ -269,18 +277,27 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
   else
     std::cout << "Homogeneous matrix " << transform_name <<": " << std::endl << oMe_lhand << std::endl;
 
-  vpHomogeneousMatrix torsoLEyePitch_(robot.getProxy()->getTransform("LEyePitch", 0, true));
+  std::string name_last_joint;
+  if (r_eye)
+    name_last_joint = "REyePitch";
+  else
+    name_last_joint = "LEyePitch";
+
+
+  vpHomogeneousMatrix torsoLEyePitch_(robot.getProxy()->getTransform(name_last_joint, 0, true));
+
+
   vpHomogeneousMatrix torsoMlcam_visp_init = torsoLEyePitch_ * eMc;
 
   vpHomogeneousMatrix tMh_desired;
   tMh_desired = (oMe_lhand.inverse() * cMo.inverse() * torsoMlcam_visp_init.inverse()).inverse();
 
-  //  {
-  //    // Hack: TODO remove when naoqi fixed
-  //    vpHomogeneousMatrix Mhack;
-  //    Mhack[1][3] = -0.025; // add Y - 0.025 offset
-  //    tMh_desired = tMh_desired * Mhack;
-  //  }
+  {
+    // Hack: TODO remove when naoqi fixed
+    vpHomogeneousMatrix Mhack;
+    Mhack[1][3] = -0.025; // add Y - 0.025 offset
+    tMh_desired = tMh_desired * Mhack;
+  }
 
   //  std::vector<float> tMh_desired_;
   //  tMh_desired.convert(tMh_desired_);
@@ -333,7 +350,9 @@ int main(int argc, const char* argv[])
   bool opt_record_video = false;
   bool opt_learning_detection = false;
   bool opt_no_color_tracking = false;
-
+  bool opt_Reye = false;
+  bool opt_plotter_q = false;
+  bool opt_plotter_q_sec_arm = false;
 
   // Learning folder in /tmp/$USERNAME
   std::string username;
@@ -383,19 +402,25 @@ int main(int argc, const char* argv[])
       opt_plotter_arm = true;
     else if (std::string(argv[i]) == "--plot-qrcode-pose")
       opt_plotter_qrcode_pose = true;
+    else if (std::string(argv[i]) == "--plot-q")
+      opt_plotter_q = true;
+    else if (std::string(argv[i]) == "--plot-q2-joint-avoidance")
+      opt_plotter_q_sec_arm = true;
     else if (std::string(argv[i]) == "--no-interaction")
       opt_interaction = false;
     else if (std::string(argv[i]) == "--english")
       opt_language_english = true;
     else if (std::string(argv[i]) == "--opt-record-video")
       opt_record_video = true;
+    else if (std::string(argv[i]) == "--Reye")
+      opt_Reye = true;
     else if (std::string(argv[i]) == "--haar")
       opt_face_cascade_name = std::string(argv[i+1]);
     else if (std::string(argv[i]) == "--help") {
       std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--box-name] [--opt_no_color_tracking]" << std::endl;
       std::cout << "       [--haar <haarcascade xml filename>] [--no-interaction] [--learn-open-loop-position] " << std::endl;
-      std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] "<< std::endl;
-      std::cout << "       [--data-folder] [--learn-detection-box]"<< std::endl;
+      std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] [--plot-q] "<< std::endl;
+      std::cout << "       [--data-folder] [--learn-detection-box] [--Reye] "<< std::endl;
       std::cout << "       [--english] [--opt-record-video] [--help]" << std::endl;
       return 0;
     }
@@ -446,10 +471,26 @@ int main(int argc, const char* argv[])
   /** Open the grabber for the acquisition of the images from the robot*/
   vpNaoqiGrabber g;
   g.setFramerate(15);
-  g.setCamera(2); // LEye
+
+  // Initialize constant transformations
+  vpHomogeneousMatrix eMc;
+
+  if (opt_Reye)
+  {
+    g.setCamera(3); // CameraRightEye
+    eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraRightEye");
+  }
+  else
+  {
+    g.setCamera(2); // CameraLeftEye
+    eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
+  }
+  std::cout << "eMc: " << eMc << std::endl;
   if (! opt_ip.empty())
     g.setRobotIp(opt_ip);
   g.open();
+  std::string camera_name = g.getCameraName();
+  std::cout << "Camera name: " << camera_name << std::endl;
 
   vpCameraParameters cam = g.getCameraParameters(vpCameraParameters::perspectiveProjWithoutDistortion);
   std::cout << "Camera parameters: " << cam << std::endl;
@@ -468,17 +509,14 @@ int main(int argc, const char* argv[])
   //Initialize opencv color image
   cv::Mat cvI = cv::Mat(cv::Size(g.getWidth(), g.getHeight()), CV_8UC3);
 
-  // Initialize constant transformations
-  vpHomogeneousMatrix eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithoutDistortion,"CameraLeftEye");
-
-  std::cout << "eMc: " << eMc << std::endl;
 
   // Initialize constant parameters
   std::string learned_oMh_filename = "grasping_pose.xml"; // This file contains the following two transf. matrix:
   std::string learned_oMh_path = box_folder + "grasping/LArm"; // This file contains the following two transf. matrix:
 
-  std::string name_oMh_open_loop =  "oMh_open_loop"; // Offset position Hand w.r.t the object (Open loop)
-  std::string name_oMh_grasp =  "oMh_close_loop"; // Offset position Hand w.r.t the object to grasp it (Close loop)
+  std::string name_oMh_open_loop =  "oMh_open_loop_" + camera_name; // Offset position Hand w.r.t the object (Open loop)
+  std::string name_oMh_grasp =  "oMh_close_loop_"+ camera_name; // Offset position Hand w.r.t the object to grasp it (Close loop)
+
 
   // Initialization detection and localiztion teabox
   vpMbLocalization teabox_tracker(opt_model, config_detection_file_folder, cam);
@@ -516,6 +554,15 @@ int main(int argc, const char* argv[])
   jointNames_tot.push_back(jointNamesREye.at(0));
   jointNames_tot.push_back(jointNamesREye.at(1));
   vpColVector head_pose(jointNames_tot.size(), 0);
+
+
+// Map to don't consider the HeadRoll
+  vpMatrix MAP_head(6,5);
+  for (unsigned int i = 0; i < 3 ; i++)
+    MAP_head[i][i]= 1;
+  MAP_head[4][3]= 1;
+  MAP_head[5][4]= 1;
+
 
   // Initialize Detection color class
 
@@ -562,8 +609,46 @@ int main(int argc, const char* argv[])
   vpServoArm servo_larm; // Initialize arm servoing
   std::vector<std::string> jointNames_larm =  robot.getBodyNames("LArm");
   jointNames_larm.pop_back(); // Delete last joints LHand, that we don't consider in the servo
+  const unsigned int numArmJoints =  jointNames_larm.size();
   vpVelocityTwistMatrix oVe_LArm(oMe_LArm);
   vpHomogeneousMatrix cdMc;
+
+  //Condition namber Jacobian Arm
+   double cond = 0.0;
+
+  // Initalization data for the joint avoidance limit
+  //Vector data for plotting
+  vpColVector data(13);
+
+  // Initialize the joint avoidance scheme from the joint limits
+  vpColVector jointMin = robot.getJointMin("LArm");
+  vpColVector jointMax = robot.getJointMax("LArm");
+
+  // Vector joint position of the arm
+  vpColVector q(numArmJoints);
+
+  // Vector secondary task
+  vpColVector q2_dot (numArmJoints);
+
+  vpColVector Qmiddle(numArmJoints);
+
+  std::cout << "Joint limits arm: " << std::endl;
+
+  for (unsigned int i=0; i< numArmJoints; i++)
+  {
+    Qmiddle[i] = ( jointMin[i] + jointMax[i]) /2.;
+    std::cout << " Joint " << i << " " << jointNames_larm[i]
+                 << ": min=" << vpMath::deg(jointMin[i])
+                 << " max=" << vpMath::deg(jointMax[i]) << std::endl;
+  }
+
+  double ro = 0.1;
+  double ro1 = 0.3;
+
+  vpColVector q_l0_min(numArmJoints);
+  vpColVector q_l0_max(numArmJoints);
+  vpColVector q_l1_min(numArmJoints);
+  vpColVector q_l1_max(numArmJoints);
 
 
   //Create vector containing Arm and head joints
@@ -598,6 +683,23 @@ int main(int argc, const char* argv[])
     plotter_arm->initGraph(1, q_dot_larm.size()); // d_dot
     plotter_arm->setTitle(0, "Visual features error");
     plotter_arm->setTitle(1, "joint velocities");
+
+    plotter_arm->setLegend(0, 0, "tx");
+    plotter_arm->setLegend(0, 1, "ty");
+    plotter_arm->setLegend(0, 2, "tz");
+    plotter_arm->setLegend(1, 0, "tux");
+    plotter_arm->setLegend(1, 1, "tuy");
+    plotter_arm->setLegend(1, 2, "tuz");
+
+    plotter_arm->setLegend(1, 0, "LshouderPitch");
+    plotter_arm->setLegend(1, 1, "LShoulderYaw");
+    plotter_arm->setLegend(1, 2, "LElbowRoll");
+    plotter_arm->setLegend(1, 3, "LElbowYaw");
+    plotter_arm->setLegend(1, 4, "LWristRoll");
+    plotter_arm->setLegend(1, 5, "LWristYaw");
+    plotter_arm->setLegend(1, 6, "LWristPitch");
+
+
   }
   vpPlot *plotter_qrcode_pose;
   if (opt_plotter_qrcode_pose) {
@@ -613,6 +715,82 @@ int main(int argc, const char* argv[])
     plotter_qrcode_pose->setLegend(1, 1, "tuy");
     plotter_qrcode_pose->setLegend(1, 2, "tuz");
   }
+
+
+  vpPlot *plotter_q;
+  if (opt_plotter_q) {
+
+    plotter_q = new vpPlot(1, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+100, I.display->getWindowYPosition()+60, "Values of q and limits");
+    plotter_q->initGraph(0, 13);
+
+    plotter_q->setTitle(0, "Q1 values");
+
+    plotter_q->setLegend(0, 0, "LshouderPitch");
+    plotter_q->setLegend(0, 1, "LShoulderYaw");
+    plotter_q->setLegend(0, 2, "LElbowRoll");
+    plotter_q->setLegend(0, 3, "LElbowYaw");
+    plotter_q->setLegend(0, 4, "LWristRoll");
+    plotter_q->setLegend(0, 5, "LWristYaw");
+    plotter_q->setLegend(0, 6, "LWristPitch");
+
+    plotter_q->setLegend(0, 7, "Low Limits");
+    plotter_q->setLegend(0, 8, "Upper Limits");
+    plotter_q->setLegend(0, 9, "l0 min");
+    plotter_q->setLegend(0, 10, "l0 max");
+    plotter_q->setLegend(0, 11, "l1 min");
+    plotter_q->setLegend(0, 12, "l1 max");
+
+    plotter_q->setColor(0, 7,vpColor::darkRed);
+    plotter_q->setThickness(0, 7,2);
+    plotter_q->setColor(0, 9,vpColor::darkRed);
+    plotter_q->setThickness(0, 9,2);
+    plotter_q->setColor(0, 11,vpColor::darkRed);
+    plotter_q->setThickness(0, 11,2);
+
+    plotter_q->setColor(0, 8,vpColor::darkRed);
+    plotter_q->setThickness(0, 8,2);
+    plotter_q->setColor(0, 10,vpColor::darkRed);
+    plotter_q->setThickness(0, 10,2);
+    plotter_q->setColor(0, 12,vpColor::darkRed);
+    plotter_q->setThickness(0, 12,2);
+
+  }
+
+  vpPlot *plotter_q_sec_arm;
+  if (opt_plotter_q_sec_arm) {
+    plotter_q_sec_arm = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+100, I.display->getWindowYPosition()+30, "Secondary Task");
+    plotter_q_sec_arm->initGraph(0, 7); // translations
+    plotter_q_sec_arm->initGraph(1, 7); // rotations
+
+    plotter_q_sec_arm->setTitle(0, "Q2 values");
+    plotter_q_sec_arm->setTitle(1, "Q tot values");
+
+    plotter_q_sec_arm->setLegend(0, 0, "LshouderPitch");
+    plotter_q_sec_arm->setLegend(0, 1, "LShoulderYaw");
+    plotter_q_sec_arm->setLegend(0, 2, "LElbowRoll");
+    plotter_q_sec_arm->setLegend(0, 3, "LElbowYaw");
+    plotter_q_sec_arm->setLegend(0, 4, "LWristRoll");
+    plotter_q_sec_arm->setLegend(0, 5, "LWristYaw");
+    plotter_q_sec_arm->setLegend(0, 6, "LWristPitch");
+
+    plotter_q_sec_arm->setLegend(1, 0, "LshouderPitch");
+    plotter_q_sec_arm->setLegend(1, 1, "LShoulderYaw");
+    plotter_q_sec_arm->setLegend(1, 2, "LElbowRoll");
+    plotter_q_sec_arm->setLegend(1, 3, "LElbowYaw");
+    plotter_q_sec_arm->setLegend(1, 4, "LWristRoll");
+    plotter_q_sec_arm->setLegend(1, 5, "LWristYaw");
+    plotter_q_sec_arm->setLegend(1, 6, "LWristPitch");
+
+  }
+
+
+  vpPlot *plotter_cond;
+  if (1) {
+    plotter_cond = new vpPlot(1, I.getHeight(), I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition()+10, "Loop time");
+    plotter_cond->initGraph(0, 1);
+  }
+
+
   vpPlot *plotter_time;
   if (opt_plotter_time) {
     plotter_time = new vpPlot(1, I.getHeight(), I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition()+10, "Loop time");
@@ -632,6 +810,10 @@ int main(int argc, const char* argv[])
     vpDisplay::display(I);
 
     //vpImageIo::write(I, "milkbox.ppm");
+
+    //Get Actual position of the arm joints
+    q = robot.getPosition(jointNames_larm);
+
 
     if (! opt_record_video)
       vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Right click to quit", vpColor::red);
@@ -685,7 +867,7 @@ int main(int argc, const char* argv[])
         bool static firstTime = true;
 
         if (firstTime) {
-          tts.post.say(" \\rspd=75\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
+          tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
           firstTime = false;
         }
 
@@ -698,7 +880,11 @@ int main(int argc, const char* argv[])
         vpImagePoint head_cog_cur = obj_color.getCog(j);
         vpImagePoint head_cog_des(I.getHeight()/2, I.getWidth()/2);
 
-        vpMatrix eJe = robot.get_eJe("LEye");
+        vpMatrix eJe;
+        if (opt_Reye)
+          eJe = robot.get_eJe("REye");
+        else
+          eJe = robot.get_eJe("LEye");
         servo_head.set_eJe( eJe );
         servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
@@ -748,7 +934,7 @@ int main(int argc, const char* argv[])
       if(!opt_learn_grasp_position && !opt_learn_open_loop_position && opt_no_color_tracking )
       {
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
-        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(17), vpMath::rad(3.7), vpMath::rad(0), 2.0 , 2.0, 2.0, 2.0  );
+        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(17), vpMath::rad(3.7), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
         float fractionMaxSpeed  = 0.05f;
         robot.getProxy()->setAngles(jointNames_tot, angles_head, fractionMaxSpeed);
       }
@@ -892,18 +1078,26 @@ int main(int argc, const char* argv[])
       vpAdaptiveGain lambda(1.5, .3, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
       servo_head.setLambda(lambda);
 
-      vpMatrix eJe_head = robot.get_eJe("LEye");
+
+      vpMatrix eJe_head;
+      if (opt_Reye)
+        eJe_head = robot.get_eJe("REye");
+      else
+        eJe_head = robot.get_eJe("LEye");
+
       servo_head.set_eJe(eJe_head);
       servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
       servo_head.setCurrentFeature(teabox_cog_cur);
       vpImagePoint teabox_cog_des;
-      if (opt_model.find("milkbox"))
+      if (opt_box_name == "milkbox")
         teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*7/8 );
-      else if (opt_model.find("spraybox"))
+      else if (opt_box_name =="spraybox")
         teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6/8 );
+      else if (opt_box_name =="tabascobox")
+        teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6.6/8 );
       else
-        teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*7/8 );
+        teabox_cog_des.set_ij( I.getHeight()*6/8, I.getWidth()*5.5/8 );
 
       servo_head.setDesiredFeature( teabox_cog_des );
       //vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::blue, 3);
@@ -942,7 +1136,7 @@ int main(int argc, const char* argv[])
       vpDisplay::displayText(I, vpImagePoint(25,10), "and left click to learn the pose", vpColor::red);
       if (click_done && button == vpMouseButton::button1) {
         vpHomogeneousMatrix teaboxMh_offset;
-        if (learnDesiredLHandOpenLoopPosition(robot, cMo_teabox, eMc, learning_folder + "/" + learned_oMh_filename, name_oMh_open_loop, teaboxMh_offset)) {
+        if (learnDesiredLHandOpenLoopPosition(robot, cMo_teabox, eMc, learning_folder + "/" + learned_oMh_filename, name_oMh_open_loop, teaboxMh_offset, opt_Reye)) {
           printPose("The learned open loop pose: ", teaboxMh_offset);
           std::cout << "is saved in " << learning_folder + "/" + learned_oMh_filename << std::endl;
           return 0;
@@ -1010,7 +1204,7 @@ int main(int argc, const char* argv[])
       }
       if (click_done) {
 
-        vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_open_loop);
+        vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_open_loop, opt_Reye);
         std::vector<float> handMbox_desired_;
         handMbox_desired.convert(handMbox_desired_);
 
@@ -1057,8 +1251,8 @@ int main(int argc, const char* argv[])
             std::cout << "-- Start visual servoing of the head" << std::endl;
             servo_head_time_init = vpTime::measureTimeSecond();
             first_time_head_servo = false;
-            g.setCameraParameter(AL::kCameraAutoExpositionID, 0);
-            g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
+             g.setCameraParameter(AL::kCameraAutoExpositionID, 0);
+             g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
           }
 
           vpImagePoint teabox_cog_cur;
@@ -1071,11 +1265,18 @@ int main(int argc, const char* argv[])
           teabox_cog_cur.set_uv(u, v);
           qrcode_cog_cur = qrcode_tracker.getCog();
 
-          vpMatrix eJe_head = robot.get_eJe("LEye");
+          vpMatrix eJe_head;
+          if (opt_Reye)
+            eJe_head = robot.get_eJe("REye");
+          else
+            eJe_head = robot.get_eJe("LEye");
+
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
-          vpAdaptiveGain lambda(1, .4, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
+          //vpAdaptiveGain lambda(1, .4, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
+          vpAdaptiveGain lambda(0.6, .3, 10); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
+
           servo_head.setLambda(lambda);
 
           servo_head.setCurrentFeature( (teabox_cog_cur + qrcode_cog_cur)/2 );
@@ -1092,24 +1293,49 @@ int main(int argc, const char* argv[])
           //robot.setVelocity(jointNames_tot, q_dot_tot);
         }
 
-        // Servo arm
+        // Servo arm -pregraps
         if (! grasp_servo_converged) {
-          vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
-          //servo_larm.setLambda(0.15);
-          vpAdaptiveGain lambda(0.3, .2, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
-          servo_larm.setLambda(lambda);
-          servo_larm.set_eJe(oJo);
-          vpHomogeneousMatrix torsoMLEyePitch(robot.getProxy()->getTransform("LEyePitch", 0, true));
-          vpVelocityTwistMatrix cVtorso( (torsoMLEyePitch * eMc).inverse());
-          servo_larm.set_cVf( cVtorso );
-          vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
-          vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
-          servo_larm.set_fVe( torsoVo );
 
-          // Compute the desired position of the hand taking into account the off-set
-          cdMc = cMo_teabox * oMh_Tea_Box_grasp * cMo_qrcode.inverse() ;
+
+//          vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
+//          servo_larm.setLambda(0.15);
+//          //vpAdaptiveGain lambda(0.3, .2, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
+//          //servo_larm.setLambda(lambda);
+//          servo_larm.set_eJe(oJo);
+
+//          std::string name_last_eye_joint;
+//          if (opt_Reye)
+//            name_last_eye_joint = "REyePitch";
+//          else
+//            name_last_eye_joint = "LEyePitch";
+
+//          vpHomogeneousMatrix torsoMLEyePitch(robot.getProxy()->getTransform(name_last_eye_joint, 0, true));
+//          vpVelocityTwistMatrix cVtorso( (torsoMLEyePitch * eMc).inverse());
+//          servo_larm.set_cVf( cVtorso );
+
+//          vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
+//          vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
+//          servo_larm.set_fVe( torsoVo );
+
+//          // Compute the desired position of the hand taking into account the off-set
+//          //cdMc = cMo_teabox * oMh_Tea_Box_grasp * cMo_qrcode.inverse() ;
+
+//          cdMc = cMo_qrcode.inverse() * cMo_teabox * oMh_Tea_Box_grasp;
+//          printPose("cdMc: ", cdMc);
+//          servo_larm.setCurrentFeature(cdMc) ;
+
+
+          vpAdaptiveGain lambda(0.8, 0.05, 8);
+          servo_larm.setLambda(lambda);
+
+          servo_larm.set_eJe(robot.get_eJe("LArm"));
+          servo_larm.m_task.set_cVe(oVe_LArm);
+
+          cdMc = (cMo_qrcode.inverse() * cMo_teabox * oMh_Tea_Box_grasp).inverse();
           printPose("cdMc: ", cdMc);
           servo_larm.setCurrentFeature(cdMc) ;
+
+
 
           vpDisplay::displayFrame(I, cMo_teabox * oMh_Tea_Box_grasp , cam, 0.025, vpColor::red, 2);
 
@@ -1120,14 +1346,9 @@ int main(int argc, const char* argv[])
             first_time_arm_servo = false;
           }
 
-          q_dot_larm = servo_larm.computeControlLaw(servo_arm_time_init);
+          q_dot_larm =  - servo_larm.computeControlLaw(servo_arm_time_init);
 
           //robot.setVelocity(jointNames_larm, q_dot_larm);
-
-          if (opt_plotter_arm) {
-            plotter_arm->plot(0, cpt_iter_servo_grasp, servo_larm.m_task.getError());
-            plotter_arm->plot(1, cpt_iter_servo_grasp, q_dot_larm);
-          }
 
 
           vpTranslationVector t_error_grasp = cdMc.getTranslationVector();
@@ -1140,14 +1361,24 @@ int main(int argc, const char* argv[])
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
           std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
 
-          vpVelocityTwistMatrix cVo(cMo_qrcode);
-          vpMatrix cJe = cVo * oJo;
-
+//          vpVelocityTwistMatrix cVo(cMo_qrcode);
+//          vpMatrix cJe = cVo * oJo;
           // Compute the feed-forward terms
-          vpColVector sec_ter = 0.5 * ((servo_head.m_task_head.getTaskJacobianPseudoInverse() *  (servo_head.m_task_head.getInteractionMatrix() * cJe)) * q_dot_larm);
-          std::cout <<"Second Term:" <<sec_ter << std::endl;
+          //          vpColVector sec_ter = 0.5 * ((servo_head.m_task_head.getTaskJacobianPseudoInverse() *  (servo_head.m_task_head.getInteractionMatrix() * cJe)) * q_dot_larm);
+          //          std::cout <<"Second Term:" <<sec_ter << std::endl;
+          //q_dot_head = q_dot_head + sec_ter;
 
-          q_dot_head = q_dot_head + sec_ter;
+          vpColVector task_error = servo_larm.m_task.getError();
+          vpMatrix taskJac = servo_larm.m_task.getTaskJacobian();
+          vpMatrix taskJacPseudoInv = servo_larm.m_task.getTaskJacobianPseudoInverse();
+
+          cond = taskJacPseudoInv.cond();
+          plotter_cond->plot(0, 0, loop_iter, cond);
+
+          // Compute joint limit avoidance
+          q2_dot = computeQdotLimitAvoidance(task_error, taskJac, taskJacPseudoInv, jointMin, jointMax, q, q_dot_larm, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
+
+          //q_dot_head = q_dot_head;
 
           // Add mirroring eyes
           q_dot_tot = q_dot_head;
@@ -1155,11 +1386,25 @@ int main(int argc, const char* argv[])
           q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
 
 
-          vpColVector q_dot_arm_head = q_dot_larm;
+          vpColVector q_dot_arm_head = q_dot_larm + q2_dot;
 
           q_dot_arm_head.stack(q_dot_tot);
 
+
           robot.setVelocity(joint_names_arm_head,q_dot_arm_head);
+
+          if (opt_plotter_arm) {
+            plotter_arm->plot(0, cpt_iter_servo_grasp, servo_larm.m_task.getError());
+            plotter_arm->plot(1, cpt_iter_servo_grasp, q_dot_larm);
+          }
+
+          if (opt_plotter_q_sec_arm)
+          {
+            plotter_q_sec_arm->plot(0,loop_iter,q2_dot);
+            plotter_q_sec_arm->plot(1,loop_iter,q_dot_larm + q2_dot);
+
+          }
+
 
 
           if (cpt_iter_servo_grasp > 100) {
@@ -1241,7 +1486,12 @@ int main(int argc, const char* argv[])
           vpImagePoint qrcode_cog_cur;
           qrcode_cog_cur = qrcode_tracker.getCog();
 
-          vpMatrix eJe_head = robot.get_eJe("LEye");
+          vpMatrix eJe_head;
+          if (opt_Reye)
+            eJe_head = robot.get_eJe("REye");
+          else
+            eJe_head = robot.get_eJe("LEye");
+
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
           //servo_head.setLambda(0.4);
@@ -1470,7 +1720,15 @@ int main(int argc, const char* argv[])
 
           vpAdaptiveGain lambda(2.5, 1., 30); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
           servo_head.setLambda(lambda);
-          servo_head.set_eJe( robot.get_eJe("LEye") );
+
+          vpMatrix eJe_head;
+          if (opt_Reye)
+            eJe_head = robot.get_eJe("REye");
+          else
+            eJe_head = robot.get_eJe("LEye");
+
+          servo_head.set_eJe( eJe_head );
+
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
           servo_head.setCurrentFeature(head_cog_cur);
@@ -1624,6 +1882,50 @@ int main(int argc, const char* argv[])
     if (opt_plotter_time)
       plotter_time->plot(0, 0, loop_iter, loop_time);
 
+    if (opt_plotter_q )
+    {
+
+      // q normalized between (entre -1 et 1)
+      for (unsigned int i=0 ; i < numArmJoints ; i++) {
+        data[i] = (q[i] - Qmiddle[i]) ;
+        data[i] /= (jointMax[i] - jointMin[i]) ;
+        data[i]*=2 ;
+      }
+
+      data[numArmJoints] = -1.0;
+      data[numArmJoints+1] = 1.0;
+
+      unsigned int joint = 1;
+      double tQmin_l0 = jointMin[joint] + ro *(jointMax[joint] - jointMin[joint]);
+      double tQmax_l0 = jointMax[joint] - ro *(jointMax[joint] - jointMin[joint]);
+
+      double tQmin_l1 =  tQmin_l0 - ro * ro1 * (jointMax[joint] - jointMin[joint]);
+      double tQmax_l1 =  tQmax_l0 + ro * ro1 * (jointMax[joint] - jointMin[joint]);
+
+      data[numArmJoints+2] = 2*(tQmin_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numArmJoints+3] = 2*(tQmax_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+      data[numArmJoints+4] =  2*(tQmin_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numArmJoints+5] =  2*(tQmax_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+      plotter_q->plot(0,0,loop_iter,data[0]);
+      plotter_q->plot(0,1,loop_iter,data[1]);
+      plotter_q->plot(0,2,loop_iter,data[2]);
+      plotter_q->plot(0,3,loop_iter,data[3]);
+      plotter_q->plot(0,4,loop_iter,data[4]);
+      plotter_q->plot(0,5,loop_iter,data[5]);
+      plotter_q->plot(0,6,loop_iter,data[6]);
+
+      plotter_q->plot(0,7,loop_iter,data[7]);
+      plotter_q->plot(0,8,loop_iter,data[8]);
+
+      plotter_q->plot(0,9,loop_iter,data[9]);
+      plotter_q->plot(0,10,loop_iter,data[10]);
+      plotter_q->plot(0,11,loop_iter,data[11]);
+      plotter_q->plot(0,12,loop_iter,data[12]);
+
+    }
+
     vpDisplay::flush(I) ;
     //std::cout << "Loop time: " << vpTime::measureTimeMs() - loop_time_start << std::endl;
 
@@ -1641,6 +1943,12 @@ int main(int argc, const char* argv[])
 
   if (opt_plotter_qrcode_pose)
     delete plotter_qrcode_pose;
+
+  if (opt_plotter_q)
+    delete plotter_q;
+
+  if (opt_plotter_q_sec_arm)
+    delete plotter_q_sec_arm;
 
   return 0;
 }
