@@ -41,7 +41,7 @@ using namespace AL;
 
 double sigmoidFunction(const vpColVector & e)
 {
-  double e0 = 0.1;
+  double e0 = 0.3;
   double e1 = 0.9;
   double sig = 0.0;
 
@@ -92,7 +92,7 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
 {
 
 
-  double lambda = 0.8;
+  double lambda = 0.7;
   double lambda_l = 0.0;
 
   int n = q.size();
@@ -150,34 +150,39 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
       Pg_i = (P * g.getCol(i));
       double b = ( vpMath::abs(q1[i]) )/( vpMath::abs( Pg_i[i] ) );
 
-      if (q[i] < q_l1_min[i] || q[i] > q_l1_max[i] )
+      if (b < 1)
       {
-        q2_i = - (1 + lambda) * b * Pg_i;
-        //std::cout << "---- caso 1 "  << std::endl;
-        // std::cout << "b: " << std::endl << b << std::endl;
-        // std::cout << "Pg_i: " << std::endl << Pg_i << std::endl;
-      }
 
-      else
-      {
-        if (q[i] >= q_l0_max[i] && q[i] <= q_l1_max[i] )
+        if (q[i] < q_l1_min[i] || q[i] > q_l1_max[i] )
         {
-          //std::cout << "---- caso 2"  << std::endl;
-          lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_max[i]) / (q_l1_min[i] - q_l0_max[i])  ) + 6 ) );
-        }
-        else if (q[i] >= q_l1_min[i] && q[i] < q_l0_min[i])
-        {
-          lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_min[i]) / (q_l1_min[i] - q_l0_min[i])  ) + 6 ) );
-          //std::cout << "---- caso 3 "  << std::endl;
+          q2_i = - (1 + lambda) * b * Pg_i;
+          //std::cout << "---- caso 1 "  << std::endl;
+          // std::cout << "b: " << std::endl << b << std::endl;
+          // std::cout << "Pg_i: " << std::endl << Pg_i << std::endl;
         }
 
-        q2_i = - lambda_l * (1 + lambda)* b * Pg_i;
+        else
+        {
+          if (q[i] >= q_l0_max[i] && q[i] <= q_l1_max[i] )
+          {
+            //std::cout << "---- caso 2"  << std::endl;
+            lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_max[i]) / (q_l1_min[i] - q_l0_max[i])  ) + 6 ) );
+          }
+          else if (q[i] >= q_l1_min[i] && q[i] < q_l0_min[i])
+          {
+            lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_min[i]) / (q_l1_min[i] - q_l0_min[i])  ) + 6 ) );
+            //std::cout << "---- caso 3 "  << std::endl;
+          }
+
+          q2_i = - lambda_l * (1 + lambda)* b * Pg_i;
+        }
+
       }
+      q2 = q2 + q2_i;
+
+      // std::cout << "q2_i: " << std::endl << q2_i << std::endl;
 
     }
-    q2 = q2 + q2_i;
-
-    // std::cout << "q2_i: " << std::endl << q2_i << std::endl;
 
   }
 
@@ -186,7 +191,6 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
   return q2;
 
 }
-
 
 
 
@@ -208,8 +212,6 @@ vpColVector computeQdotLimitAvoidance(const vpColVector & e, const vpMatrix & J,
 
 
 
-
-
 void printPose(const std::string &text, const vpHomogeneousMatrix &cMo)
 {
   vpTranslationVector t;
@@ -228,62 +230,6 @@ void printPose(const std::string &text, const vpHomogeneousMatrix &cMo)
 
 int main(int argc, const char* argv[])
 {
-
-
-
-  //  // TO TEST
-
-  //  int n = 4;
-  //  double k = 0.0;
-  //  vpMatrix J(n,n);
-  //  for (unsigned int i = 0; i < n; i++)
-  //    for (unsigned int j = 0; j < n; j++)
-  //    {
-  //      J[i][j] = k;
-  //      k = k +1.0;
-  //    }
-  //  vpColVector e(4);
-
-  //  for (unsigned int i = 0; i < n; i++)
-  //    e[i] = double(i);
-  //  //e[i] = 0.0001;
-
-
-  //  vpColVector jointMin(n) ;
-  //  for (unsigned int i = 0; i < n; i++)
-  //    jointMin[i] = -0.5;
-
-
-  //  vpColVector jointMax(n) ;
-  //  for (unsigned int i = 0; i < n; i++)
-  //    jointMax[i] = 0.3;
-
-  //  vpColVector q(n) ;
-  //  for (unsigned int i = 0; i < n; i++)
-  //    q[i] = 0.1 * i;
-
-  //  vpColVector q1(n) ;
-  //  for (unsigned int i = 0; i < n; i++)
-  //    q1[i] = 0.2 * i;
-
-  //  std::cout << "J: " << std::endl << J << std::endl;
-  //  std::cout << "e: " << std::endl << e << std::endl;
-  //  std::cout << "jointMin: " << std::endl << jointMin << std::endl;
-  //  std::cout << "jointMax: " << std::endl << jointMax << std::endl;
-  //  std::cout << "q: " << std::endl << q << std::endl;
-  //  std::cout << "q1: " << std::endl << q1 << std::endl;
-
-  //  vpColVector q2 (n);
-  //  q2 =  computeQdotLimitAvoidance(e, J, J.pseudoInverse(),jointMin, jointMax, q, q1);
-
-  //  std::cout << "q2: " << std::endl << q2 << std::endl;
-
-  //  return 0;
-
-
-
-
-
 
   std::string opt_ip = "198.18.0.1";;
   bool opt_plotter_arm = false;
@@ -401,8 +347,8 @@ int main(int argc, const char* argv[])
                  << ": min=" << vpMath::deg(jointMin[i])
                  << " max=" << vpMath::deg(jointMax[i]) << std::endl;
   }
-  double ro = 0.1;
-  double ro1 = 0.5;
+  double ro = 0.2;
+  double ro1 = 0.4;
 
 
   // Initialize arm open loop servoing
@@ -412,29 +358,40 @@ int main(int argc, const char* argv[])
   robot.setStiffness(jointNames_larm, 1.f);
   vpColVector q_dot_larm(numJoints, 0);
 
+
+  robot.getProxy()->setCollisionProtectionEnabled("LArm",false);
+
   // Common
   vpMouseButton::vpMouseButtonType button;
   unsigned long loop_iter = 0;
 
+  bool onlyTranslation = false;
+
   // Plotter
+
   vpPlot *plotter_arm;
   if (opt_plotter_arm) {
-    plotter_arm = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+80, I.display->getWindowYPosition(), "Visual servoing");
-    plotter_arm->initGraph(0, 6); // visual features
+    plotter_arm = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition(), "Visual servoing");
+    if (onlyTranslation)
+      plotter_arm->initGraph(0, 3); // visual features
+    else
+      plotter_arm->initGraph(0, 6); // visual features
     plotter_arm->initGraph(1, q_dot_larm.size()); // d_dot
     plotter_arm->setTitle(0, "Visual features error");
     plotter_arm->setTitle(1, "joint velocities");
     plotter_arm->setLegend(0, 0, "tx");
     plotter_arm->setLegend(0, 1, "ty");
     plotter_arm->setLegend(0, 2, "tz");
-    plotter_arm->setLegend(0, 3, "tux");
-    plotter_arm->setLegend(0, 4, "tuy");
-    plotter_arm->setLegend(0, 5, "tuz");
-
+    if (!onlyTranslation)
+    {
+      plotter_arm->setLegend(0, 3, "tux");
+      plotter_arm->setLegend(0, 4, "tuy");
+      plotter_arm->setLegend(0, 5, "tuz");
+    }
   }
   vpPlot *plotter_qrcode_pose;
   if (opt_plotter_qrcode_pose) {
-    plotter_qrcode_pose = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition()+10, "Qrcode pose");
+    plotter_qrcode_pose = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+ 3* I.getWidth(), I.display->getWindowYPosition(), "Qrcode pose");
     plotter_qrcode_pose->initGraph(0, 3); // translations
     plotter_qrcode_pose->initGraph(1, 3); // rotations
     plotter_qrcode_pose->setTitle(0, "Pose translation");
@@ -449,7 +406,7 @@ int main(int argc, const char* argv[])
 
   vpPlot *plotter_q_sec_arm;
   if (opt_plotter_q_sec_arm) {
-    plotter_q_sec_arm = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+100, I.display->getWindowYPosition()+30, "Secondary Task");
+    plotter_q_sec_arm = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+ I.getWidth()+50, I.display->getWindowYPosition()+ 2*I.getHeight() + 60, "Secondary Task");
     plotter_q_sec_arm->initGraph(0, 7); // translations
     plotter_q_sec_arm->initGraph(1, 7); // rotations
 
@@ -478,7 +435,7 @@ int main(int argc, const char* argv[])
   vpPlot *plotter_q;
   if (opt_plotter_q) {
 
-    plotter_q = new vpPlot(1, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+100, I.display->getWindowYPosition()+60, "Values of q and limits");
+    plotter_q = new vpPlot(1, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+3*I.getWidth(), I.display->getWindowYPosition()+ 2*I.getHeight() + 60, "Values of q and limits");
     plotter_q->initGraph(0, 13);
 
     plotter_q->setTitle(0, "Q1 values");
@@ -498,7 +455,15 @@ int main(int argc, const char* argv[])
     plotter_q->setLegend(0, 11, "l1 min");
     plotter_q->setLegend(0, 12, "l1 max");
 
+    plotter_q->setColor(0, 7,vpColor::darkRed);
+    plotter_q->setColor(0, 9,vpColor::darkRed);
+    plotter_q->setColor(0, 11,vpColor::darkRed);
 
+
+    plotter_q->setColor(0, 8,vpColor::darkRed);
+    plotter_q->setColor(0, 10,vpColor::darkRed);
+    plotter_q->setColor(0, 12,vpColor::darkRed);
+    plotter_q->setThickness(0, 7,2);
 
   }
 
@@ -516,10 +481,6 @@ int main(int argc, const char* argv[])
     else
       std::cout << "Homogeneous matrix " << learned_transform_name <<": " << std::endl << cdMo_learned << std::endl;
   }
-
-  std::vector<float> head_pose, larm_pose, larm_new_pose;
-  AL::ALValue LShoulderYaw_limits;
-  float shoulderYaw_pos ;
 
 
   // Move the head in the default position
@@ -544,6 +505,7 @@ int main(int argc, const char* argv[])
 
     // track qrcode
     status_qrcode_tracker = qrcode_tracker.track(I);
+
 
     if (status_qrcode_tracker) { // display the tracking results
       cMo_qrcode = qrcode_tracker.get_cMo();
@@ -581,38 +543,59 @@ int main(int argc, const char* argv[])
 
       // Servo arm
       if (! grasp_servo_converged) {
-        vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
+        //vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
         //servo_larm.setLambda(0.2);
-        vpAdaptiveGain lambda(1.6, .6, 20);
+        vpAdaptiveGain lambda(0.8, 0.06, 8);
 
-        servo_larm.set_eJe(oJo);
-        vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
-        vpVelocityTwistMatrix cVtorso( (torsoMHeadRoll * eMc).inverse());
-        servo_larm.set_cVf( cVtorso );
-        vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
-        vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
-        servo_larm.set_fVe( torsoVo );
+        servo_larm.setLambda(lambda);
+
+//        servo_larm.set_eJe(oJo);
+//        vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
+//        vpVelocityTwistMatrix cVtorso( (torsoMHeadRoll * eMc).inverse());
+//        servo_larm.set_cVf( cVtorso );
+//        vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
+//        vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
+//        servo_larm.set_fVe( torsoVo );
+
+        //servo_larm.m_task.set_cVe();
+
+        servo_larm.set_eJe(robot.get_eJe("LArm"));
+        servo_larm.m_task.set_cVe(oVe_LArm);
 
 
-        vpHomogeneousMatrix cdMc = cdMo_learned * /*oMh_Tea_Box_grasp * */ cMo_qrcode.inverse() ;
+        //vpHomogeneousMatrix cdMc = cdMo_learned * /*oMh_Tea_Box_grasp * */ cMo_qrcode.inverse() ;
+
+        vpHomogeneousMatrix cdMc = (cdMo_learned.inverse() * cMo_qrcode) ;
         printPose("cdMc: ", cdMc);
         servo_larm.setCurrentFeature(cdMc) ;
 
         vpDisplay::displayFrame(I, cdMo_learned /* * oMh_Tea_Box_grasp */, cam, 0.025, vpColor::none, 2);
 
-        q_dot_larm = servo_larm.computeControlLaw(servo_time_init);
+        q_dot_larm = - servo_larm.computeControlLaw(servo_time_init);
+
         std::cout << "Vel arm: " << q_dot_larm.t() << std::endl;
 
         vpColVector e = servo_larm.getError();
         vpMatrix TaskJac = servo_larm.getTaskJacobian();
         vpMatrix TaskJacPseudoInv = servo_larm.getTaskJacobianPseudoInverse();
+        vpMatrix L = servo_larm.m_task.getInteractionMatrix();
+
+        vpMatrix Ieye;
+        Ieye.eye(q_dot_larm.size());
+        std::cout <<"OperatorVisp " << std::endl << Ieye-  servo_larm.m_task.getWpW()  << std::endl;
+
+        //std::cout << "cVo: " << std::endl << cVtorso*torsoVo << std::endl;
+        std::cout << "L: " << std::endl << L << std::endl;
+        //std::cout << "oJo: " << std::endl << oJo << std::endl;
+
+
 
         q = robot.getPosition(jointNames_larm);
 
         q2 = computeQdotLimitAvoidance(e, TaskJac, TaskJacPseudoInv, jointMin, jointMax, q, q_dot_larm,ro,ro1);
 
         std::cout << "q2: " << std::endl << q2 << std::endl;
-        robot.setVelocity(jointNames_larm, q_dot_larm +q2);
+        robot.setVelocity(jointNames_larm, q_dot_larm+q2);
         //robot.setVelocity(jointNames_larm, q_dot_larm);
 
         //        vpDisplay::flush(I);
@@ -670,11 +653,18 @@ int main(int argc, const char* argv[])
       data[numJoints] = -1.0;
       data[numJoints+1] = 1.0;
 
-      data[numJoints+2] = -1 + ro * 2;
-      data[numJoints+3] = 1 - ro * 2;
+      unsigned int joint = 1;
+      double tQmin_l0 = jointMin[joint] + ro *(jointMax[joint] - jointMin[joint]);
+      double tQmax_l0 = jointMax[joint] - ro *(jointMax[joint] - jointMin[joint]);
 
-      data[numJoints+4] =  data[numJoints+2] - ro * ro1 * 2;
-      data[numJoints+5] =  data[numJoints+3] + ro * ro1 * 2;
+      double tQmin_l1 =  tQmin_l0 - ro * ro1 * (jointMax[joint] - jointMin[joint]);
+      double tQmax_l1 =  tQmax_l0 + ro * ro1 * (jointMax[joint] - jointMin[joint]);
+
+      data[numJoints+2] = 2*(tQmin_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numJoints+3] = 2*(tQmax_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+      data[numJoints+4] =  2*(tQmin_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numJoints+5] =  2*(tQmax_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
 
       plotter_q->plot(0,0,loop_iter,data[0]);
       plotter_q->plot(0,1,loop_iter,data[1]);
