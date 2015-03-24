@@ -295,7 +295,7 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
   {
     // Hack: TODO remove when naoqi fixed
     vpHomogeneousMatrix Mhack;
-    Mhack[1][3] = -0.025; // add Y - 0.025 offset
+    Mhack[1][3] = -0.045; // add Y - 0.025 offset
     tMh_desired = tMh_desired * Mhack;
   }
 
@@ -556,7 +556,7 @@ int main(int argc, const char* argv[])
   vpColVector head_pose(jointNames_tot.size(), 0);
 
 
-// Map to don't consider the HeadRoll
+  // Map to don't consider the HeadRoll
   vpMatrix MAP_head(6,5);
   for (unsigned int i = 0; i < 3 ; i++)
     MAP_head[i][i]= 1;
@@ -614,7 +614,7 @@ int main(int argc, const char* argv[])
   vpHomogeneousMatrix cdMc;
 
   //Condition namber Jacobian Arm
-   double cond = 0.0;
+  double cond = 0.0;
 
   // Initalization data for the joint avoidance limit
   //Vector data for plotting
@@ -785,7 +785,7 @@ int main(int argc, const char* argv[])
 
 
   vpPlot *plotter_cond;
-  if (1) {
+  if (0) {
     plotter_cond = new vpPlot(1, I.getHeight(), I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition()+10, "Loop time");
     plotter_cond->initGraph(0, 1);
   }
@@ -867,7 +867,11 @@ int main(int argc, const char* argv[])
         bool static firstTime = true;
 
         if (firstTime) {
-          tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
+
+          if (opt_box_name == "tabascobox")
+            tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful orange box  \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
+          else
+            tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
           firstTime = false;
         }
 
@@ -935,8 +939,9 @@ int main(int argc, const char* argv[])
       {
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
         AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(17), vpMath::rad(3.7), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
-        float fractionMaxSpeed  = 0.05f;
+        float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_tot, angles_head, fractionMaxSpeed);
+
       }
 
 
@@ -1245,15 +1250,7 @@ int main(int argc, const char* argv[])
       if (status_qrcode_tracker && status_teabox_tracker) {
         // servo head to center qrcode and teabox
         static int cpt_iter_servo_grasp = 0;
-        if (1) {
-          static bool first_time_head_servo = true;
-          if (first_time_head_servo) {
-            std::cout << "-- Start visual servoing of the head" << std::endl;
-            servo_head_time_init = vpTime::measureTimeSecond();
-            first_time_head_servo = false;
-             g.setCameraParameter(AL::kCameraAutoExpositionID, 0);
-             g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
-          }
+
 
           vpImagePoint teabox_cog_cur;
           vpImagePoint qrcode_cog_cur;
@@ -1283,46 +1280,50 @@ int main(int argc, const char* argv[])
           servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*5/8, I.getWidth()/2) );
           vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::yellow, 3);
 
+          if (1) {
+            static bool first_time_head_servo = true;
+            if (first_time_head_servo) {
+              std::cout << "-- Start visual servoing of the head" << std::endl;
+              servo_head_time_init = vpTime::measureTimeSecond();
+              first_time_head_servo = false;
+              //g.setCameraParameter(AL::kCameraAutoExpositionID, 0);
+              //g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
+            }
+
           q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
 
-          //          // Add mirroring eyes
-          //          q_dot_tot = q_dot_head;
-          //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
-          //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
-
-          //robot.setVelocity(jointNames_tot, q_dot_tot);
         }
 
         // Servo arm -pregraps
         if (! grasp_servo_converged) {
 
 
-//          vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
-//          servo_larm.setLambda(0.15);
-//          //vpAdaptiveGain lambda(0.3, .2, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
-//          //servo_larm.setLambda(lambda);
-//          servo_larm.set_eJe(oJo);
+          //          vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
+          //          servo_larm.setLambda(0.15);
+          //          //vpAdaptiveGain lambda(0.3, .2, 15); // lambda(0)=2, lambda(oo)=0.8 and lambda_dot(0)=30
+          //          //servo_larm.setLambda(lambda);
+          //          servo_larm.set_eJe(oJo);
 
-//          std::string name_last_eye_joint;
-//          if (opt_Reye)
-//            name_last_eye_joint = "REyePitch";
-//          else
-//            name_last_eye_joint = "LEyePitch";
+          //          std::string name_last_eye_joint;
+          //          if (opt_Reye)
+          //            name_last_eye_joint = "REyePitch";
+          //          else
+          //            name_last_eye_joint = "LEyePitch";
 
-//          vpHomogeneousMatrix torsoMLEyePitch(robot.getProxy()->getTransform(name_last_eye_joint, 0, true));
-//          vpVelocityTwistMatrix cVtorso( (torsoMLEyePitch * eMc).inverse());
-//          servo_larm.set_cVf( cVtorso );
+          //          vpHomogeneousMatrix torsoMLEyePitch(robot.getProxy()->getTransform(name_last_eye_joint, 0, true));
+          //          vpVelocityTwistMatrix cVtorso( (torsoMLEyePitch * eMc).inverse());
+          //          servo_larm.set_cVf( cVtorso );
 
-//          vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
-//          vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
-//          servo_larm.set_fVe( torsoVo );
+          //          vpHomogeneousMatrix torsoMLWristPitch(robot.getProxy()->getTransform("LWristPitch", 0, true));
+          //          vpVelocityTwistMatrix torsoVo(torsoMLWristPitch * oMe_LArm.inverse());
+          //          servo_larm.set_fVe( torsoVo );
 
-//          // Compute the desired position of the hand taking into account the off-set
-//          //cdMc = cMo_teabox * oMh_Tea_Box_grasp * cMo_qrcode.inverse() ;
+          //          // Compute the desired position of the hand taking into account the off-set
+          //          //cdMc = cMo_teabox * oMh_Tea_Box_grasp * cMo_qrcode.inverse() ;
 
-//          cdMc = cMo_qrcode.inverse() * cMo_teabox * oMh_Tea_Box_grasp;
-//          printPose("cdMc: ", cdMc);
-//          servo_larm.setCurrentFeature(cdMc) ;
+          //          cdMc = cMo_qrcode.inverse() * cMo_teabox * oMh_Tea_Box_grasp;
+          //          printPose("cdMc: ", cdMc);
+          //          servo_larm.setCurrentFeature(cdMc) ;
 
 
           vpAdaptiveGain lambda(0.8, 0.05, 8);
@@ -1348,8 +1349,6 @@ int main(int argc, const char* argv[])
 
           q_dot_larm =  - servo_larm.computeControlLaw(servo_arm_time_init);
 
-          //robot.setVelocity(jointNames_larm, q_dot_larm);
-
 
           vpTranslationVector t_error_grasp = cdMc.getTranslationVector();
           vpRotationMatrix R_error_grasp;
@@ -1361,8 +1360,8 @@ int main(int argc, const char* argv[])
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
           std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
 
-//          vpVelocityTwistMatrix cVo(cMo_qrcode);
-//          vpMatrix cJe = cVo * oJo;
+          //          vpVelocityTwistMatrix cVo(cMo_qrcode);
+          //          vpMatrix cJe = cVo * oJo;
           // Compute the feed-forward terms
           //          vpColVector sec_ter = 0.5 * ((servo_head.m_task_head.getTaskJacobianPseudoInverse() *  (servo_head.m_task_head.getInteractionMatrix() * cJe)) * q_dot_larm);
           //          std::cout <<"Second Term:" <<sec_ter << std::endl;
@@ -1372,8 +1371,8 @@ int main(int argc, const char* argv[])
           vpMatrix taskJac = servo_larm.m_task.getTaskJacobian();
           vpMatrix taskJacPseudoInv = servo_larm.m_task.getTaskJacobianPseudoInverse();
 
-          cond = taskJacPseudoInv.cond();
-          plotter_cond->plot(0, 0, loop_iter, cond);
+          //cond = taskJacPseudoInv.cond();
+          //plotter_cond->plot(0, 0, loop_iter, cond);
 
           // Compute joint limit avoidance
           q2_dot = computeQdotLimitAvoidance(task_error, taskJac, taskJacPseudoInv, jointMin, jointMax, q, q_dot_larm, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
@@ -1421,8 +1420,8 @@ int main(int argc, const char* argv[])
             robot.stop(joint_names_arm_head);
             state_teabox_tracker = TakeTea;
             grasp_servo_converged = true;
-            g.setCameraParameter(AL::kCameraAutoExpositionID, 1);
-            g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 1);
+            //g.setCameraParameter(AL::kCameraAutoExpositionID, 1);
+            // g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 1);
             //            if (click_done && button == vpMouseButton::button1 && cpt_iter_servo_grasp > 150) {
             //              click_done = false;
             //            }
@@ -1442,8 +1441,8 @@ int main(int argc, const char* argv[])
       else {
         // state grasping but one of the tracker fails
         robot.stop(joint_names_arm_head);
-        g.setCameraParameter(AL::kCameraAutoExpositionID, 1);
-        g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 1);
+        //g.setCameraParameter(AL::kCameraAutoExpositionID, 1);
+        //g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 1);
       }
     }
 
@@ -1475,13 +1474,11 @@ int main(int argc, const char* argv[])
       }
 
       // servo head to center qrcode
-      if (grasp_status >= LiftTeabox  && grasp_status != Finished) {
+      if (grasp_status >= CloseHand  && grasp_status != Finished) {
         if (status_qrcode_tracker) {
-          static bool first_time = true;
-          if (first_time) {
-            servo_time_init = vpTime::measureTimeSecond();
-            first_time = false;
-          }
+
+
+
 
           vpImagePoint qrcode_cog_cur;
           qrcode_cog_cur = qrcode_tracker.getCog();
@@ -1495,14 +1492,22 @@ int main(int argc, const char* argv[])
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
           //servo_head.setLambda(0.4);
-          static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          //static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          vpAdaptiveGain lambda(2.5, 1., 15);
           //static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
           servo_head.setCurrentFeature( qrcode_cog_cur );
           servo_head.setDesiredFeature( vpImagePoint( I.getHeight()*6/8, I.getWidth()*2/8) );
           vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::yellow, 3);
 
-          vpColVector q_dot_head = servo_head.computeControlLaw(servo_time_init);
+
+          static bool first_time_servo = true;
+          static double servo_init;
+          if (first_time_servo) {
+            servo_init = vpTime::measureTimeSecond();
+            first_time_servo = false;
+          }
+          vpColVector q_dot_head = servo_head.computeControlLaw(servo_init);
 
           // Add mirroring eyes
           q_dot_tot = q_dot_head;
@@ -1713,6 +1718,8 @@ int main(int argc, const char* argv[])
           static bool first_time = true;
           if (first_time) {
             servo_time_init = vpTime::measureTimeSecond();
+            tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ " );
+
             first_time = false;
           }
 
@@ -1800,6 +1807,7 @@ int main(int argc, const char* argv[])
         if (click_done && button == vpMouseButton::button1) {
           click_done = false;
           robot.stop(jointNames_tot);
+          tts.post.say(" \\rspd=90\\ \\emph=2\\ I will give you the box!  \\eos=1\\ " );
           interaction_status = MoveArm;
         }
         break;
@@ -1844,7 +1852,7 @@ int main(int argc, const char* argv[])
           if (opt_language_english == false)
             phraseToSay = "Je vais te donner la boite";
           else
-            phraseToSay = "I will give you the box";
+            phraseToSay = " \\rspd=90\\ \\emph=2\\ Take it!  \\eos=1\\ " ;
           tts.post.say(phraseToSay);
           double angle = 1.0f;
           robot.getProxy()->setAngles("LHand", angle, 1.);
@@ -1927,8 +1935,8 @@ int main(int argc, const char* argv[])
     }
 
     vpDisplay::flush(I) ;
-    //std::cout << "Loop time: " << vpTime::measureTimeMs() - loop_time_start << std::endl;
 
+    //std::cout << "Loop time: " << vpTime::measureTimeMs() - loop_time_start << std::endl;
     loop_iter ++;
   }
 
