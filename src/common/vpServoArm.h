@@ -26,6 +26,7 @@ public:
 
   vpColVector computeControlLaw()
   {
+    m_task.print();
     return ( m_task.computeControlLaw() );
   }
   vpColVector computeControlLaw(double servo_time_init)
@@ -41,8 +42,8 @@ public:
   void set_fVe(const vpVelocityTwistMatrix &fVe) { m_task.set_fVe(fVe);}
   void setCurrentFeature(const vpHomogeneousMatrix &cdMc)
   {
-    m_t.buildFrom(cdMc) ;
-    m_tu.buildFrom(cdMc) ;
+   m_t.buildFrom(cdMc) ;
+   m_tu.buildFrom(cdMc) ;
   }
   void setLambda(double lambda) {m_task.setLambda(lambda);}
   void setLambda(const vpAdaptiveGain &lambda) {m_task.setLambda(lambda);}

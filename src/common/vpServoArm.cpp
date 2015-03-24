@@ -8,7 +8,7 @@ vpServoArm::vpServoArm() : m_t(vpFeatureTranslation::cdMc), m_tu(vpFeatureThetaU
   // We want to see a point on a point
   m_task.addFeature(m_t) ;   // 3D translation
   m_task.addFeature(m_tu) ; // 3D rotation
-  m_task.setServo(vpServo::EYETOHAND_L_cVf_fVe_eJe);
+  m_task.setServo(vpServo::EYETOHAND_L_cVe_eJe);// EYETOHAND_L_cVf_fVe_eJe);
   // Interaction matrix is computed with the desired visual features sd
   m_task.setInteractionMatrixType(vpServo::CURRENT, vpServo::PSEUDO_INVERSE);
   m_task.setLambda(m_lambda);
