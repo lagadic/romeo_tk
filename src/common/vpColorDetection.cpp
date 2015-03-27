@@ -135,7 +135,7 @@ void vpColorDetection::morphOps(cv::Mat &T){
 
   cv::Mat erodeElement = getStructuringElement( cv::MORPH_RECT,cv::Size(3,3)); //3
   //dilate with larger element so make sure object is nicely visible
-  cv::Mat dilateElement = getStructuringElement( cv::MORPH_RECT,cv::Size(18,18)); //8
+  cv::Mat dilateElement = getStructuringElement( cv::MORPH_RECT,cv::Size(8,8)); //8
 
   cv::erode(T,T,erodeElement);
   cv::erode(T,T,erodeElement);
@@ -253,7 +253,7 @@ bool vpColorDetection::trackFilteredObject(cv::Mat threshold)
     for( size_t i = 0; i < m_objects.size(); i++ )
     {
       std::ostringstream message;
-      message << m_name << " " << i;
+      message << m_name << " " << int(i);
       m_message.push_back( message.str() );
 
       std::vector<vpImagePoint> polygon;

@@ -109,7 +109,7 @@ int main(int argc, const char* argv[])
       else if (std::string(argv[i]) == "--file_name")
         opt_name_file = std::string(argv[i+1]);
       else if (std::string(argv[i]) == "--help") {
-        std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--learn-color] [--object_name <name>]" << std::endl;
+        std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--learn-color] [--object_name <numberObjects> <name1 name2 ...>]" << std::endl;
         std::cout <<                         "[--file_name <path>]" << std::endl;
         return 0;
       }
@@ -213,12 +213,12 @@ int main(int argc, const char* argv[])
           if (obj_found) {
             for(size_t i=0; i <  objects[k].getNbObjects(); i++) {
               vpRect bbox =  objects[k].getBBox(i);
-              vpDisplay::displayRectangle(I, bbox, color_rects[k], false, 1);
+              vpDisplay::displayRectangle(I, bbox, color_rects[k], false, 2);
               vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(),
                                      objects[k].getMessage(i), color_rects[k]);
 
               if (firstTime[k]) {
-                tts.post.say(opt_names[k]);
+                tts.post.say("\\emph=2\\" + opt_names[k]);
                 firstTime[k] = false;
               }
 

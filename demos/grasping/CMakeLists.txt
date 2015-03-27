@@ -21,4 +21,6 @@
 #qi_use_lib(grasp_box romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
 
 qi_create_bin(grasp_box_eye grasp_box_eye.cpp)
+qi_create_bin(grasp_box_bh grasp_box_bh.cpp)
 qi_use_lib(grasp_box_eye romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
+qi_use_lib(grasp_box_bh romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)

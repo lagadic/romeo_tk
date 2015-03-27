@@ -37,6 +37,7 @@ protected:
   vpCameraParameters m_cam;
   vpHomogeneousMatrix m_cMo;
   bool m_force_detection;
+  std::string m_message;
 
 public:
 
@@ -60,6 +61,10 @@ public:
 
   void setForceDetection(bool force_detection) {
     m_force_detection = force_detection;
+  }
+
+  void setMessage(const std::string &message) {
+    m_message = message;
   }
 
   void setQRCodeSize(double qrcode_size);

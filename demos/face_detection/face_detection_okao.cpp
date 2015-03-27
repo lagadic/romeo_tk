@@ -84,6 +84,7 @@ int main(int argc, const char* argv[])
     vpNaoqiGrabber g;
     if (! opt_ip.empty())
       g.setRobotIp(opt_ip);
+    g.setCamera(0);
     g.open();
 
     vpImage<unsigned char> I(g.getHeight(), g.getWidth());
@@ -172,8 +173,8 @@ int main(int argc, const char* argv[])
             //            std::cout << "Esite: " << in_array(name, names) << std::endl;
             //            std::cout << "==================================== " << std::endl;
 
-            if (!in_array(name, names) && sizeX*sizeY > 1200) {
-              std::string phraseToSay = "\\emph=2\\ Hi " + name;
+            if (!in_array(name, names) && sizeX*sizeY > 4000) {
+              std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + name;
               std::cout << phraseToSay << std::endl;
               tts.post.say(phraseToSay);
               names.push_back(name);

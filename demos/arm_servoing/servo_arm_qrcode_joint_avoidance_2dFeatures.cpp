@@ -41,7 +41,7 @@ using namespace AL;
 
 double sigmoidFunction(const vpColVector & e)
 {
-  double e0 = 0.2;
+  double e0 = 0.3;
   double e1 = 0.9;
   double sig = 0.0;
 
@@ -92,7 +92,7 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
 {
 
 
-  double lambda = 2;
+  double lambda = 0.7;
   double lambda_l = 0.0;
 
   int n = q.size();
@@ -482,6 +482,21 @@ int main(int argc, const char* argv[])
     plotter_q->setLegend(0, 11, "l1 min");
     plotter_q->setLegend(0, 12, "l1 max");
 
+    plotter_q->setColor(0, 7,vpColor::darkRed);
+    plotter_q->setThickness(0, 7,2);
+    plotter_q->setColor(0, 9,vpColor::darkRed);
+    plotter_q->setThickness(0, 9,2);
+    plotter_q->setColor(0, 11,vpColor::darkRed);
+     plotter_q->setThickness(0, 11,2);
+
+    plotter_q->setColor(0, 8,vpColor::darkRed);
+    plotter_q->setThickness(0, 8,2);
+    plotter_q->setColor(0, 10,vpColor::darkRed);
+    plotter_q->setThickness(0, 10,2);
+    plotter_q->setColor(0, 12,vpColor::darkRed);
+   plotter_q->setThickness(0, 12,2);
+
+
   }
 
 
@@ -549,13 +564,13 @@ int main(int argc, const char* argv[])
 
   // Move the head in the default position
 
-  AL::ALValue names_head       = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
-  AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(15), vpMath::rad(0), vpMath::rad(10), vpMath::rad(6));
-  float fractionMaxSpeed  = 0.2f;
-  robot.getProxy()->setStiffnesses(names_head, AL::ALValue::array(1.0f, 1.0f, 1.0f, 1.0f));
-  qi::os::sleep(1.0f);
-  robot.getProxy()->setAngles(names_head, angles_head, fractionMaxSpeed);
-  qi::os::sleep(2.0f);
+//  AL::ALValue names_head       = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
+//  AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(15), vpMath::rad(0), vpMath::rad(10), vpMath::rad(6));
+//  float fractionMaxSpeed  = 0.2f;
+//  robot.getProxy()->setStiffnesses(names_head, AL::ALValue::array(1.0f, 1.0f, 1.0f, 1.0f));
+//  qi::os::sleep(1.0f);
+//  robot.getProxy()->setAngles(names_head, angles_head, fractionMaxSpeed);
+//  qi::os::sleep(2.0f);
 
 
   while(1) {
@@ -608,9 +623,9 @@ int main(int argc, const char* argv[])
       if (! grasp_servo_converged) {
         vpMatrix oJo = oVe_LArm * robot.get_eJe("LArm");
         //servo_larm.setLambda(0.2);
-        //vpAdaptiveGain lambda(1.6, .6, 20);
+        vpAdaptiveGain lambda(0.3, .2, 15);
 
-        task.setLambda(0.4);
+        task.setLambda(lambda);
 
         task.set_eJe(oJo);
         vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
@@ -649,7 +664,7 @@ int main(int argc, const char* argv[])
 
 
         std::cout << "q2: " << std::endl << q2 << std::endl;
-       robot.setVelocity(jointNames_larm, q_dot_larm +q2);
+       robot.setVelocity(jointNames_larm, q_dot_larm + q2);
        //robot.setVelocity(jointNames_larm, q_dot_larm);
 
         task.print();
@@ -707,11 +722,18 @@ int main(int argc, const char* argv[])
       data[numJoints] = -1.0;
       data[numJoints+1] = 1.0;
 
-      data[numJoints+2] = -1 + ro * 2;
-      data[numJoints+3] = 1 - ro * 2;
+      unsigned int joint = 1;
+      double tQmin_l0 = jointMin[joint] + ro *(jointMax[joint] - jointMin[joint]);
+      double tQmax_l0 = jointMax[joint] - ro *(jointMax[joint] - jointMin[joint]);
 
-      data[numJoints+4] =  data[numJoints+2] - ro * ro1 * 2;
-      data[numJoints+5] =  data[numJoints+3] + ro * ro1 * 2;
+      double tQmin_l1 =  tQmin_l0 - ro * ro1 * (jointMax[joint] - jointMin[joint]);
+      double tQmax_l1 =  tQmax_l0 + ro * ro1 * (jointMax[joint] - jointMin[joint]);
+
+      data[numJoints+2] = 2*(tQmin_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numJoints+3] = 2*(tQmax_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+      data[numJoints+4] =  2*(tQmin_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+      data[numJoints+5] =  2*(tQmax_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
 
       plotter_q->plot(0,0,loop_iter,data[0]);
       plotter_q->plot(0,1,loop_iter,data[1]);
@@ -723,6 +745,7 @@ int main(int argc, const char* argv[])
 
       plotter_q->plot(0,7,loop_iter,data[7]);
       plotter_q->plot(0,8,loop_iter,data[8]);
+
       plotter_q->plot(0,9,loop_iter,data[9]);
       plotter_q->plot(0,10,loop_iter,data[10]);
       plotter_q->plot(0,11,loop_iter,data[11]);

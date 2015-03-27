@@ -155,6 +155,8 @@ int main(int argc, const char** argv)
     vpNaoqiGrabber g;
     if (! opt_ip.empty())
       g.setRobotIp(opt_ip);
+
+    g.setCamera(0);
     g.open();
 
     vpImage<unsigned char> I; // for gray images

@@ -54,6 +54,7 @@ int main(int argc, const char* argv[])
   std::string opt_ip = "198.18.0.1";
   std::string opt_face_cascade_name = "./haarcascade_frontalface_alt.xml";
   bool opt_language_english = false;
+  bool opt_Reye = false;
 
   for (unsigned int i=0; i<argc; i++) {
     if (std::string(argv[i]) == "--ip")
@@ -62,8 +63,10 @@ int main(int argc, const char* argv[])
       opt_face_cascade_name = std::string(argv[i+1]);
     else if (std::string(argv[i]) == "--english")
       opt_language_english = true;
+    else if (std::string(argv[i]) == "--Reye")
+      opt_Reye = true;
     else if (std::string(argv[i]) == "--help") {
-      std::cout << "Usage: " << argv[0] << " [--ip <robot address>] [--haar <haarcascade xml filename>] [--english] [--help]" << std::endl;
+      std::cout << "Usage: " << argv[0] << " [--ip <robot address>] [--haar <haarcascade xml filename>] [--english] [--Reye] [--help]" << std::endl;
       return 0;
     }
   }
@@ -73,10 +76,20 @@ int main(int argc, const char* argv[])
   if (! opt_ip.empty())
     g.setRobotIp(opt_ip);
   g.setFramerate(15);
-  g.setCamera(2); // CameraLeftEye
+  vpHomogeneousMatrix eMc;
+  if (opt_Reye)
+  {
+    g.setCamera(3); // CameraRightEye
+    eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraRightEye");
+  }
+  else
+  {
+    g.setCamera(2); // CameraLeftEye
+    eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
+  }
   g.open();
   vpCameraParameters cam = g.getCameraParameters();
-  vpHomogeneousMatrix eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
+
 
 
   // Connect to the robot
@@ -91,10 +104,10 @@ int main(int argc, const char* argv[])
   std::vector<std::string> jointNamesLEye = robot.getBodyNames("LEye");
   std::vector<std::string> jointNamesREye = robot.getBodyNames("REye");
 
-  jointNames.insert(jointNames.end(), jointNamesLEye.begin(), jointNamesLEye.end());
+  jointNames.insert(jointNames.end(), jointNamesREye.begin(), jointNamesREye.end());
   std::vector<std::string> jointNames_tot = jointNames;
-  jointNames_tot.push_back(jointNamesREye.at(0));
-  jointNames_tot.push_back(jointNamesREye.at(1));
+  jointNames_tot.push_back(jointNamesLEye.at(0));
+  jointNames_tot.push_back(jointNamesLEye.at(1));
 
 
   vpMatrix MAP_head(6,5);
@@ -169,7 +182,10 @@ int main(int argc, const char* argv[])
         vpDisplay::displayRectangle(I, face_tracker.getFace(), vpColor::red, false, 4);
         head_cog_cur = face_tracker.getFace().getCenter();
 
-        servo_head.set_eJe( robot.get_eJe("LEye") * MAP_head );
+        if (opt_Reye)
+          servo_head.set_eJe( robot.get_eJe("REye") * MAP_head );
+        else
+          servo_head.set_eJe( robot.get_eJe("LEye") * MAP_head );
         servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
         servo_head.setCurrentFeature(head_cog_cur);
@@ -178,7 +194,7 @@ int main(int argc, const char* argv[])
 
         q_dot_head = servo_head.computeControlLaw(servo_time_init);
 
-       // Add mirroring eyes
+        // Add mirroring eyes
         q_dot_tot = q_dot_head;
         q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
         q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);

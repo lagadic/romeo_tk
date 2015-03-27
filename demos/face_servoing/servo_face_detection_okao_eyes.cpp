@@ -72,7 +72,7 @@ int main(int argc, const char* argv[])
 
     std::string opt_ip = "198.18.0.1";
 
-    bool opt_language_english = true;
+    bool opt_language_english = false;
 
     if (argc == 3) {
       if (std::string(argv[1]) == "--ip")
@@ -126,7 +126,7 @@ int main(int argc, const char* argv[])
     vpColVector head_pos(jointNames_head.size());
     head_pos = 0;
     head_pos[1] = vpMath::rad(-10.); // NeckPitch
-    head_pos[2] = vpMath::rad(0.); // HeadPitch
+    head_pos[2] = vpMath::rad(-6.); // HeadPitch
     robot.setPosition(jointNames_head, head_pos, 0.3);
 
     vpTime::sleepMs(1000);
@@ -215,6 +215,9 @@ int main(int argc, const char* argv[])
         float sx = result[1][0][0][3];
         float sy = result[1][0][0][4];
 
+        std::string name = result[1][i][1][2];
+        float score = result[1][i][1][1];
+
         // sizeX / sizeY are the face size in relation to the image
 
         float sizeX = mImageHeight * sx;
@@ -225,7 +228,6 @@ int main(int argc, const char* argv[])
         float y = mImageHeight / 2 + mImageHeight * beta;
 
         vpDisplay::displayCross(I, y, x, 10, vpColor::red);
-
         vpDisplay::displayRectangle(I,y,x,0.0,sizeX,sizeY,vpColor::cyan,1);
 
         //          cv::Point p1(x - (sizeX / 2), y - (sizeY / 2));

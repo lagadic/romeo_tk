@@ -3,7 +3,7 @@
 
 
 vpQRCodeTracker::vpQRCodeTracker(int barcode)
-  : m_detector(NULL), m_warp(), m_tracker(NULL), m_state(detection), m_target_found(false), m_P(4), m_force_detection(false)
+  : m_detector(NULL), m_warp(), m_tracker(NULL), m_state(detection), m_target_found(false), m_P(4), m_force_detection(false), m_message("romeo_left_arm")
 {
   if (barcode == 0)
     m_detector = new vpDetectorQRCode;
@@ -62,7 +62,7 @@ bool vpQRCodeTracker::track(const vpImage<unsigned char> &I)
     bool status = m_detector->detect(I);
     if (status) {
       for (size_t i=0; i < m_detector->getNbObjects(); i++) {
-        if (m_detector->getMessage(i) == "romeo_left_arm") {
+        if (m_detector->getMessage(i) == m_message) {
           m_corners_detected = m_detector->getPolygon(i);
           m_state = init_tracking;
 

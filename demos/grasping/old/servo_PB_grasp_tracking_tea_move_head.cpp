@@ -582,7 +582,7 @@ int main(int argc, char* argv[])
         //        std::cout <<"task_head.getTaskJacobianPseudoInverse():" <<task_head.getTaskJacobianPseudoInverse() << std::endl;
         //        std::cout <<"task_head.getInteractionMatrix():" <<task_head.getInteractionMatrix() << std::endl;
 
-       // sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
+        sec_ter = 0.5 * ((task_head.getTaskJacobianPseudoInverse() *  (task_head.getInteractionMatrix() * cJc)) * q_dot_arm);
 
 
         std::cout <<"Second Term:" <<sec_ter << std::endl;
