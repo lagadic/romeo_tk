@@ -8,7 +8,7 @@
   <!--Homogeneous Matrix-->
   <homogeneous_transformation>
     <!--Name of the homogeneous matrix-->
-    <name>oMh_open_loop</name>
+    <name>oMh_open_loop_CameraLeftEye</name>
     <values>
       <!--Translation vector with values in meters-->
       <tx>0.150943</tx>
@@ -23,7 +23,7 @@
   <!--Homogeneous Matrix-->
   <homogeneous_transformation>
     <!--Name of the homogeneous matrix-->
-    <name>oMh_close_loop</name>
+    <name>oMh_close_loop_CameraLeftEye</name>
     <values>
       <!--Translation vector with values in meters-->
       <tx>0.132508</tx>
