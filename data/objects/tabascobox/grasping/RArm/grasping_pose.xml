@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<root>
+  <!--This file stores homogeneous matrix used
+   in the vpHomogeneousMatrix Class of ViSP available
+   at http://www.irisa.fr/lagadic/visp/visp.html .
+   It can be read with the parse method of
+   the vpXmlParserHomogeneousMatrix class.-->
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_open_loop_CameraRightEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>0.018004</tx>
+      <ty>0.116636</ty>
+      <tz>-0.116631</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>1.312223</theta_ux>
+      <theta_uy>-1.132588</theta_uy>
+      <theta_uz>-0.616917</theta_uz>
+    </values>
+  </homogeneous_transformation>
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_close_loop_CameraRightEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>0.018004</tx>
+      <ty>0.116636</ty>
+      <tz>-0.116631</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>1.312223</theta_ux>
+      <theta_uy>-1.132588</theta_uy>
+      <theta_uz>-0.616917</theta_uz>
+    </values>
+  </homogeneous_transformation>
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_open_loop_CameraLeftEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>0.018004</tx>
+      <ty>0.116636</ty>
+      <tz>-0.116631</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>1.312223</theta_ux>
+      <theta_uy>-1.132588</theta_uy>
+      <theta_uz>-0.616917</theta_uz>
+    </values>
+  </homogeneous_transformation>
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_close_loop_CameraLeftEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>-0.061808</tx>
+      <ty>0.099824</ty>
+      <tz>-0.009288</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>1.958722</theta_ux>
+      <theta_uy>-1.640045</theta_uy>
+      <theta_uz>0.026337</theta_uz>
+    </values>
+  </homogeneous_transformation>
+</root>
