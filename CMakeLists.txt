@@ -32,8 +32,11 @@ qi_create_lib(romeo_tk
     src/common/vpServoHead.h
     src/common/vpServoHead.cpp
     src/common/vpCartesianDisplacement.h
-    src/common/vpMBDetection.h
-    src/common/vpMBDetection.cpp
+    src/common/vpMbLocalization.h
+    src/common/vpMbLocalization.cpp
+    src/common/vpColorDetection.h
+    src/common/vpColorDetection.cpp
+    src/common/vpJointLimitAvoidance.h
 )
 
 qi_use_lib(romeo_tk visp_naoqi VISP ALCOMMON ALPROXIES ALVISION)
