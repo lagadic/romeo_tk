@@ -35,8 +35,8 @@
     <py>839.44555</py> 
   </camera>
   <face>
-    <angle_appear>75</angle_appear> 
-    <angle_disappear>75</angle_disappear> 
+    <angle_appear>89</angle_appear> 
+    <angle_disappear>89</angle_disappear> 
     <near_clipping>0.1</near_clipping>
     <far_clipping>100</far_clipping>
     <fov_clipping>1</fov_clipping>
