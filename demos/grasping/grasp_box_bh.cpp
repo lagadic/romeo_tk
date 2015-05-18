@@ -532,11 +532,13 @@ int main(int argc, const char* argv[])
 
     if (opt_Reye)
     {
+      std::cout << "Using camera Eye Right" << std::endl;
         g.setCamera(3); // CameraRightEye
         eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraRightEye");
     }
     else
     {
+      std::cout << "Using camera Eye Right" << std::endl;
         g.setCamera(2); // CameraLeftEye
         eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
     }
@@ -587,7 +589,7 @@ int main(int argc, const char* argv[])
     }
     else
     {
-        qrcode_tracker.setQRCodeSize(0.035);
+        qrcode_tracker.setQRCodeSize(0.045);
         qrcode_tracker.setMessage("romeo_left_arm");
     }
 
@@ -676,7 +678,7 @@ int main(int argc, const char* argv[])
     const unsigned int numArmJoints =  jointNames_larm.size();
     vpHomogeneousMatrix cdMc;
 
-    //Condition namber Jacobian Arm
+    //Condition number Jacobian Arm
     double cond = 0.0;
 
     // Initalization data for the joint avoidance limit
@@ -686,6 +688,10 @@ int main(int argc, const char* argv[])
     // Initialize the joint avoidance scheme from the joint limits
     vpColVector jointMin = robot.getJointMin(chain_name);
     vpColVector jointMax = robot.getJointMax(chain_name);
+
+    jointMin.resize(numArmJoints,false);
+    jointMax.resize(numArmJoints,false);
+
 
     // Vector joint position of the arm
     vpColVector q(numArmJoints);
@@ -1170,7 +1176,7 @@ int main(int argc, const char* argv[])
                 else if (opt_box_name =="spraybox")
                     teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*2/8 );
                 else if (opt_box_name =="tabascobox")
-                    teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*1.6/8 );
+                    teabox_cog_des.set_ij( I.getHeight()*6/8, I.getWidth()*1.6/8 );
                 else
                     teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*2/8 );
 
@@ -1460,8 +1466,9 @@ int main(int argc, const char* argv[])
                     //plotter_cond->plot(0, 0, loop_iter, cond);
 
                     // Compute joint limit avoidance
-                    q2_dot = computeQdotLimitAvoidance(task_error, taskJac, taskJacPseudoInv, jointMin, jointMax, q, q_dot_larm, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
+                    //q2_dot = computeQdotLimitAvoidance(task_error, taskJac, taskJacPseudoInv, jointMin, jointMax, q, q_dot_larm, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
 
+                    q2_dot  = servo_larm.m_task.secondaryTaskJointLimitAvoidance(q,q_dot_larm,jointMin,jointMax);
                     //q_dot_head = q_dot_head;
 
                     // Add mirroring eyes
