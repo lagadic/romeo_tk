@@ -6,7 +6,10 @@ vpQRCodeTracker::vpQRCodeTracker(int barcode)
   : m_detector(NULL), m_warp(), m_tracker(NULL), m_state(detection), m_target_found(false), m_P(4), m_force_detection(false), m_message("romeo_left_arm")
 {
   if (barcode == 0)
+  {
     m_detector = new vpDetectorQRCode;
+    std::cout << "vpDetectorQRCode"<< std::endl;
+   }
   else
     m_detector = new vpDetectorDataMatrixCode;
 
@@ -16,7 +19,7 @@ vpQRCodeTracker::vpQRCodeTracker(int barcode)
   m_tracker->setIterationMax(5);
   m_tracker->setPyramidal(2, 1);
 
-  setQRCodeSize(0.06);
+  setQRCodeSize(0.045);
 }
 
 vpQRCodeTracker::~vpQRCodeTracker()
@@ -56,23 +59,35 @@ void vpQRCodeTracker::setQRCodeSize(double qrcode_size)
 
 bool vpQRCodeTracker::track(const vpImage<unsigned char> &I)
 {
+  bool result = false;
+  bool status = m_detector->detect(I);
+  if (status)
+    result = track(I, m_detector);
+
+  return result;
+}
+
+
+
+bool vpQRCodeTracker::track(const vpImage<unsigned char> &I, vpDetectorBase * &detector )
+{
   vpColVector p; // Estimated parameters
 
   if (m_state == detection || m_force_detection) {
-    bool status = m_detector->detect(I);
-    if (status) {
-      for (size_t i=0; i < m_detector->getNbObjects(); i++) {
-        if (m_detector->getMessage(i) == m_message) {
-          m_corners_detected = m_detector->getPolygon(i);
+    //bool status = detector->detect(I);
+    if (detector->getNbObjects()>0) {
+      for (size_t i=0; i < detector->getNbObjects(); i++) {
+        if (detector->getMessage(i) == m_message) {
+          m_corners_detected = detector->getPolygon(i);
           m_state = init_tracking;
 
-//          vpDisplay::displayText(I, I.getHeight()-20, 10, "Bar code message: " + m_detector->get_message(i), vpColor::green);
-//          for(size_t j=0; j < m_corners_detected.size(); j++) {
-//            std::ostringstream s;
-//            s << j;
-//            vpDisplay::displayText(I, m_corners_detected[j]+vpImagePoint(-20,-20), s.str(), vpColor::green);
-//            vpDisplay::displayCross(I, m_corners_detected[j], 25, vpColor::green, 2);
-//          }
+          //          vpDisplay::displayText(I, I.getHeight()-20, 10, "Bar code message: " + m_detector->get_message(i), vpColor::green);
+          //          for(size_t j=0; j < m_corners_detected.size(); j++) {
+          //            std::ostringstream s;
+          //            s << j;
+          //            vpDisplay::displayText(I, m_corners_detected[j]+vpImagePoint(-20,-20), s.str(), vpColor::green);
+          //            vpDisplay::displayCross(I, m_corners_detected[j], 25, vpColor::green, 2);
+          //          }
         }
       }
 

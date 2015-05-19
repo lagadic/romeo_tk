@@ -70,6 +70,7 @@ public:
   void setQRCodeSize(double qrcode_size);
 
   bool track(const vpImage<unsigned char> &I);
+  bool track(const vpImage<unsigned char> &I, vpDetectorBase *&detector );
 
 private:
   std::vector<vpImagePoint> getTemplateTrackerCorners(const vpTemplateTrackerZone &zone);
