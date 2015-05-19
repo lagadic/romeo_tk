@@ -66,11 +66,14 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
 
   m_tracker->setCameraParameters(m_cam);
   m_tracker->setOgreVisibilityTest(false);
+
   if(vpIoTools::checkFilename(m_model + ".cao"))
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
-  //m_tracker->setDisplayFeatures(true);
+ // m_tracker->setDisplayFeatures(true);
+
+
 
   //Initalize Detection
   m_configuration_file = configuration_file_folder + "detection-config.xml";
@@ -362,8 +365,11 @@ void vpMbLocalization::initDetection(const std::string &name_file_learning_data)
 
 vpMbLocalization::~vpMbLocalization()
 {
+  if (m_tracker != NULL)
   delete m_tracker;
+if (m_keypoint_learning != NULL)
   delete m_keypoint_learning;
+if (m_keypoint_detection != NULL)
   delete m_keypoint_detection;
 
 }

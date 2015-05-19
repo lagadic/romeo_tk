@@ -1,4 +1,3 @@
-
 #include <vpServoArm.h>
 
 

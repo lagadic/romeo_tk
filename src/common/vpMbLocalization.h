@@ -99,6 +99,7 @@ protected:
 
 
 public:
+
   vpMbLocalization(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam);
   virtual ~vpMbLocalization();
 
