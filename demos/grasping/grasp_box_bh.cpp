@@ -136,8 +136,12 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
 
         if (chain_name == "RArm")
         {
-            pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
+            // pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
+            //       pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
+            pos1 = AL::ALValue::array(0.3692784905433655, -0.35209423303604126, -0.07788902521133423, 1.2388615608215332, 0.6193198561668396, -0.17408452928066254);
             pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+
+
         }
         else
         {
@@ -326,7 +330,7 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
     vpHomogeneousMatrix Mhack;// Hack: TODO remove when naoqi fixed
     if (chain_name == "RArm")
     {
-        Mhack[1][3] = +0.040; // add Y - 0.025 offset
+        Mhack[1][3] = +0.020; // add Y - 0.025 offset
         tMh_desired = tMh_desired * Mhack;
 
     }
@@ -480,7 +484,7 @@ int main(int argc, const char* argv[])
     if (opt_right_arm)
     {
         chain_name = "RArm";
-        //opt_Reye = true;
+        // opt_Reye = true;
     }
     else
     {
@@ -532,13 +536,13 @@ int main(int argc, const char* argv[])
 
     if (opt_Reye)
     {
-      std::cout << "Using camera Eye Right" << std::endl;
+        std::cout << "Using camera Eye Right" << std::endl;
         g.setCamera(3); // CameraRightEye
         eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraRightEye");
     }
     else
     {
-      std::cout << "Using camera Eye Right" << std::endl;
+        std::cout << "Using camera Eye Right" << std::endl;
         g.setCamera(2); // CameraLeftEye
         eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
     }
@@ -1009,9 +1013,10 @@ int main(int argc, const char* argv[])
                 //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
                 AL::ALValue angles_head;
                 if (opt_right_arm)
-                    angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(8.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
+                    //angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(11.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
+                    angles_head      = AL::ALValue::array(vpMath::rad(-7.5), vpMath::rad(18.9), vpMath::rad(11.0), vpMath::rad(0.0), vpMath::rad(2.4) , vpMath::rad(1.4), 0.0, 0.0  );
                 else
-                    angles_head      = AL::ALValue::array(vpMath::rad(-17), vpMath::rad(17), vpMath::rad(3.7), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
+                    angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(3.7), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
                 float fractionMaxSpeed  = 0.1f;
                 robot.getProxy()->setAngles(jointNames_tot, angles_head, fractionMaxSpeed);
 
@@ -1176,7 +1181,7 @@ int main(int argc, const char* argv[])
                 else if (opt_box_name =="spraybox")
                     teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*2/8 );
                 else if (opt_box_name =="tabascobox")
-                    teabox_cog_des.set_ij( I.getHeight()*6/8, I.getWidth()*1.6/8 );
+                    teabox_cog_des.set_ij( I.getHeight()*5.3/8, I.getWidth()*1.3/8 );
                 else
                     teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*2/8 );
 
