@@ -11,13 +11,13 @@
     <name>oMh_open_loop_CameraRightEye</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>0.018004</tx>
-      <ty>0.116636</ty>
-      <tz>-0.116631</tz>
+      <tx>0.022722</tx>
+      <ty>0.190445</ty>
+      <tz>-0.019926</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.312223</theta_ux>
-      <theta_uy>-1.132588</theta_uy>
-      <theta_uz>-0.616917</theta_uz>
+      <theta_ux>1.200660</theta_ux>
+      <theta_uy>-1.050553</theta_uy>
+      <theta_uz>-1.231596</theta_uz>
     </values>
   </homogeneous_transformation>
   <!--Homogeneous Matrix-->
@@ -26,28 +26,29 @@
     <name>oMh_close_loop_CameraRightEye</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>0.018004</tx>
-      <ty>0.116636</ty>
-      <tz>-0.116631</tz>
+      <tx>-0.039379</tx>
+      <ty>0.126733</ty>
+      <tz>0.000732</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.312223</theta_ux>
-      <theta_uy>-1.132588</theta_uy>
-      <theta_uz>-0.616917</theta_uz>
+      <theta_ux>1.781238</theta_ux>
+      <theta_uy>-1.851184</theta_uy>
+      <theta_uz>-0.016910</theta_uz>
     </values>
   </homogeneous_transformation>
+
   <!--Homogeneous Matrix-->
   <homogeneous_transformation>
     <!--Name of the homogeneous matrix-->
     <name>oMh_open_loop_CameraLeftEye</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>0.018004</tx>
-      <ty>0.116636</ty>
-      <tz>-0.116631</tz>
+      <tx>0.021307</tx>
+      <ty>0.163671</ty>
+      <tz>-0.054126</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.312223</theta_ux>
-      <theta_uy>-1.132588</theta_uy>
-      <theta_uz>-0.616917</theta_uz>
+      <theta_ux>1.186333</theta_ux>
+      <theta_uy>-1.421627</theta_uy>
+      <theta_uz>-1.054597</theta_uz>
     </values>
   </homogeneous_transformation>
   <!--Homogeneous Matrix-->
@@ -56,13 +57,15 @@
     <name>oMh_close_loop_CameraLeftEye</name>
     <values>
       <!--Translation vector with values in meters-->
-      <tx>-0.061808</tx>
-      <ty>0.099824</ty>
-      <tz>-0.009288</tz>
+      <tx>-0.037650</tx>
+      <ty>0.126563</ty>
+      <tz>0.002561</tz>
       <!--Rotational vector expressed in angle axis representation with values in radians-->
-      <theta_ux>1.958722</theta_ux>
-      <theta_uy>-1.640045</theta_uy>
-      <theta_uz>0.026337</theta_uz>
+      <theta_ux>1.814250</theta_ux>
+      <theta_uy>-1.854637</theta_uy>
+      <theta_uz>-0.125411</theta_uz>
     </values>
   </homogeneous_transformation>
+  
+
 </root>
