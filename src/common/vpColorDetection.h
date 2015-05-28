@@ -54,6 +54,26 @@
 #include <visp/vpImageConvert.h>
 
 
+
+struct found_objects {
+
+
+
+    typedef enum {
+      Triangle,
+      Square,
+      Rectangle,
+      Circle,
+      Penta,
+      Exa,
+      Concave,
+      Unknown
+    } GeometricShape;
+
+    GeometricShape type;
+    cv::Rect rect;
+};
+
 /*!
   This class allows to learn, detect an object with a specific color.
 
@@ -65,6 +85,12 @@
 
 class VISP_EXPORT vpColorDetection : public vpDetectorBase
 {
+
+public:
+
+
+
+
 protected:
   int m_H_min; //!< Minumum H value
   int m_H_max; //!< Maximum H value
@@ -79,31 +105,45 @@ protected:
   double m_min_obj_area; //!< Minimum Area for an object to be detected
   unsigned int m_max_objs_num; //!<  Max number of objects to detect
   std::string m_name; //!< Name of the kind of object
-  std::vector<cv::Rect> m_objects;  //!< Bounding box of the detected objects.
+ // std::vector<cv::Rect> m_objects;  //!< Bounding box of the detected object.
+  std::vector<found_objects> m_objects;  //!< Bounding box of the detected object.
 
   const std::string m_trackbarWindowName; //!< Name of the trackbar window in opencv
   cv::Mat m_T; //!< OpenCV image used as input for the object detection.
+
+  bool m_levelMorphOps;
+  //GeometricShape m_geometricShape; //!< Indicate the geometricShape of the object
+  std::vector <found_objects::GeometricShape> m_geometricShape;
+  bool m_shapeRecognition; //!< If true the geometric shape recognition is activated
+
+
+
 
   void createTrackbars();
   void drawObject(int &x, int &y, cv::Mat &frame);
   void morphOps(cv::Mat &T);
   bool trackFilteredObject(cv::Mat threshold);
   std::string intToString(int number);
-
+  std::string getGeometricShapeString(found_objects::GeometricShape shape);
 
 public:
+
   vpColorDetection();
   virtual ~vpColorDetection() {}
+
+  static double angle(cv::Point pt1, cv::Point pt2, cv::Point pt0);
   bool detect(const vpImage<unsigned char> &I) { std::cout << "Not implemented" << std::endl;}
   bool detect(const cv::Mat &I);
 
-
-  std::vector<int> getValueHSV();
   std::string getName(){return m_name;}
+  std::vector<int> getValueHSV();
 
   bool learningColor(const cv::Mat &I);
   bool loadHSV(const std::string &filename);
   bool saveHSV(const std::string &filename);
+  void setShapeRecognition(const bool &enable){m_shapeRecognition = enable;}
+  //void setGeometricShape(const GeometricShape &shape)  { m_geometricShape = shape; }
+  void setLevelMorphOps(const bool level){m_levelMorphOps = level;}
   void setMinObjectArea(const double &area_min){m_min_obj_area = area_min; }
   void setMaxObjectArea(const double &area_max){m_max_obj_area = area_max; }
   void setMaxAndMinObjectArea(const double &area_min, const double &area_max );

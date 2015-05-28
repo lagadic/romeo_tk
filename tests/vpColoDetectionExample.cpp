@@ -139,6 +139,23 @@ int main(int argc, const char* argv[])
     g.setCamera(0);
     g.open();
 
+    g.setCameraParameter(AL::kCameraAutoWhiteBalanceID,1);
+    g.setCameraParameter(AL::kCameraAutoExpositionID,1);
+
+//   // g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraBrightnessID);
+//    g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraContrastID);
+//    g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraSaturationID);
+//    g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraHueID);
+//    g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraGainID);
+
+
+    std::vector<int> result(4);
+    result[0] = g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraContrastID);
+    result[1] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraSaturationID);
+    result[2] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraHueID);
+    result[3] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraGainID);
+
+    std::cout<< "Result constrast, sat, Hue, Gain " << std::endl << result << std::endl;
 
 
     // Open Proxy for the speech
@@ -165,12 +182,16 @@ int main(int argc, const char* argv[])
     {
       objects[i].setName(opt_names[i]);
       firstTime[i] = true;
+      objects[i].setMaxAndMinObjectArea(130.0,4000.0);
+      objects[i].setLevelMorphOps(false);
+      objects[i].setShapeRecognition(true);
 
       color_rects.at(i).id = vpColor::vpColorIdentifier( std::rand() % ( 18 + 1 ) );
 
 
       if (!opt_learning )
       {
+        std::cout << "Try to load the color " << objects[i].getName() << std::endl;
         std::string filename = opt_names[i] + "HSV.txt";
         if (!objects[i].loadHSV(filename))
         {
@@ -180,6 +201,7 @@ int main(int argc, const char* argv[])
       }
 
     }
+
 
     Mat cvI = Mat(Size(g.getWidth(), g.getHeight()), CV_8UC3);
 
@@ -235,6 +257,8 @@ int main(int argc, const char* argv[])
 
       if (click_done && button == vpMouseButton::button3) {
         click_done = false;
+        g.setCameraParameter(AL::kCameraAutoWhiteBalanceID,1);
+        g.setCameraParameter(AL::kCameraAutoExpositionID,1);
         break;
       }
       else if (click_done && button == vpMouseButton::button1 && opt_learning) {
