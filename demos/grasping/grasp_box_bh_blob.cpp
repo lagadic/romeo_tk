@@ -137,10 +137,10 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
 
         if (chain_name == "RArm")
         {
-            // pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
-            //       pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
-            pos1 = AL::ALValue::array(0.3692784905433655, -0.35209423303604126, -0.07788902521133423, 1.2388615608215332, 0.6193198561668396, -0.17408452928066254);
-            pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+            pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
+            pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
+            //pos1 = AL::ALValue::array(0.3692784905433655, -0.35209423303604126, -0.07788902521133423, 1.2388615608215332, 0.6193198561668396, -0.17408452928066254);
+           // pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
 
 
         }
@@ -485,7 +485,7 @@ int main(int argc, const char* argv[])
     if (opt_right_arm)
     {
         chain_name = "RArm";
-        // opt_Reye = true;
+        opt_Reye = true;
     }
     else
     {
@@ -614,6 +614,9 @@ int main(int argc, const char* argv[])
     hand_tracker.setCameraParameters(cam);
     hand_tracker.setPoints(points);
 
+    if (opt_right_arm)
+        hand_tracker.setLeftHandTarget(false);
+
     if(!hand_tracker.loadHSV(opt_name_file_color_target))
     {
         std::cout << "Error opening the file "<< opt_name_file_color_target << std::endl;
@@ -650,7 +653,6 @@ int main(int argc, const char* argv[])
 
 
     // Initialize Detection color class
-
     vpColorDetection obj_color;
     obj_color.setName(opt_box_name);
     std::string filename_color = box_folder + "color/" + opt_box_name + "HSV.txt";
@@ -1035,7 +1037,7 @@ int main(int argc, const char* argv[])
                 AL::ALValue angles_head;
                 if (opt_right_arm)
                     //angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(11.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
-                    angles_head      = AL::ALValue::array(vpMath::rad(-7.5), vpMath::rad(18.9), vpMath::rad(11.0), vpMath::rad(0.0), vpMath::rad(2.4) , vpMath::rad(1.4), 0.0, 0.0  );
+                    angles_head      = AL::ALValue::array(vpMath::rad(3.5), vpMath::rad(21.0), vpMath::rad(13.0), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
                 else
                     angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
                 float fractionMaxSpeed  = 0.1f;
@@ -1138,7 +1140,7 @@ int main(int argc, const char* argv[])
         bool ret = vpDisplay::getKeyboardEvent(I, key, false);
         std::string s = key;
 
-        if (state_teabox_tracker >= MoveToDesiredLHandPosition && state_teabox_tracker < Interaction)
+        if (state_teabox_tracker >= LearnDesiredLHandGraspPosition && state_teabox_tracker < Interaction)
         {
             if (ret && s == "h")
             {
@@ -1456,7 +1458,8 @@ int main(int argc, const char* argv[])
                     //          servo_larm.setCurrentFeature(cdMc) ;
 
 
-                    vpAdaptiveGain lambda(0.8, 0.05, 8);
+                    //vpAdaptiveGain lambda(0.8, 0.05, 8);
+                    vpAdaptiveGain lambda(1.0, 0.09, 8);
                     servo_larm.setLambda(lambda);
 
                     servo_larm.set_eJe(robot.get_eJe(chain_name));
