@@ -1,7 +1,7 @@
 set(source 
   servo_face_detection_visp_head.cpp
   servo_face_detection_visp_eyes.cpp
-  servo_face_detection_visp_Reye.cpp
+ # servo_face_detection_visp_Reye.cpp
   servo_face_detection_okao_eyes.cpp
   servo_face_detection_okao_eyes_joint_limits.cpp
   ) 
