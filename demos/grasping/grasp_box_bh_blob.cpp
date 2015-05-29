@@ -140,7 +140,7 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
             pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
             pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
             //pos1 = AL::ALValue::array(0.3692784905433655, -0.35209423303604126, -0.07788902521133423, 1.2388615608215332, 0.6193198561668396, -0.17408452928066254);
-           // pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+            // pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
 
 
         }
@@ -632,6 +632,8 @@ int main(int argc, const char* argv[])
     double servo_arm_time_init = 0;
     std::vector<std::string> jointNames_head =  robot.getBodyNames("Head");
 
+
+
     std::vector<std::string> jointNames = robot.getBodyNames("Head");
     //jointNames.pop_back(); // We don't consider  the last joint of the head = HeadRoll
     std::vector<std::string> jointNamesLEye = robot.getBodyNames("LEye");
@@ -643,6 +645,9 @@ int main(int argc, const char* argv[])
     jointNames_tot.push_back(jointNamesREye.at(1));
     vpColVector head_pose(jointNames_tot.size(), 0);
 
+    // Variable for visual servoing center box
+    int cpt_iter_servo_head_center_box = 0;
+    bool first_time_center_box  = true;
 
     // Map to don't consider the HeadRoll
     vpMatrix MAP_head(6,5);
@@ -1177,13 +1182,16 @@ int main(int argc, const char* argv[])
             }
 
         }
+
+
+
         // Servo head for teabox
         if (! opt_learn_grasp_position && ! opt_learn_open_loop_position && status_teabox_tracker && ! teabox_servo_converged) {
-            static int cpt_iter_servo_head = 0;
-            static bool first_time = true;
-            if (first_time) {
+            //static int cpt_iter_servo_head = 0;
+            //static bool first_time = true;
+            if (first_time_center_box) {
                 servo_time_init = vpTime::measureTimeSecond();
-                first_time = false;
+                first_time_center_box = false;
             }
             vpImagePoint teabox_cog_cur;
             vpPoint P;
@@ -1251,19 +1259,19 @@ int main(int argc, const char* argv[])
 
             robot.setVelocity(jointNames_tot, q_dot_tot);
 
-            if (cpt_iter_servo_head > 100) {
+            if (cpt_iter_servo_head_center_box > 100) {
                 if (opt_record_video)
                     vpDisplay::displayText(I, vpImagePoint(10,10), "Click to continue", vpColor::red);
                 else
                     vpDisplay::displayText(I, vpImagePoint(10,10), "Cannot converge. Click to continue", vpColor::red);
 
             }
-            if ( sqrt(servo_head.m_task_head.getError().sumSquare())*cam.get_px() < 10. || (click_done && button == vpMouseButton::button1 && cpt_iter_servo_head > 100) )
+            if ( sqrt(servo_head.m_task_head.getError().sumSquare())*cam.get_px() < 10. || (click_done && button == vpMouseButton::button1 && cpt_iter_servo_head_center_box > 100) )
             {
                 robot.stop(jointNames_tot);
                 teabox_servo_converged = true;
             }
-            cpt_iter_servo_head ++;
+            cpt_iter_servo_head_center_box ++;
             if (click_done && button == vpMouseButton::button1)
                 click_done = false;
         }
@@ -2052,6 +2060,43 @@ int main(int argc, const char* argv[])
             }
         }
         // End interaction
+
+
+        if (ret && s == "i" && state_teabox_tracker <= TakeTea)
+        {
+            robot.stop(jointNames_tot);
+            robot.stop(jointNames_larm);
+
+            AL::ALValue pos0;
+            if (opt_right_arm)
+                pos0 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+            else
+                pos0 = AL::ALValue::array(0.3599576950073242, 0.3060062527656555, 0.01953596994280815, -1.1513646841049194, -0.18644022941589355, -0.1889418214559555);
+
+            robot.getProxy()->setPositions(chain_name, 0, pos0, 0.4, 63);
+
+
+            //Open loop motion arm
+            arm_moved = false;
+            //VS center box
+            teabox_servo_converged = false;
+            cpt_iter_servo_head_center_box = 0;
+            first_time_center_box  = true;
+            //VS grasp
+            grasp_servo_converged = false;
+            // State
+            state_teabox_tracker = Acquisition;
+            // Tracker BOX
+            status_teabox_tracker = false;
+            teabox_tracker.setForceDetection();
+            teabox_tracker.setOnlyDetection(true);
+            // Tracker Hand
+            status_hand_tracker = false;
+            hand_tracker.setForceDetection(true);
+
+
+        }
+
 
         if (click_done && button == vpMouseButton::button3) { // Quit the loop
             robot.stop(jointNames_tot);
