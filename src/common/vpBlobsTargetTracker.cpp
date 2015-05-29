@@ -5,7 +5,7 @@
 
 vpBlobsTargetTracker::vpBlobsTargetTracker()
     : m_colBlob(),  m_state(detection), m_target_found(false), m_P(), m_force_detection(false), m_name("target_blob"),
-      m_blob_list(), m_cog(0,0), m_initPose(true), m_numBlobs(4), m_manual_blob_init(false)
+      m_blob_list(), m_cog(0,0), m_initPose(true), m_numBlobs(4), m_manual_blob_init(false), m_left_hand_target(true)
 {
 
     //m_colBlob = new vpColorDetection;
@@ -39,15 +39,13 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
         // Delete previuos list of blobs
         m_blob_list.clear();
         m_initPose = true;
+        m_target_found = false;
 
         if (obj_found || m_manual_blob_init) {
 
             try{
 
-                std::cout << "TARGET FOUND" << std::endl;
-
-                vpImagePoint cog = m_colBlob.getCog(0);
-                vpDisplay::displayCross(I,cog,10, vpColor::red,2 );
+                // std::cout << "TARGET FOUND" << std::endl;
 
                 vpDot2 blob;
                 blob.setGraphics(true);
@@ -59,7 +57,11 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
                     blob.initTracking(I);
                 }
                 else
+                {
+                    vpImagePoint cog = m_colBlob.getCog(0);
+                    vpDisplay::displayCross(I,cog,10, vpColor::red,2 );
                     blob.initTracking(I,cog);
+                }
                 blob.track(I);
 
                 printf("Dot characteristics: \n");
@@ -74,17 +76,34 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
 
 
                 vpDot2 black_blob = blob;
-                black_blob.setGrayLevelMax(30);
+                black_blob.setGrayLevelMax(40);
                 black_blob.setGrayLevelMin(0);
 
-                int i = blob.getCog().get_i()-blob.getHeight()*2.3;
-                int j = blob.getCog().get_j()-blob.getWidth()*3.3;
-                unsigned int ai = blob.getHeight()*5;
-                unsigned int aj =blob.getWidth()*5;
-                //search similar blobs in the image and store them in blob_list
-                //black_blob.searchDotsInArea(I, 0, 0, I.getWidth(), I.getHeight(), m_blob_list);
-                //vpDisplay::displayRectangle(I, i, j, ai, aj, vpColor::red, false, 1);
-                black_blob.searchDotsInArea(I, j, i, ai, aj, m_blob_list);
+                int i,j,aj,ai;
+
+                if(m_left_hand_target)
+                {
+                    i = blob.getCog().get_i()-blob.getHeight()*2.3;
+                    j = blob.getCog().get_j()-blob.getWidth()*3.3;
+                    ai = blob.getHeight()*5;
+                    aj =blob.getWidth()*5;
+                }
+                else
+                {
+                    i = blob.getCog().get_i()-blob.getHeight();
+                    j = blob.getCog().get_j()-blob.getWidth()*2.0;
+                    ai = blob.getHeight()*4.5;
+                    aj = blob.getWidth()*4;
+
+                }
+
+
+
+
+                    //search similar blobs in the image and store them in blob_list
+                    //black_blob.searchDotsInArea(I, 0, 0, I.getWidth(), I.getHeight(), m_blob_list);
+                    //vpDisplay::displayRectangle(I, i, j, ai, aj, vpColor::red, false, 1);
+                    black_blob.searchDotsInArea(I, j, i, ai, aj, m_blob_list);
 
                 //        vpDisplay::flush(I);
                 //        vpDisplay::getClick(I,true);

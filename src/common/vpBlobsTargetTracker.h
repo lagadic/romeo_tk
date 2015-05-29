@@ -37,6 +37,7 @@ protected:
   bool m_initPose;
   unsigned int m_numBlobs;
   bool m_manual_blob_init;
+  bool m_left_hand_target;
 
 public:
 
@@ -72,6 +73,10 @@ public:
   void setName(const std::string &name) {
     m_name = name;
     m_colBlob.setName(name);
+  }
+
+  void setLeftHandTarget(const bool &left_target) {
+    m_left_hand_target = left_target;
   }
 
 
