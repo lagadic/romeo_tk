@@ -41,8 +41,12 @@ using namespace AL;
 
 double sigmoidFunction(const vpColVector & e)
 {
-    double e0 = 0.3;
-    double e1 = 0.9;
+//    double e0 = 0.3;
+//    double e1 = 0.9;
+    double e0 = 0.1;
+    double e1 = 0.7;
+
+
     double sig = 0.0;
 
     double norm_e = e.euclideanNorm() ;
@@ -68,7 +72,7 @@ vpMatrix computeP(const vpColVector & e, const vpMatrix & J, const vpMatrix & J_
     vpMatrix P_e(n,n);
     P_e =  I - J_pinv * J; // vpMatrix 	I_WpW in Visp vpServo
 
-    double pp = (e.transpose() * J * J.transpose() * e)[0];
+    double pp = (e.t() * J * J.transpose() * e);
 
     vpMatrix  ee_t(n,n);
     ee_t =  e * e.t();
@@ -79,8 +83,13 @@ vpMatrix computeP(const vpColVector & e, const vpMatrix & J, const vpMatrix & J_
 
     P = sigmoidFunction(e) * P_norm_e + (1 - sigmoidFunction(e)) * P_e;
 
-    //
+    std::cout << "OLD --------------: " <<  std::endl;
     std::cout << "P: " << std::endl << P << std::endl;
+    std::cout << "sigmoidFunction(e): " << std::endl << sigmoidFunction(e) << std::endl;
+    std::cout << "pp: " << std::endl << pp << std::endl;
+    std::cout << "P_norm_e: " << std::endl << P_norm_e << std::endl;
+    std::cout << "P_e: " << std::endl << P_e << std::endl;
+    std::cout << "--------------: " <<  std::endl;
 
     return P;
 
@@ -180,7 +189,7 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
             }
             q2 = q2 + q2_i;
 
-            // std::cout << "q2_i: " << std::endl << q2_i << std::endl;
+              std::cout << "q2_i: " << i << " " << std::endl << q2_i << std::endl;
 
         }
 
@@ -355,6 +364,10 @@ int main(int argc, const char* argv[])
     // Initialize the joint avoidance scheme from the joint limits
     vpColVector jointMin = robot.getJointMin(chain_name);
     vpColVector jointMax = robot.getJointMax(chain_name);
+
+    jointMin.resize(numJoints,false);
+    jointMax.resize(numJoints,false);
+
     // Vector secondary task
     vpColVector q2 (numJoints);
 
@@ -374,8 +387,8 @@ int main(int argc, const char* argv[])
                      << ": min=" << vpMath::deg(jointMin[i])
                      << " max=" << vpMath::deg(jointMax[i]) << std::endl;
     }
-    double ro = 0.2;
-    double ro1 = 0.4;
+    double ro = 0.1;
+    double ro1 = 0.3;
 
 
     // Initialize arm open loop servoing
@@ -512,7 +525,7 @@ int main(int argc, const char* argv[])
 
     // Move the head in the default position
 
-    AL::ALValue names_head       = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
+    AL::ALValue names_head  = AL::ALValue::array("HeadPitch","HeadRoll", "NeckPitch", "NeckYaw");
     AL::ALValue angles_head ;
     if(opt_right_arm)
         angles_head      = AL::ALValue::array(vpMath::rad(15), vpMath::rad(0), vpMath::rad(10), vpMath::rad(-5));
@@ -547,21 +560,21 @@ int main(int argc, const char* argv[])
         vpHomogeneousMatrix torsoMHeadRoll(robot.getProxy()->getTransform("HeadRoll", 0, true));
         vpHomogeneousMatrix torsoMlcam = torsoMHeadRoll * eMc;
 
-//        if (opt_right_arm)
-//        {
-//            vpHomogeneousMatrix torsoMWristRoll(robot.getProxy()->getTransform("RWristRoll", 0, true));
-//            vpDisplay::displayFrame(I,torsoMlcam.inverse()*  torsoMWristRoll *oMe_Arm.inverse(), cam, 0.04, vpColor::none, 3);
-//            vpDisplay::displayFrame(I, torsoMlcam.inverse() * torsoMWristRoll , cam, 0.04, vpColor::none, 3);
+        //        if (opt_right_arm)
+        //        {
+        //            vpHomogeneousMatrix torsoMWristRoll(robot.getProxy()->getTransform("RWristRoll", 0, true));
+        //            vpDisplay::displayFrame(I,torsoMlcam.inverse()*  torsoMWristRoll *oMe_Arm.inverse(), cam, 0.04, vpColor::none, 3);
+        //            vpDisplay::displayFrame(I, torsoMlcam.inverse() * torsoMWristRoll , cam, 0.04, vpColor::none, 3);
 
-//        }
-//        else
-//        {
-//            vpHomogeneousMatrix torsoMWristRoll(robot.getProxy()->getTransform("LWristRoll", 0, true));
+        //        }
+        //        else
+        //        {
+        //            vpHomogeneousMatrix torsoMWristRoll(robot.getProxy()->getTransform("LWristRoll", 0, true));
 
-//            vpDisplay::displayFrame(I,torsoMlcam.inverse()*  torsoMWristRoll *oMe_Arm.inverse(), cam, 0.04, vpColor::none, 3);
+        //            vpDisplay::displayFrame(I,torsoMlcam.inverse()*  torsoMWristRoll *oMe_Arm.inverse(), cam, 0.04, vpColor::none, 3);
 
-//            vpDisplay::displayFrame(I, torsoMlcam.inverse() * torsoMWristRoll , cam, 0.04, vpColor::none, 3);
-//        }
+        //            vpDisplay::displayFrame(I, torsoMlcam.inverse() * torsoMWristRoll , cam, 0.04, vpColor::none, 3);
+        //        }
 
 
 
@@ -637,7 +650,28 @@ int main(int argc, const char* argv[])
 
                 q = robot.getPosition(jointNames_arm);
 
-                q2 = computeQdotLimitAvoidance(e, TaskJac, TaskJacPseudoInv, jointMin, jointMax, q, q_dot_larm,ro,ro1);
+                //q2 = computeQdotLimitAvoidance(e, TaskJac, TaskJacPseudoInv, jointMin, jointMax, q, q_dot_larm,ro,ro1);
+
+                vpMatrix PP = servo_arm.m_task.getLargeP() ;
+
+                std::cout << "PVISP:" << PP << std::endl;
+
+                vpColVector a = servo_arm.m_task.secondaryTask(q);
+                vpColVector aa = servo_arm.m_task.secondaryTask(q,true);
+                 std::cout << "a:" << a << std::endl;
+                  std::cout << "aa:" << aa << std::endl;
+
+                q2 = servo_arm.m_task.secondaryTaskJointLimitAvoidance(q,q_dot_larm,jointMin,jointMax);
+
+
+                //vpColVector diff = q2 - q2visp;
+
+
+//                std::cout << "DIFF: " << std::endl << diff << std::endl;
+
+//                std::cout << "visp: " << std::endl << q2visp << std::endl;
+//                std::cout << "novisp: " << std::endl << q2  << std::endl;
+
 
                 std::cout << "q2: " << std::endl << q2 << std::endl;
                 robot.setVelocity(jointNames_arm, q_dot_larm+q2);
@@ -678,7 +712,7 @@ int main(int argc, const char* argv[])
 
         if (opt_plotter_q_sec_arm  && status_qrcode_tracker)
         {
-            plotter_q_sec_arm->plot(0,loop_iter,q2);
+            plotter_q_sec_arm->plot(0,loop_iter, q2);
             plotter_q_sec_arm->plot(1,loop_iter,q_dot_larm + q2);
 
         }
