@@ -22,6 +22,7 @@
 
 qi_create_bin(grasp_box_eye grasp_box_eye.cpp)
 qi_create_bin(grasp_box_bh grasp_box_bh.cpp)
+qi_create_bin(grasp_box_bh_blob grasp_box_bh_blob.cpp)
 qi_create_bin(grasp_boxes_2arms grasp_boxes_2arms.cpp)
 qi_create_bin(grasp_boxes_2arms_move_head grasp_boxes_2arms_move_head.cpp)
 
@@ -29,3 +30,4 @@ qi_use_lib(grasp_box_eye romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
 qi_use_lib(grasp_box_bh romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
 qi_use_lib(grasp_boxes_2arms romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
 qi_use_lib(grasp_boxes_2arms_move_head romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)
+qi_use_lib(grasp_box_bh_blob romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION ALMATH)

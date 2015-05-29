@@ -43,6 +43,7 @@
 #include <alproxies/alspeechrecognitionproxy.h>
 #include <alproxies/altexttospeechproxy.h>
 #include <alproxies/almemoryproxy.h>
+#include <alproxies/alledsproxy.h>
 
 #include <visp_naoqi/vpNaoqiRobot.h>
 
@@ -78,6 +79,8 @@ int main(int argc, const char* argv[])
 
     //    robot.open();
 
+AL::ALLedsProxy ledp(opt_ip, 9559);
+
 
     // Open Proxy for the speech
     AL::ALTextToSpeechProxy tts(opt_ip, 9559);
@@ -91,7 +94,12 @@ int main(int argc, const char* argv[])
 
     // Open Proxy for the recognition speech
     AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
-   // asr.unsubscribe("Test_ASR");
+
+//    asr.exit();
+//    return 0;
+//    asr.unsubscribe("Test_ASR");
+
+    asr.setVisualExpression(false);
     asr.setLanguage("English");
     std::vector<std::string> vocabulary;
     vocabulary.push_back("yes");
@@ -99,6 +107,7 @@ int main(int argc, const char* argv[])
 
     // Set the vocabulary
     asr.setVocabulary(vocabulary,false);
+
 
 
     AL::ALMemoryProxy memProxy(opt_ip, 9559);

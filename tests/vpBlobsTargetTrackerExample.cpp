@@ -118,7 +118,7 @@ int main(int argc, const char* argv[])
         g.setRobotIp(opt_ip);
     }
     g.setFramerate(15);
-    g.setCamera(0);
+    g.setCamera(3);
     g.open();
 
     vpCameraParameters cam = g.getCameraParameters();
@@ -162,6 +162,7 @@ int main(int argc, const char* argv[])
             objects[i].setCameraParameters(cam);
             firstTime[i] = true;
             objects[i].setPoints(points);
+            objects[i].setLeftHandTarget(false);
            // objects[i].setManualBlobInit(true);
 
             //      color_rects.at(i).id = vpColor::vpColorIdentifier( std::rand() % ( 18 + 1 ) );
@@ -231,7 +232,7 @@ int main(int argc, const char* argv[])
 
                 if (obj_found) {
                     vpHomogeneousMatrix cMo = objects[k].get_cMo();
-                    vpDisplay::displayFrame(I, cMo, cam, 0.1, vpColor::none, 3);
+                    vpDisplay::displayFrame(I, cMo, cam, 0.05, vpColor::none, 2);
 
                     cMo.print();
 

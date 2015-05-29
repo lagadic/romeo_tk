@@ -18,6 +18,7 @@ set(source1
   detection-object-mbt_class.cpp
   vpColoDetectionExample.cpp
   tracking_box_color.cpp
+  vpBlobsTargetTrackerExample.cpp
 )
 
 foreach(src ${source1})

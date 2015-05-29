@@ -37,6 +37,8 @@ qi_create_lib(romeo_tk
     src/common/vpColorDetection.h
     src/common/vpColorDetection.cpp
     src/common/vpJointLimitAvoidance.h
+    src/common/vpBlobsTargetTracker.h
+    src/common/vpBlobsTargetTracker.cpp
 )
 
 qi_use_lib(romeo_tk visp_naoqi VISP ALCOMMON ALPROXIES ALVISION)
