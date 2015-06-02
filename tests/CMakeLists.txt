@@ -19,6 +19,7 @@ set(source1
   vpColoDetectionExample.cpp
   tracking_box_color.cpp
   vpBlobsTargetTrackerExample.cpp
+  test_calibration.cpp
 )
 
 foreach(src ${source1})
