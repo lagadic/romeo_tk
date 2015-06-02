@@ -86,7 +86,7 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
                     i = blob.getCog().get_i()-blob.getHeight()*2.3;
                     j = blob.getCog().get_j()-blob.getWidth()*3.3;
                     ai = blob.getHeight()*5;
-                    aj =blob.getWidth()*5;
+                    aj = blob.getWidth()*5;
                 }
                 else
                 {

@@ -137,10 +137,13 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
 
         if (chain_name == "RArm")
         {
-            pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
-            pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
+            // pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
+            // pos2 = AL::ALValue::array(0.3702833652496338, -0.34589311480522156, 0.23645465075969696, 1.3869593143463135, -0.2769468426704407, -0.16718725860118866);
             //pos1 = AL::ALValue::array(0.3692784905433655, -0.35209423303604126, -0.07788902521133423, 1.2388615608215332, 0.6193198561668396, -0.17408452928066254);
             // pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+            pos1 = AL::ALValue::array(0.3741794228553772, -0.33311545848846436, -0.036883752793073654, 1.260278582572937, 0.4322237968444824, 0.009434251114726067);
+            pos2 = AL::ALValue::array(0.39718443155288696, -0.282814621925354, 0.17343932390213013, 1.194741129875183, -0.5093367099761963, 0.18652880191802979);
+
 
 
         }
@@ -199,8 +202,10 @@ void moveLArmToRestPosition(const vpNaoqiRobot &robot,  const std::string chain_
         if (chain_name == "RArm")
         {
             pos0 = AL::ALValue::array(0.10328315198421478, -0.2016201913356781, -0.3066698908805847, 1.8711119890213013, 0.843141496181488, 0.4650134742259979);
-            pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
-            pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
+            pos1 = AL::ALValue::array(0.3741794228553772, -0.33311545848846436, -0.036883752793073654, 1.260278582572937, 0.4322237968444824, 0.009434251114726067);
+            pos2 = AL::ALValue::array(0.39718443155288696, -0.282814621925354, 0.17343932390213013, 1.194741129875183, -0.5093367099761963, 0.18652880191802979);
+            // pos1 = AL::ALValue::array(0.38404589891433716, -0.23612679541110992, -0.09724850952625275, 1.4714961051940918, 0.5567980408668518, 0.2787119448184967);
+            // pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
         }
 
         else
@@ -353,8 +358,6 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
 }
 
 
-
-
 void printPose(const std::string &text, const vpHomogeneousMatrix &cMo)
 {
     vpTranslationVector t;
@@ -424,7 +427,6 @@ int main(int argc, const char* argv[])
             return 0;
         }
     }
-
 
 
     for (unsigned int i=0; i<argc; i++) {
@@ -598,6 +600,7 @@ int main(int argc, const char* argv[])
     //        qrcode_tracker.setMessage("romeo_left_arm");
     //    }
     std::string opt_name_file_color_target = opt_data_folder + "/" +"target/"+ chain_name +"/color.txt";
+    std::string opt_name_file_color_target1 = opt_data_folder + "/" +"target/"+ chain_name +"/color1.txt";
 
     vpBlobsTargetTracker hand_tracker;
     bool status_hand_tracker;
@@ -648,6 +651,7 @@ int main(int argc, const char* argv[])
     // Variable for visual servoing center box
     int cpt_iter_servo_head_center_box = 0;
     bool first_time_center_box  = true;
+    bool first_time_look_table = true;
 
     // Map to don't consider the HeadRoll
     vpMatrix MAP_head(6,5);
@@ -970,8 +974,8 @@ int main(int argc, const char* argv[])
 
                 if (firstTime) {
 
-                    if (opt_box_name == "tabascobox")
-                        tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful orange box  \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
+                    if (opt_box_name == "tabascobox" ||opt_box_name == "tabascobox_green"  )
+                        tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful tabasco box  \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
                     else
                         tts.post.say(" \\rspd=80\\ \\pau=1000\\ \\emph=2\\ What a beatiful " + opt_box_name + " \\eos=1\\ \\wait=5\\ \\emph=2\\ Can you put it on the table ? \\wait=2\\  \\emph=2\\ please!\\eos=1\\  " );
                     firstTime = false;
@@ -1036,8 +1040,15 @@ int main(int argc, const char* argv[])
                 vpDisplay::displayText(I, vpImagePoint(10,10), "Left click: automatic detection, Central: manual", vpColor::red);
 
             // Move the head in the default position
-            if(!opt_learn_grasp_position && !opt_learn_open_loop_position && opt_no_color_tracking )
+            if(!opt_learn_grasp_position && !opt_learn_open_loop_position && first_time_look_table)// && opt_no_color_tracking )
             {
+                first_time_look_table = false;
+                static bool find_box = true;
+                if (find_box)
+                {
+                    tts.post.say(" \\rspd=87\\ \\emph=2\\ Let's see what there is on the table!  \\eos=1\\ " );
+                    find_box = false;
+                }
                 //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
                 AL::ALValue angles_head;
                 if (opt_right_arm)
@@ -1192,6 +1203,7 @@ int main(int argc, const char* argv[])
             if (first_time_center_box) {
                 servo_time_init = vpTime::measureTimeSecond();
                 first_time_center_box = false;
+                tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a box of  \\emph=2\\ tabasco!  \\eos=1\\ " );
             }
             vpImagePoint teabox_cog_cur;
             vpPoint P;
@@ -1477,8 +1489,6 @@ int main(int argc, const char* argv[])
                     printPose("cdMc: ", cdMc);
                     servo_larm.setCurrentFeature(cdMc) ;
 
-
-
                     vpDisplay::displayFrame(I, cMo_teabox * oMh_Tea_Box_grasp , cam, 0.025, vpColor::red, 2);
 
                     static bool first_time_arm_servo = true;
@@ -1543,9 +1553,7 @@ int main(int argc, const char* argv[])
                     {
                         plotter_q_sec_arm->plot(0,loop_iter,q2_dot);
                         plotter_q_sec_arm->plot(1,loop_iter,q_dot_larm + q2_dot);
-
                     }
-
 
 
                     if (cpt_iter_servo_grasp > 100) {
@@ -1684,7 +1692,7 @@ int main(int argc, const char* argv[])
                     if (opt_language_english == false)
                         phraseToSay = "Je vais attraper la boite.";
                     else
-                        phraseToSay = "I will grasp the box";
+                        phraseToSay = "\\rspd=90\\ \\emph=2\\ I will grasp the box \\eos=1\\ ";
                     tts.post.say(phraseToSay);
                     click_done = false;
                     grasp_status = WaitLiftTeabox;
@@ -1873,7 +1881,10 @@ int main(int argc, const char* argv[])
                     static bool first_time = true;
                     if (first_time) {
                         servo_time_init = vpTime::measureTimeSecond();
-                        tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ " );
+                        if(opt_right_arm)
+                            tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my right! \\eos=1\\ " );
+                        else
+                            tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my left! \\eos=1\\ " );
 
                         first_time = false;
                     }
@@ -1954,6 +1965,7 @@ int main(int argc, const char* argv[])
                 vpColVector head_pos_mes = robot.getPosition(jointNames_tot);
                 if (sqrt((head_pos_mes-head_pos).sumSquare()) < vpMath::rad(4)) {
                     interaction_status = HeadFollowFace;
+                    tts.post.say(" \\rspd=90\\ \\emph=2\\ Who wants the box?  \\eos=1\\ " );
                 }
                 break;
             }
@@ -1962,7 +1974,7 @@ int main(int argc, const char* argv[])
                 if (click_done && button == vpMouseButton::button1) {
                     click_done = false;
                     robot.stop(jointNames_tot);
-                    tts.post.say(" \\rspd=90\\ \\emph=2\\ I will give you the box!  \\eos=1\\ " );
+                    tts.post.say(" \\rspd=90\\ \\emph=2\\ Now I will give it to you!  \\eos=1\\ " );
                     interaction_status = MoveArm;
                 }
                 break;
@@ -2030,7 +2042,7 @@ int main(int argc, const char* argv[])
                     if (opt_language_english == false)
                         phraseToSay = "Je vais te donner la boite";
                     else
-                        phraseToSay = " \\rspd=90\\ \\emph=2\\ Take it!  \\eos=1\\ " ;
+                        phraseToSay = " \\rspd=90\\ \\emph=2\\ Take it please!  \\eos=1\\ " ;
                     tts.post.say(phraseToSay);
                     double angle = 1.0f;
                     if (opt_right_arm)
@@ -2046,6 +2058,7 @@ int main(int argc, const char* argv[])
             case MoveArmToRestPosition: {
                 vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to move arm to rest", vpColor::red);
                 if (click_done && button == vpMouseButton::button1)  {
+                    tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
                     moveLArmToRestPosition(robot, chain_name); // move down to rest
                     click_done = false;
                     interaction_status = WaitForEnd;
@@ -2067,6 +2080,8 @@ int main(int argc, const char* argv[])
             robot.stop(jointNames_tot);
             robot.stop(jointNames_larm);
 
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Let's try again!  \\eos=1\\ " );
+
             AL::ALValue pos0;
             if (opt_right_arm)
                 pos0 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
@@ -2075,6 +2090,8 @@ int main(int argc, const char* argv[])
 
             robot.getProxy()->setPositions(chain_name, 0, pos0, 0.4, 63);
 
+            //Initial motion of the head
+            first_time_look_table = true;
 
             //Open loop motion arm
             arm_moved = false;
@@ -2094,7 +2111,15 @@ int main(int argc, const char* argv[])
             status_hand_tracker = false;
             hand_tracker.setForceDetection(true);
 
+        }
 
+        if (ret && s == "c" && state_teabox_tracker <= TakeTea)
+        {
+
+            if(!hand_tracker.loadHSV(opt_name_file_color_target1))
+            {
+                std::cout << "Error opening the file "<< opt_name_file_color_target1 << std::endl;
+            }
         }
 
 

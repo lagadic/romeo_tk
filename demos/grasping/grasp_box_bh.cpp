@@ -142,6 +142,7 @@ void moveLArmFromRestPosition (const vpNaoqiRobot &robot, const std::vector<floa
             pos2 = AL::ALValue::array(0.39801979064941406, -0.20118434727191925, 0.17352993786334991, 1.471331238746643, -0.24805442988872528, 0.6248168349266052);
 
 
+
         }
         else
         {
