@@ -33,6 +33,8 @@
 typedef enum {
     CalibrateRigthArm,
     CalibrateLeftArm,
+    WaitPreGrasp,
+    PreGraps,
     VSBox,
     End
 } State_t;
@@ -222,8 +224,13 @@ int main(int argc, const char* argv[])
     // Constant transformation Target Frame to Arm end-effector (WristPitch)
     std::vector<vpHomogeneousMatrix> hand_Me_Arm(2);
     std::string filename_transform = std::string(ROMEOTK_DATA_FOLDER) + "/transformation.xml";
-    // Create twist matrix from target Frame to Arm end-effector (WristPitch)
+    // Create twist matrix from box to Arm end-effector (WristPitch)
     std::vector <vpVelocityTwistMatrix> box_Ve_Arm(2);
+    // Create twist matrix from target Frame to Arm end-effector (WristPitch)
+    std::vector <vpVelocityTwistMatrix> hand_Ve_Arm(2);
+
+    // Constant transformation Target Frame to box to target Hand
+    std::vector<vpHomogeneousMatrix> box_Mhand(2);
 
 
     for (unsigned int i = 0; i < 2; i++)
@@ -239,10 +246,9 @@ int main(int argc, const char* argv[])
         else
             std::cout << "Homogeneous matrix " << name_transform <<": " << std::endl << hand_Me_Arm[i] << std::endl;
 
-       // oVe_Arm[i].buildFrom(hand_Me_Arm[i]);
+        hand_Ve_Arm[i].buildFrom(hand_Me_Arm[i]);
 
     }
-
 
     /************************************************************************************************/
 
@@ -252,26 +258,24 @@ int main(int argc, const char* argv[])
         robot.setRobotIp(opt_ip);
     robot.open();
 
-
     std::vector<std::string> jointNames = robot.getBodyNames("Head");
     //jointNames.pop_back(); // We don't consider  the last joint of the head = HeadRoll
     std::vector<std::string> jointNamesLEye = robot.getBodyNames("LEye");
     std::vector<std::string> jointNamesREye = robot.getBodyNames("REye");
 
     jointNames.insert(jointNames.end(), jointNamesLEye.begin(), jointNamesLEye.end());
-    std::vector<std::string> jointNames_tot = jointNames;
-    jointNames_tot.push_back(jointNamesREye.at(0));
-    jointNames_tot.push_back(jointNamesREye.at(1));
-
+    std::vector<std::string> jointHeadNames_tot = jointNames;
+    jointHeadNames_tot.push_back(jointNamesREye.at(0));
+    jointHeadNames_tot.push_back(jointNamesREye.at(1));
 
     /************************************************************************************************/
-
-
-
 
     std::vector<bool> grasp_servo_converged(2);
     grasp_servo_converged[0]= false;
     grasp_servo_converged[1]= false;
+
+
+    std::vector<vpMatrix> eJe(2);
 
 
     // Initialize arms servoing
@@ -290,11 +294,21 @@ int main(int argc, const char* argv[])
     jointNames_arm[0].pop_back();
     jointNames_arm[1].pop_back();
 
+    std::vector<std::string> jointArmsNames_tot = jointNames_arm[0];
+
+    jointArmsNames_tot.insert(jointArmsNames_tot.end(), jointNames_arm[1].begin(), jointNames_arm[1].end());
+
+
     const unsigned int numArmJoints =  jointNames_arm.size();
     std::vector<vpHomogeneousMatrix> box_dMbox(2);
 
+    std::vector<vpColVector> q_dot_arm;
 
-    vpColVector q_dot_larm(jointNames_arm[0].size(), 0);
+    vpColVector   q_dot_larm(chain_name[0].size());
+    vpColVector   q_dot_rarm(chain_name[0].size());
+    q_dot_arm.push_back(q_dot_larm);
+    q_dot_arm.push_back(q_dot_rarm);
+
 
     std::vector<bool> first_time_arm_servo(2);
     first_time_arm_servo[0] = true;
@@ -310,11 +324,18 @@ int main(int argc, const char* argv[])
 
     unsigned int index_hand = 1;
 
-    vpHomogeneousMatrix M_offset;
-    M_offset[1][3] = 0.03;
-    M_offset[0][3] = 0.03;
-    M_offset[3][3] = 0.02;
+    //    vpHomogeneousMatrix M_offset;
+    //    M_offset[1][3] = 0.00;
+    //    M_offset[0][3] = 0.00;
+    //    M_offset[2][3] = 0.00;
 
+    vpHomogeneousMatrix M_offset;
+    M_offset.buildFrom(0.0, 0.0, 0.0, 0.0, 0.0, 0.0) ;
+
+    double d_t = 0.01;
+    double d_r = 0.0;
+
+    bool first_time_box_pose = true;
 
 
     /************************************************************************************************/
@@ -328,6 +349,13 @@ int main(int argc, const char* argv[])
     state = CalibrateRigthArm;
 
 
+    //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
+
+    AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-18.9), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+    float fractionMaxSpeed  = 0.1f;
+    robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
+
+
 
     while(1) {
         double loop_time_start = vpTime::measureTimeMs();
@@ -339,34 +367,105 @@ int main(int argc, const char* argv[])
         bool click_done = vpDisplay::getClick(I, button, false);
 
 
-        if (state < VSBox)
+        //        if (state < VSBox)
+        //        {
+
+
+        char key[10];
+        bool ret = vpDisplay::getKeyboardEvent(I, key, false);
+        std::string s = key;
+
+
+
+
+        if (ret)
         {
+            if (s == "r")
+            {
+                M_offset.buildFrom(0.0, 0.0, 0.0, 0.0, 0.0, 0.0) ;
+
+                d_t = 0.0;
+                d_r = 0.2;
+                std::cout << "Rotation mode. " << std::endl;
 
 
-            char key[10];
-            bool ret = vpDisplay::getKeyboardEvent(I, key, false);
-            std::string s = key;
+            }
 
-            if (ret && s == "h")
+            if (s == "t")
+            {
+                M_offset.buildFrom(0.0, 0.0, 0.0, 0.0, 0.0, 0.0) ;
+
+                d_t = 0.01;
+                d_r = 0.0;
+                std::cout << "Translation mode. " << std::endl;
+
+
+            }
+
+
+
+            if (s == "h")
             {
                 hand_tracker[index_hand]->setManualBlobInit(true);
                 hand_tracker[index_hand]->setForceDetection(true);
             }
-            else if (ret && s == "+")
+            else if ( s == "+")
             {
                 unsigned int value = hand_tracker[index_hand]->getGrayLevelMaxBlob() +10;
                 hand_tracker[index_hand]->setGrayLevelMaxBlob(value);
                 std::cout << "Set to "<< value << "the value of  " << std::endl;
 
             }
-            else if (ret && s == "-")
+            else if (s == "-")
             {
                 unsigned int value = hand_tracker[1]->getGrayLevelMaxBlob()-10;
                 hand_tracker[index_hand]->setGrayLevelMaxBlob(value-10);
                 std::cout << "Set to "<< value << " GrayLevelMaxBlob. " << std::endl;
-
             }
 
+            //          |x
+            //      z\  |
+            //        \ |
+            //         \|_____ y
+            //
+
+            else if (s == "4") //-y
+            {
+                M_offset.buildFrom(0.0, -d_t, 0.0, 0.0, -d_r, 0.0) ;
+            }
+
+            else if (s == "6")  //+y
+            {
+                M_offset.buildFrom(0.0, d_t, 0.0, 0.0, d_r, 0.0) ;
+            }
+
+            else if (s == "8")  //+x
+            {
+                M_offset.buildFrom(d_t, 0.0, 0.0, d_r, 0.0, 0.0) ;
+            }
+
+            else if (s == "2") //-x
+            {
+                M_offset.buildFrom(-d_t, 0.0, 0.0, -d_r, 0.0, 0.0) ;
+            }
+
+            else if (s == "7")//-z
+            {
+                M_offset.buildFrom(0.0, 0.0, -d_t, 0.0, 0.0, -d_r) ;
+            }
+            else if (s == "9") //+z
+            {
+                M_offset.buildFrom(0.0, 0.0, d_t, 0.0, 0.0, d_r) ;
+            }
+
+            cMbox_d = cMbox_d * M_offset;
+
+
+        }
+
+
+        if (state < PreGraps)
+        {
             status_hand_tracker[index_hand] = hand_tracker[index_hand]->track(cvI,I);
 
             if (status_hand_tracker[index_hand] ) { // display the tracking results
@@ -379,38 +478,52 @@ int main(int argc, const char* argv[])
 
         }
 
+        //        }
+
         status_box_tracker = box_tracker.track(cvI,I);
         if (status_box_tracker ) { // display the tracking results
             cMbox = box_tracker.get_cMo();
             //printPose("cMo qrcode: ", cMo_hand);
             // The qrcode frame is only displayed when PBVS is active or learning
 
-            vpDisplay::displayFrame(I, cMbox, cam, 0.04, vpColor::none, 3);
+            vpDisplay::displayFrame(I, cMbox, cam, 0.04, vpColor::none, 1);
+
+
+            //            if (first_time_box_pose)
+            //            {
+            //                // Compute desired box position cMbox_d
+            //                cMbox_d = cMbox * M_offset;
+            //                first_time_box_pose = false;
+            //            }
+
+            // vpDisplay::displayFrame(I, cMbox_d, cam, 0.04, vpColor::red, 1);
+
         }
 
 
         if (state == CalibrateRigthArm &&  status_box_tracker && status_hand_tracker[index_hand] )
         {
             vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Left click to calibrate right hand", vpColor::red);
-            vpHomogeneousMatrix box_Me_Arm; // Homogeneous matrix from the box to the left wrist
-            box_Me_Arm = cMbox.inverse() *  cMo_hand[index_hand] * hand_Me_Arm[index_hand] ; // from box to WristPitch
 
-            // Compute desired box position cMbox_d
-            cMbox_d = cMbox * M_offset;
-            vpDisplay::displayFrame(I, cMbox_d, cam, 0.04, vpColor::red, 1);
+            vpHomogeneousMatrix box_Me_Arm; // Homogeneous matrix from the box to the left wrist
+
+            box_Mhand[index_hand] = cMbox.inverse() *  cMo_hand[index_hand];
+            box_Me_Arm = box_Mhand[index_hand] * hand_Me_Arm[index_hand] ; // from box to WristPitch
+
+
 
             // vpDisplay::displayFrame(I, cMo_hand[index_hand] * (cMbox.inverse() *  cMo_hand[index_hand]).inverse() , cam, 0.04, vpColor::green, 1);
 
 
             if (click_done && button == vpMouseButton::button1 ) {
 
-               box_Ve_Arm[index_hand].buildFrom(box_Me_Arm);
-               index_hand = 0;
+                box_Ve_Arm[index_hand].buildFrom(box_Me_Arm);
+                index_hand = 0;
                 state = CalibrateLeftArm;
                 //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
                 AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(4.9), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
                 float fractionMaxSpeed  = 0.1f;
-                robot.getProxy()->setAngles(jointNames_tot, angles_head, fractionMaxSpeed);
+                robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
 
 
                 click_done = false;
@@ -424,25 +537,83 @@ int main(int argc, const char* argv[])
         {
             vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Left click to calibrate left hand", vpColor::red);
 
-                vpHomogeneousMatrix box_Me_Arm; // Homogeneous matrix from the box to the left wrist
-            box_Me_Arm = cMbox.inverse() *  cMo_hand[index_hand] * hand_Me_Arm[index_hand] ; // from box to WristPitch
+            vpHomogeneousMatrix box_Me_Arm; // Homogeneous matrix from the box to the left wrist
+            box_Mhand[index_hand] = cMbox.inverse() *  cMo_hand[index_hand];
+            box_Me_Arm = box_Mhand[index_hand] * hand_Me_Arm[index_hand] ; // from box to WristPitch
 
-            // Compute desired box position cMbox_d
-            cMbox_d = cMbox * M_offset;
-            vpDisplay::displayFrame(I, cMbox_d, cam, 0.04, vpColor::red, 1);
+            //            if (first_time_box_pose)
+            //            {
+            //                // Compute desired box position cMbox_d
+            //                cMbox_d = cMbox * M_offset;
+            //                first_time_box_pose = false;
+
+            //            }
+
+            // vpDisplay::displayFrame(I, cMbox_d, cam, 0.04, vpColor::red, 1);
 
             // vpDisplay::displayFrame(I, cMo_hand[index_hand] * (cMbox.inverse() *  cMo_hand[index_hand]).inverse() , cam, 0.04, vpColor::green, 1);
 
 
             if (click_done && button == vpMouseButton::button1 ) {
 
-               box_Ve_Arm[index_hand].buildFrom(box_Me_Arm);
-                  state = VSBox;
+                box_Ve_Arm[index_hand].buildFrom(box_Me_Arm);
+                state = WaitPreGrasp;
                 click_done = false;
-
+                //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
+                AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-5.0), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+                float fractionMaxSpeed  = 0.05f;
+                robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
             }
 
         }
+
+
+        if (state == WaitPreGrasp && status_box_tracker )
+        {
+
+            if (click_done && button == vpMouseButton::button1 ) {
+
+                state = PreGraps;
+                click_done = false;
+            }
+
+
+
+
+        }
+
+
+
+        if (state == PreGraps && status_box_tracker )
+        {
+
+            vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Left click to start the servo", vpColor::red);
+
+            if (first_time_box_pose)
+            {
+                // Compute desired box position cMbox_d
+                cMbox_d = cMbox * M_offset;
+                first_time_box_pose = false;
+
+            }
+
+            vpDisplay::displayFrame(I, cMbox_d , cam, 0.05, vpColor::none, 3);
+            vpDisplay::displayFrame(I, cMbox *box_Mhand[1] , cam, 0.05, vpColor::none, 3);
+            vpDisplay::displayFrame(I, cMbox *box_Mhand[0] , cam, 0.05, vpColor::none, 3);
+
+
+
+            if (click_done && button == vpMouseButton::button1 ) {
+
+                state = VSBox;
+                click_done = false;
+            }
+
+
+
+        }
+
+
 
 
         if (state == VSBox)
@@ -451,22 +622,37 @@ int main(int argc, const char* argv[])
             if(status_box_tracker )
             {
 
-                int i = 0;
 
 
-                if (! grasp_servo_converged[i]) {
 
-                    vpAdaptiveGain lambda(0.8, 0.05, 8);
-                    servo_larm[i]->setLambda(lambda);
+                if (! grasp_servo_converged[0]) {
+                    //                    for (unsigned int i = 0; i<2; i++)
+                    //                    {
 
-                    servo_larm[i]->set_eJe(robot.get_eJe(chain_name[i]));
+                    unsigned int i = 0;
+                    //vpAdaptiveGain lambda(0.8, 0.05, 8);
+                    vpAdaptiveGain lambda(0.4, 0.02, 4);
+
+                    //servo_larm[i]->setLambda(lambda);
+                    servo_larm[i]->setLambda(0.4);
+
+
+                    eJe[i] = robot.get_eJe(chain_name[i]);
+
+                    servo_larm[i]->set_eJe(eJe[i]);
                     servo_larm[i]->m_task.set_cVe(box_Ve_Arm[i]);
 
                     box_dMbox[i] = cMbox_d.inverse() * cMbox;
                     printPose("box_dMbox: ", box_dMbox[i]);
                     servo_larm[i]->setCurrentFeature(box_dMbox[i]) ;
 
-                    vpDisplay::displayFrame(I, cMbox_d , cam, 0.025, vpColor::red, 2);
+                    vpDisplay::displayFrame(I, cMbox_d , cam, 0.05, vpColor::none, 3);
+
+
+                    vpDisplay::displayFrame(I, cMbox *box_Mhand[1] , cam, 0.05, vpColor::none, 3);
+                    vpDisplay::displayFrame(I, cMbox *box_Mhand[0] , cam, 0.05, vpColor::none, 3);
+
+
 
                     if (first_time_arm_servo[i]) {
                         std::cout << "-- Start visual servoing of the arm" << chain_name[i] << "." << std::endl;
@@ -474,18 +660,20 @@ int main(int argc, const char* argv[])
                         first_time_arm_servo[i] = false;
                     }
 
-                    q_dot_larm =  - servo_larm[i]->computeControlLaw(servo_arm_time_init[i]);
+                    q_dot_arm[i] =  - servo_larm[i]->computeControlLaw(servo_arm_time_init[i]);
 
 
-                    vpTranslationVector t_error_grasp = box_dMbox[i].getTranslationVector();
-                    vpRotationMatrix R_error_grasp;
-                    box_dMbox[i].extract(R_error_grasp);
-                    vpThetaUVector tu_error_grasp;
-                    tu_error_grasp.buildFrom(R_error_grasp);
-                    double theta_error_grasp;
-                    vpColVector u_error_grasp;
-                    tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
-                    std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+                    vpColVector real_q = robot.getJointVelocity(jointNames_arm[i]);
+
+                    //                    std::cout << "real_q:  " << std::endl <<  real_q << std::endl;
+
+                    //                    std::cout << " box_Ve_Arm[i]:  " << std::endl << box_Ve_Arm[i] << std::endl;
+                    //                    std::cout << "  eJe[i][i]:  " << std::endl <<  eJe[i] << std::endl;
+
+                    vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) * real_q;
+
+                    //                    std::cout << "real_v:  " << std::endl <<real_v << std::endl;
+
 
                     //          vpVelocityTwistMatrix cVo(cMo_hand);
                     //          vpMatrix cJe = cVo * oJo;
@@ -494,9 +682,9 @@ int main(int argc, const char* argv[])
                     //          std::cout <<"Second Term:" <<sec_ter << std::endl;
                     //q_dot_head = q_dot_head + sec_ter;
 
-                    vpColVector task_error = servo_larm[i]->m_task.getError();
-                    vpMatrix taskJac = servo_larm[i]->m_task.getTaskJacobian();
-                    vpMatrix taskJacPseudoInv = servo_larm[i]->m_task.getTaskJacobianPseudoInverse();
+                    //vpColVector task_error = servo_larm[i]->m_task.getError();
+                    //vpMatrix taskJac = servo_larm[i]->m_task.getTaskJacobian();
+                    //vpMatrix taskJacPseudoInv = servo_larm[i]->m_task.getTaskJacobianPseudoInverse();
 
                     //cond = taskJacPseudoInv.cond();
                     //plotter_cond->plot(0, 0, loop_iter, cond);
@@ -516,7 +704,7 @@ int main(int argc, const char* argv[])
 
                     //q_dot_arm_head.stack(q_dot_tot);
                     //          robot.setVelocity(joint_names_arm_head,q_dot_arm_head);
-                    robot.setVelocity(jointNames_arm[i], q_dot_larm);
+                    //robot.setVelocity(jointNames_arm[i], q_dot_larm);
 
                     //          if (opt_plotter_arm) {
                     //            plotter_arm->plot(0, cpt_iter_servo_grasp, servo_larm.m_task.getError());
@@ -531,35 +719,97 @@ int main(int argc, const char* argv[])
                     //          }
 
 
+                    cpt_iter_servo_grasp[i] ++;
 
-                    if (cpt_iter_servo_grasp[i] > 100) {
 
-                            vpDisplay::displayText(I, vpImagePoint(10,10), "Cannot converge. Click to continue", vpColor::red);
-                    }
-                    double error_t_treshold = 0.007;
+                    //                    }
 
-                    if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
-                    {
-                        robot.stop(jointNames_arm[i]);
-                        state = End;
-                        grasp_servo_converged[i] = true;
 
-                        if (click_done && button == vpMouseButton::button1)
-                            click_done = false;
-                    }
+
+
+
+                    //                    // Visual servoing slave
+
+                    //                    i = 1;
+
+                    //                    vpAdaptiveGain lambda(0.4, 0.02, 4);
+                    //                    servo_larm[i]->setLambda(lambda);
+
+                    //                    servo_larm[i]->set_eJe(robot.get_eJe(chain_name[i]));
+                    //                    servo_larm[i]->m_task.set_cVe(hand_Ve_Arm[i]);
+
+                    //                    box_dMbox[i] = (cMbox * box_Mhand).inverse() * ;
+                    //                    printPose("box_dMbox: ", box_dMbox[i]);
+                    //                    servo_larm[i]->setCurrentFeature(box_dMbox[i]) ;
+
+                    //                    vpDisplay::displayFrame(I, cMbox_d , cam, 0.025, vpColor::red, 2);
+
+                    //                    if (first_time_arm_servo[i]) {
+                    //                        std::cout << "-- Start visual servoing of the arm" << chain_name[i] << "." << std::endl;
+                    //                        servo_arm_time_init[i] = vpTime::measureTimeSecond();
+                    //                        first_time_arm_servo[i] = false;
+                    //                    }
+
+                    //                    q_dot_arm[i] =  - servo_larm[i]->computeControlLaw(servo_arm_time_init[i]);
+
+
+
+                    eJe[1] = robot.get_eJe(chain_name[1]);
+                    q_dot_arm[1] = (box_Ve_Arm[1] * eJe[1]).pseudoInverse() * real_v;
+
+                    vpColVector q_dot_tot = q_dot_arm[0];
+
+                    q_dot_tot.stack( q_dot_arm[1]);
+
+
+                    robot.setVelocity(jointArmsNames_tot, q_dot_tot);
+
+
+                    vpTranslationVector t_error_grasp = box_dMbox[0].getTranslationVector();
+                    vpRotationMatrix R_error_grasp;
+                    box_dMbox[0].extract(R_error_grasp);
+                    vpThetaUVector tu_error_grasp;
+                    tu_error_grasp.buildFrom(R_error_grasp);
+                    double theta_error_grasp;
+                    vpColVector u_error_grasp;
+                    tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
+                    std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+
+
+
+
+                    //                    if (cpt_iter_servo_grasp[0] > 100) {
+
+                    //                        vpDisplay::displayText(I, vpImagePoint(10,10), "Cannot converge. Click to continue", vpColor::red);
+                    //                    }
+                    //                    double error_t_treshold = 0.007;
+
+                    //                    if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
+                    //                    {
+                    //                        robot.stop(jointArmsNames_tot);
+
+                    //                        state = End;
+                    //                        grasp_servo_converged[0] = true;
+
+                    //                        if (click_done && button == vpMouseButton::button1)
+                    //                            click_done = false;
+                    //                    }
 
 
                 }
 
-                cpt_iter_servo_grasp[i] ++;
-
-
             }
             else {
                 // state grasping but one of the tracker fails
-                robot.stop(jointNames_arm[0]);
-                robot.stop(jointNames_arm[1]);
+                robot.stop(jointArmsNames_tot);
             }
+
+
+
+
+
+
+
 
 
         }
@@ -578,6 +828,10 @@ int main(int argc, const char* argv[])
         //std::cout << "Loop time: " << vpTime::measureTimeMs() - loop_time_start << std::endl;
 
     }
+
+    robot.stop(jointArmsNames_tot);
+
+
 
 
 }
