@@ -299,15 +299,56 @@ int main(int argc, const char* argv[])
     jointArmsNames_tot.insert(jointArmsNames_tot.end(), jointNames_arm[1].begin(), jointNames_arm[1].end());
 
 
-    const unsigned int numArmJoints =  jointNames_arm.size();
+    const unsigned int numArmJoints =  jointNames_arm[0].size();
     std::vector<vpHomogeneousMatrix> box_dMbox(2);
 
+    // Vector containing the joint velocity vectors of the arms
     std::vector<vpColVector> q_dot_arm;
+    // Vector containing the joint velocity vectors of the arms for the secondary task
+    std::vector<vpColVector> q_dot_arm_sec;
+    // Vector joint position of the arms
+    std::vector<vpColVector> q;
+    // Vector joint real velocities of the arms
+    std::vector<vpColVector> q_dot_real;
 
-    vpColVector   q_dot_larm(chain_name[0].size());
-    vpColVector   q_dot_rarm(chain_name[0].size());
-    q_dot_arm.push_back(q_dot_larm);
-    q_dot_arm.push_back(q_dot_rarm);
+    vpColVector   q_temp(numArmJoints);
+    q_dot_arm.push_back(q_temp);
+    q_dot_arm.push_back(q_temp);
+
+    q_dot_arm_sec.push_back(q_temp);
+    q_dot_arm_sec.push_back(q_temp);
+
+    q.push_back(q_temp);
+    q.push_back(q_temp);
+
+    q_dot_real.push_back(q_temp);
+    q_dot_real.push_back(q_temp);
+
+
+
+    // Initialize the joint avoidance scheme from the joint limits
+    std::vector<vpColVector> jointMin;
+    std::vector<vpColVector> jointMax;
+
+    jointMin.push_back(q_temp);
+    jointMin.push_back(q_temp);
+
+    jointMax.push_back(q_temp);
+    jointMax.push_back(q_temp);
+
+    for (unsigned int i = 0; i< 2; i++)
+    {
+        jointMin[i] = robot.getJointMin(chain_name[i]);
+        jointMax[i] = robot.getJointMax(chain_name[i]);
+
+        jointMin[i].resize(numArmJoints,false);
+        jointMax[i].resize(numArmJoints,false);
+
+        //        std::cout <<  jointMin[i].size() << std::endl;
+        //        std::cout <<  jointMax[i].size() << std::endl;
+        //         std::cout << "max " <<  jointMax[i] << std::endl;
+    }
+
 
 
     std::vector<bool> first_time_arm_servo(2);
@@ -323,6 +364,7 @@ int main(int argc, const char* argv[])
     cpt_iter_servo_grasp[1] = 0;
 
     unsigned int index_hand = 1;
+
 
     //    vpHomogeneousMatrix M_offset;
     //    M_offset[1][3] = 0.00;
@@ -366,10 +408,8 @@ int main(int argc, const char* argv[])
         vpDisplay::display(I);
         bool click_done = vpDisplay::getClick(I, button, false);
 
-
         //        if (state < VSBox)
         //        {
-
 
         char key[10];
         bool ret = vpDisplay::getKeyboardEvent(I, key, false);
@@ -387,8 +427,6 @@ int main(int argc, const char* argv[])
                 d_t = 0.0;
                 d_r = 0.2;
                 std::cout << "Rotation mode. " << std::endl;
-
-
             }
 
             if (s == "t")
@@ -398,11 +436,7 @@ int main(int argc, const char* argv[])
                 d_t = 0.01;
                 d_r = 0.0;
                 std::cout << "Translation mode. " << std::endl;
-
-
             }
-
-
 
             if (s == "h")
             {
@@ -464,7 +498,7 @@ int main(int argc, const char* argv[])
         }
 
 
-        if (state < PreGraps)
+        if (state < WaitPreGrasp)
         {
             status_hand_tracker[index_hand] = hand_tracker[index_hand]->track(cvI,I);
 
@@ -560,7 +594,7 @@ int main(int argc, const char* argv[])
                 state = WaitPreGrasp;
                 click_done = false;
                 //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
-                AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-5.0), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+                AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-6.8), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
                 float fractionMaxSpeed  = 0.05f;
                 robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
             }
@@ -568,17 +602,16 @@ int main(int argc, const char* argv[])
         }
 
 
-        if (state == WaitPreGrasp && status_box_tracker )
+        if (state == WaitPreGrasp  )
         {
+            index_hand = 1;
+
 
             if (click_done && button == vpMouseButton::button1 ) {
 
                 state = PreGraps;
                 click_done = false;
             }
-
-
-
 
         }
 
@@ -594,36 +627,30 @@ int main(int argc, const char* argv[])
                 // Compute desired box position cMbox_d
                 cMbox_d = cMbox * M_offset;
                 first_time_box_pose = false;
-
             }
 
             vpDisplay::displayFrame(I, cMbox_d , cam, 0.05, vpColor::none, 3);
             vpDisplay::displayFrame(I, cMbox *box_Mhand[1] , cam, 0.05, vpColor::none, 3);
             vpDisplay::displayFrame(I, cMbox *box_Mhand[0] , cam, 0.05, vpColor::none, 3);
 
-
-
             if (click_done && button == vpMouseButton::button1 ) {
 
                 state = VSBox;
                 click_done = false;
             }
-
-
-
         }
-
-
 
 
         if (state == VSBox)
         {
 
+            //Get Actual position of the arm joints
+            q[0] = robot.getPosition(jointNames_arm[0]);
+            q[1] = robot.getPosition(jointNames_arm[1]);
+
+            //  if(status_box_tracker && status_hand_tracker[index_hand] )
             if(status_box_tracker )
             {
-
-
-
 
                 if (! grasp_servo_converged[0]) {
                     //                    for (unsigned int i = 0; i<2; i++)
@@ -634,7 +661,7 @@ int main(int argc, const char* argv[])
                     vpAdaptiveGain lambda(0.4, 0.02, 4);
 
                     //servo_larm[i]->setLambda(lambda);
-                    servo_larm[i]->setLambda(0.4);
+                    servo_larm[i]->setLambda(0.2);
 
 
                     eJe[i] = robot.get_eJe(chain_name[i]);
@@ -649,10 +676,8 @@ int main(int argc, const char* argv[])
                     vpDisplay::displayFrame(I, cMbox_d , cam, 0.05, vpColor::none, 3);
 
 
-                    vpDisplay::displayFrame(I, cMbox *box_Mhand[1] , cam, 0.05, vpColor::none, 3);
-                    vpDisplay::displayFrame(I, cMbox *box_Mhand[0] , cam, 0.05, vpColor::none, 3);
-
-
+                    //                    vpDisplay::displayFrame(I, cMbox *box_Mhand[1] , cam, 0.05, vpColor::none, 3);
+                    //                    vpDisplay::displayFrame(I, cMbox *box_Mhand[0] , cam, 0.05, vpColor::none, 3);
 
                     if (first_time_arm_servo[i]) {
                         std::cout << "-- Start visual servoing of the arm" << chain_name[i] << "." << std::endl;
@@ -663,17 +688,17 @@ int main(int argc, const char* argv[])
                     q_dot_arm[i] =  - servo_larm[i]->computeControlLaw(servo_arm_time_init[i]);
 
 
-                    vpColVector real_q = robot.getJointVelocity(jointNames_arm[i]);
+                    q_dot_real[0] = robot.getJointVelocity(jointNames_arm[0]);
+                    q_dot_real[1] = robot.getJointVelocity(jointNames_arm[1]);
 
                     //                    std::cout << "real_q:  " << std::endl <<  real_q << std::endl;
 
                     //                    std::cout << " box_Ve_Arm[i]:  " << std::endl << box_Ve_Arm[i] << std::endl;
                     //                    std::cout << "  eJe[i][i]:  " << std::endl <<  eJe[i] << std::endl;
 
-                    vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) * real_q;
+                    vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) *  q_dot_real[0];
 
                     //                    std::cout << "real_v:  " << std::endl <<real_v << std::endl;
-
 
                     //          vpVelocityTwistMatrix cVo(cMo_hand);
                     //          vpMatrix cJe = cVo * oJo;
@@ -682,23 +707,11 @@ int main(int argc, const char* argv[])
                     //          std::cout <<"Second Term:" <<sec_ter << std::endl;
                     //q_dot_head = q_dot_head + sec_ter;
 
-                    //vpColVector task_error = servo_larm[i]->m_task.getError();
-                    //vpMatrix taskJac = servo_larm[i]->m_task.getTaskJacobian();
-                    //vpMatrix taskJacPseudoInv = servo_larm[i]->m_task.getTaskJacobianPseudoInverse();
 
-                    //cond = taskJacPseudoInv.cond();
-                    //plotter_cond->plot(0, 0, loop_iter, cond);
 
                     // Compute joint limit avoidance
-                    //q2_dot = computeQdotLimitAvoidance(task_error, taskJac, taskJacPseudoInv, jointMin, jointMax, q, q_dot_larm, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
-
-                    //q_dot_head = q_dot_head;
-
-                    // Add mirroring eyes
-                    //          q_dot_tot = q_dot_head;
-                    //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
-                    //          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
-
+                    q_dot_arm_sec[0]  = servo_larm[0]->m_task.secondaryTaskJointLimitAvoidance(q[0], q_dot_real[0], jointMin[0], jointMax[0]);
+                    //q_dot_arm_sec[1]  = servo_larm[1]->m_task.secondaryTaskJointLimitAvoidance(q[1], q_dot_real[1], jointMin[1], jointMax[1]);
 
                     // vpColVector q_dot_arm_head = q_dot_larm + q2_dot;
 
@@ -724,21 +737,19 @@ int main(int argc, const char* argv[])
 
                     //                    }
 
-
-
-
-
                     //                    // Visual servoing slave
 
                     //                    i = 1;
 
-                    //                    vpAdaptiveGain lambda(0.4, 0.02, 4);
-                    //                    servo_larm[i]->setLambda(lambda);
+                    //                    //vpAdaptiveGain lambda(0.4, 0.02, 4);
+
+                    //                    servo_larm[i]->setLambda(0.07);
 
                     //                    servo_larm[i]->set_eJe(robot.get_eJe(chain_name[i]));
                     //                    servo_larm[i]->m_task.set_cVe(hand_Ve_Arm[i]);
 
-                    //                    box_dMbox[i] = (cMbox * box_Mhand).inverse() * ;
+                    //                    box_dMbox[i] = (cMbox *box_Mhand[1]).inverse() *  cMo_hand[1] ;
+
                     //                    printPose("box_dMbox: ", box_dMbox[i]);
                     //                    servo_larm[i]->setCurrentFeature(box_dMbox[i]) ;
 
@@ -755,15 +766,15 @@ int main(int argc, const char* argv[])
 
 
                     eJe[1] = robot.get_eJe(chain_name[1]);
+                    //                    q_dot_arm[1] += (box_Ve_Arm[1] * eJe[1]).pseudoInverse() * real_v;
+
                     q_dot_arm[1] = (box_Ve_Arm[1] * eJe[1]).pseudoInverse() * real_v;
 
-                    vpColVector q_dot_tot = q_dot_arm[0];
+                    vpColVector q_dot_tot = q_dot_arm[0] + q_dot_arm_sec[0];
 
-                    q_dot_tot.stack( q_dot_arm[1]);
-
+                    q_dot_tot.stack( q_dot_arm[1] + q_dot_arm_sec[1]);
 
                     robot.setVelocity(jointArmsNames_tot, q_dot_tot);
-
 
                     vpTranslationVector t_error_grasp = box_dMbox[0].getTranslationVector();
                     vpRotationMatrix R_error_grasp;
@@ -774,8 +785,6 @@ int main(int argc, const char* argv[])
                     vpColVector u_error_grasp;
                     tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
                     std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
-
-
 
 
                     //                    if (cpt_iter_servo_grasp[0] > 100) {
@@ -803,13 +812,6 @@ int main(int argc, const char* argv[])
                 // state grasping but one of the tracker fails
                 robot.stop(jointArmsNames_tot);
             }
-
-
-
-
-
-
-
 
 
         }
