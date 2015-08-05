@@ -1073,6 +1073,7 @@ int main(int argc, const char* argv[])
                     cMo_teabox =  teabox_tracker.get_cMo();
                     teabox_tracker.getTracker()->display(I, cMo_teabox, cam, vpColor::red, 2);
                     vpDisplay::displayFrame(I, cMo_teabox, cam, 0.025, vpColor::none, 3);
+
                 }
 
                 if (click_done && button == vpMouseButton::button1 ) {
@@ -1162,6 +1163,20 @@ int main(int argc, const char* argv[])
             {
                 hand_tracker.setManualBlobInit(true);
                 hand_tracker.setForceDetection(true);
+            }
+            else if (ret && s == "+")
+            {
+                unsigned int value = hand_tracker.getGrayLevelMaxBlob() +10;
+                hand_tracker.setGrayLevelMaxBlob(value);
+                std::cout << "Set to "<< value << "the value of  " << std::endl;
+
+            }
+            else if (ret && s == "-")
+            {
+                unsigned int value = hand_tracker.getGrayLevelMaxBlob()-10;
+                hand_tracker.setGrayLevelMaxBlob(value-10);
+                std::cout << "Set to "<< value << " GrayLevelMaxBlob. " << std::endl;
+
             }
 
             status_hand_tracker = hand_tracker.track(cvI,I);
