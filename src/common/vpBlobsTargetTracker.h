@@ -38,6 +38,9 @@ protected:
   unsigned int m_numBlobs;
   bool m_manual_blob_init;
   bool m_left_hand_target;
+  unsigned int m_grayLevelMaxBlob;
+  unsigned int m_grayLevelMinBlob;
+  bool m_full_manual;
 
 public:
 
@@ -54,7 +57,9 @@ public:
     Return the center of gravity location of the tracked bar code.
     */
   vpImagePoint getCog();
-  //std::vector<vpImagePoint> getCorners() const {return m_corners_tracked;}
+
+  unsigned int getGrayLevelMinBlob() const {return m_grayLevelMinBlob;}
+  unsigned int getGrayLevelMaxBlob() const {return m_grayLevelMaxBlob;}
 
   void setCameraParameters(const vpCameraParameters &cam) { m_cam = cam; }
 
@@ -63,6 +68,10 @@ public:
   }
 
   void setManualBlobInit(const bool &init) {
+    m_manual_blob_init = init;
+  }
+
+  void setFullManualBlobInit(const bool &init) {
     m_manual_blob_init = init;
   }
 
@@ -82,14 +91,17 @@ public:
 
   bool loadHSV(const std::string name_file)
   {
-   return  m_colBlob.loadHSV(name_file);
+    return  m_colBlob.loadHSV(name_file);
   }
 
   void setMaxAndMinObjectAreaColor(const double &area_min, const double &area_max)
   {
     m_colBlob.setMaxAndMinObjectArea(area_min, area_max);
-
   }
+
+  void setGrayLevelMinBlob(const unsigned int & valueMin)  { m_grayLevelMinBlob = valueMin; }
+  void setGrayLevelMaxBlob(const unsigned int & valueMax)  { m_grayLevelMaxBlob = valueMax; }
+
 
   void setPoints(const std::vector<vpPoint> &points)
   {
