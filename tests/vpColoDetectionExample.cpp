@@ -85,6 +85,7 @@ int main(int argc, const char* argv[])
     std::vector<std::string> opt_names;
     std::string opt_name_file;
     unsigned int num_objects = 0;
+    int opt_cam = 2;
 
 
     bool opt_learning = false;
@@ -103,11 +104,12 @@ int main(int argc, const char* argv[])
         {
           opt_names.push_back(std::string(argv[i+k]));
         }
-
-
       }
+      else if (std::string(argv[i]) == "--cam")
+        opt_cam = atoi(argv[i+1]);
       else if (std::string(argv[i]) == "--file_name")
         opt_name_file = std::string(argv[i+1]);
+
       else if (std::string(argv[i]) == "--help") {
         std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--learn-color] [--object_name <numberObjects> <name1 name2 ...>]" << std::endl;
         std::cout <<                         "[--file_name <path>]" << std::endl;
@@ -136,11 +138,11 @@ int main(int argc, const char* argv[])
       g.setRobotIp(opt_ip);
     }
     g.setFramerate(15);
-    g.setCamera(0);
+    g.setCamera(opt_cam);
     g.open();
 
-    g.setCameraParameter(AL::kCameraAutoWhiteBalanceID,1);
-    g.setCameraParameter(AL::kCameraAutoExpositionID,1);
+    //g.setCameraParameter(AL::kCameraAutoWhiteBalanceID,1);
+   // g.setCameraParameter(AL::kCameraAutoExpositionID,1);
 
 //   // g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraBrightnessID);
 //    g.getProxy()->setCameraParameterToDefault(g.getClientName(),AL::kCameraContrastID);
@@ -182,9 +184,9 @@ int main(int argc, const char* argv[])
     {
       objects[i].setName(opt_names[i]);
       firstTime[i] = true;
-      objects[i].setMaxAndMinObjectArea(130.0,4000.0);
-      objects[i].setLevelMorphOps(false);
-      objects[i].setShapeRecognition(true);
+      //objects[i].setMaxAndMinObjectArea(130.0,4000.0);
+      //objects[i].setLevelMorphOps(false);
+      //objects[i].setShapeRecognition(true);
 
       color_rects.at(i).id = vpColor::vpColorIdentifier( std::rand() % ( 18 + 1 ) );
 
