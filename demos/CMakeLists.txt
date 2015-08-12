@@ -3,4 +3,4 @@ subdirs(blob_tracking)
 subdirs(face_servoing)
 subdirs(face_detection)
 subdirs(grasping)
-
+subdirs(drawing)
