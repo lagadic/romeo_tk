@@ -637,6 +637,8 @@ int main(int argc, const char* argv[])
 
                 state = VSBox;
                 click_done = false;
+
+                hand_tracker[index_hand] = &box_tracker; // Trick to use keys
             }
         }
 
@@ -696,7 +698,10 @@ int main(int argc, const char* argv[])
                     //                    std::cout << " box_Ve_Arm[i]:  " << std::endl << box_Ve_Arm[i] << std::endl;
                     //                    std::cout << "  eJe[i][i]:  " << std::endl <<  eJe[i] << std::endl;
 
-                    vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) *  q_dot_real[0];
+                    //vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) *  q_dot_real[0];
+                    vpColVector real_v = (box_Ve_Arm[i] * eJe[i]) *  q_dot_arm[0];
+
+
 
                     //                    std::cout << "real_v:  " << std::endl <<real_v << std::endl;
 
