@@ -60,6 +60,8 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
   m_tracker = new vpMbEdgeKltTracker;
   //m_tracker = new vpMbEdgeTracker;
 
+ // m_tracker = new vpMbKltTracker;
+
   if(vpIoTools::checkFilename(m_model + ".xml")) {
     m_tracker->loadConfigFile(m_model + ".xml");
   }
@@ -71,7 +73,7 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
- // m_tracker->setDisplayFeatures(true);
+  m_tracker->setDisplayFeatures(true);
 
 
 
@@ -328,10 +330,12 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
       status_tracking = true;
 
     }
-    catch(...)
+    catch(vpException e)
     {
-      std::cout << "Exception tracking" << std::endl;
+     // std::cout << "Exception tracking" << std::endl;
       m_state = detection;
+
+      std::cout << "Catch an exception: " << e << std::endl;
       //m_tracker->resetTracker();
       //m_tracker->reInitModel(I,m_model,m_cMo);
 

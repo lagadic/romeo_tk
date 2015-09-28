@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<root>
+  <!--This file stores homogeneous matrix used
+   in the vpHomogeneousMatrix Class of ViSP available
+   at http://www.irisa.fr/lagadic/visp/visp.html .
+   It can be read with the parse method of
+   the vpXmlParserHomogeneousMatrix class.-->
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_open_loop_CameraLeftEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>-0.130102</tx>
+      <ty>-0.130312</ty>
+      <tz>-0.052868</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>-1.235073</theta_ux>
+      <theta_uy>-0.640137</theta_uy>
+      <theta_uz>0.807142</theta_uz>
+    </values>
+  </homogeneous_transformation>
+  <!--Homogeneous Matrix-->
+  <homogeneous_transformation>
+    <!--Name of the homogeneous matrix-->
+    <name>oMh_close_loop_CameraLeftEye</name>
+    <values>
+      <!--Translation vector with values in meters-->
+      <tx>-0.087668</tx>
+      <ty>-0.096126</ty>
+      <tz>0.005746</tz>
+      <!--Rotational vector expressed in angle axis representation with values in radians-->
+      <theta_ux>-1.529217</theta_ux>
+      <theta_uy>-1.447041</theta_uy>
+      <theta_uz>0.137074</theta_uz>
+    </values>
+  </homogeneous_transformation>
+</root>

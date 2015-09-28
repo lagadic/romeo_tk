@@ -78,7 +78,7 @@ public:
 protected:
   std::string m_configuration_file;
   vpMbEdgeKltTracker * m_tracker;
-  //vpMbEdgeTracker * m_tracker;
+  //vpMbKltTracker * m_tracker;
   std::string m_model;
   state_t m_state;
   vpCameraParameters m_cam;
@@ -106,7 +106,8 @@ public:
   bool detectObject(vpImage<unsigned char> &I, vpHomogeneousMatrix &cMo);
 
   vpHomogeneousMatrix get_cMo() const {return m_cMo;}
-  vpMbEdgeTracker * getTracker() const {return m_tracker;}
+  vpMbEdgeKltTracker * getTracker() const {return m_tracker;}
+  //vpMbKltTracker * getTracker() const {return m_tracker;}
   vpImagePoint get_cog() const {return m_cog;}
   bool getDetectionStatus() const {return m_status_single_detection;}
   void initDetection(const std::string & name_file_learning_data);
