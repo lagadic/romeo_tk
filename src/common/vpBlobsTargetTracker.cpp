@@ -6,12 +6,13 @@
 vpBlobsTargetTracker::vpBlobsTargetTracker()
   : m_colBlob(),  m_state(detection), m_target_found(false), m_P(), m_force_detection(false), m_name("target_blob"),
     m_blob_list(), m_cog(0,0), m_initPose(true), m_numBlobs(4), m_manual_blob_init(false), m_left_hand_target(true),
-    m_grayLevelMinBlob(0),m_grayLevelMaxBlob(40), m_full_manual(false)
+    m_grayLevelMinBlob(0), m_grayLevelMaxBlob(40), m_full_manual(false)
 {
 
   //m_colBlob = new vpColorDetection;
   m_colBlob.setMaxAndMinObjectArea(150.0,4000.0);
   m_colBlob.setLevelMorphOps(false);
+  m_blob_list.resize(4);
 
 }
 
@@ -36,93 +37,130 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
   if (m_state == detection || m_force_detection) {
     //std::cout << "STATE: DETECTION "<< std::endl;
 
-    bool obj_found = m_colBlob.detect(cvI);
+    bool obj_found = false;
+    if (!m_manual_blob_init && !m_full_manual)
+      obj_found = m_colBlob.detect(cvI);
     // Delete previuos list of blobs
     m_blob_list.clear();
+    m_blob_list.resize(4);
     m_initPose = true;
     m_target_found = false;
 
-    if (obj_found || m_manual_blob_init) {
+    if (obj_found || m_manual_blob_init || m_full_manual) {
 
       try{
 
-        // std::cout << "TARGET FOUND" << std::endl;
 
-        vpDot2 blob;
-        blob.setGraphics(true);
-        blob.setGraphicsThickness(1);
-        blob.setEllipsoidShapePrecision(0.9);
-        if (m_manual_blob_init)
+        if (m_full_manual)
         {
+
+          std::cout << "Full manual" << std::endl;
+          vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Click on the 4 blobs", vpColor::red);
+
           vpDisplay::flush(I);
-          blob.initTracking(I);
-        }
-        else
-        {
-          vpImagePoint cog = m_colBlob.getCog(0);
-          vpDisplay::displayCross(I,cog,10, vpColor::red,2 );
-          blob.initTracking(I,cog);
-        }
-        blob.track(I);
+          for(std::list<vpDot2>::iterator it=m_blob_list.begin(); it != m_blob_list.end(); ++it)
+          {
 
-        printf("Dot characteristics: \n");
-        printf("  width : %lf\n", blob.getWidth());
-        printf("  height: %lf\n", blob.getHeight());
-        printf("  area: %lf\n", blob.getArea());
-        printf("  gray level min: %d\n", blob.getGrayLevelMin());
-        printf("  gray level max: %d\n", blob.getGrayLevelMax());
-        printf("  grayLevelPrecision: %lf\n", blob.getGrayLevelPrecision());
-        printf("  sizePrecision: %lf\n", blob.getSizePrecision());
-        printf("  ellipsoidShapePrecision: %lf\n", blob.getEllipsoidShapePrecision());
+            (*it).setGraphics(true);
+            (*it).setGraphicsThickness(1);
+            (*it).initTracking(I);
+            (*it).track(I);
+            vpDisplay::flush(I);
 
-        vpDot2 black_blob = blob;
-        black_blob.setGrayLevelMax(m_grayLevelMaxBlob);
-        black_blob.setGrayLevelMin(m_grayLevelMinBlob);
+          }
 
-        int i,j,aj,ai;
-
-        if(m_left_hand_target)
-        {
-          i = blob.getCog().get_i()-blob.getHeight()*2.3;
-          j = blob.getCog().get_j()-blob.getWidth()*3.3;
-          ai = blob.getHeight()*5;
-          aj = blob.getWidth()*5;
-        }
-        else
-        {
-          i = blob.getCog().get_i()-blob.getHeight();
-          j = blob.getCog().get_j()-blob.getWidth()*2.0;
-          ai = blob.getHeight()*4.5;
-          aj = blob.getWidth()*4;
-
-        }
-
-        //search similar blobs in the image and store them in blob_list
-        //black_blob.searchDotsInArea(I, 0, 0, I.getWidth(), I.getHeight(), m_blob_list);
-        //vpDisplay::displayRectangle(I, i, j, ai, aj, vpColor::red, false, 1);
-        black_blob.searchDotsInArea(I, j, i, ai, aj, m_blob_list);
-
-        //        vpDisplay::flush(I);
-        //        vpDisplay::getClick(I,true);
-
-        m_blob_list.insert(m_blob_list.begin(),blob);
-        std::cout << "SIZE: " << m_blob_list.size() << std::endl;
-
-        if(m_blob_list.size() == m_numBlobs)
-        {
-          for(std::list<vpDot2>::iterator it = m_blob_list.begin(); it != m_blob_list.end(); ++it)
-            it->setEllipsoidShapePrecision(0.9);
 
           m_state = tracking;
           m_force_detection = false;
+
+
         }
-        else
-          std::cout << "Number blobs found is "<< m_blob_list.size() << ". Expected number: " << m_numBlobs << std::endl;
+
+
+        else {
+
+          // std::cout << "TARGET FOUND" << std::endl;
+
+          vpDot2 blob;
+          blob.setGraphics(true);
+          blob.setGraphicsThickness(1);
+          blob.setEllipsoidShapePrecision(0.9);
+          if (m_manual_blob_init)
+          {
+            vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Click on the colored blob", vpColor::red);
+            vpDisplay::flush(I);
+            blob.initTracking(I);
+          }
+          else
+          {
+            vpImagePoint cog = m_colBlob.getCog(0);
+            vpDisplay::displayCross(I,cog,10, vpColor::red,2 );
+            blob.initTracking(I,cog);
+          }
+          blob.track(I);
+
+
+
+          printf("Dot characteristics: \n");
+          printf("  width : %lf\n", blob.getWidth());
+          printf("  height: %lf\n", blob.getHeight());
+          printf("  area: %lf\n", blob.getArea());
+          printf("  gray level min: %d\n", blob.getGrayLevelMin());
+          printf("  gray level max: %d\n", blob.getGrayLevelMax());
+          printf("  grayLevelPrecision: %lf\n", blob.getGrayLevelPrecision());
+          printf("  sizePrecision: %lf\n", blob.getSizePrecision());
+          printf("  ellipsoidShapePrecision: %lf\n", blob.getEllipsoidShapePrecision());
+
+          vpDot2 black_blob = blob;
+          black_blob.setGrayLevelMax(m_grayLevelMaxBlob);
+          black_blob.setGrayLevelMin(m_grayLevelMinBlob);
+
+          int i,j,aj,ai;
+
+          if(m_left_hand_target)
+          {
+            i = blob.getCog().get_i()-blob.getHeight()*2.3;
+            j = blob.getCog().get_j()-blob.getWidth()*3.3;
+            ai = blob.getHeight()*5;
+            aj = blob.getWidth()*5;
+          }
+          else
+          {
+            i = blob.getCog().get_i()-blob.getHeight();
+            j = blob.getCog().get_j()-blob.getWidth()*2.0;
+            ai = blob.getHeight()*4.5;
+            aj = blob.getWidth()*4;
+
+          }
+
+          //search similar blobs in the image and store them in blob_list
+          //black_blob.searchDotsInArea(I, 0, 0, I.getWidth(), I.getHeight(), m_blob_list);
+          //vpDisplay::displayRectangle(I, i, j, ai, aj, vpColor::red, false, 1);
+          black_blob.searchDotsInArea(I, j, i, ai, aj, m_blob_list);
+
+          //        vpDisplay::flush(I);
+          //        vpDisplay::getClick(I,true);
+
+          m_blob_list.insert(m_blob_list.begin(),blob);
+          std::cout << "SIZE: " << m_blob_list.size() << std::endl;
+
+          if(m_blob_list.size() == m_numBlobs)
+          {
+            for(std::list<vpDot2>::iterator it = m_blob_list.begin(); it != m_blob_list.end(); ++it)
+              it->setEllipsoidShapePrecision(0.9);
+
+            m_state = tracking;
+            m_force_detection = false;
+          }
+          else
+            std::cout << "Number blobs found is "<< m_blob_list.size() << ". Expected number: " << m_numBlobs << std::endl;
+        }
       }
       catch(...) {
         std::cout << "Exception tracking" << std::endl;
         m_target_found = false;
       }
+
 
     }
   }

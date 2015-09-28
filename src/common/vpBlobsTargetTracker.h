@@ -75,6 +75,11 @@ public:
     m_manual_blob_init = init;
   }
 
+  void setFullManual(const bool &value) {
+    m_full_manual = value;
+  }
+
+
   void setNumBlobs(const unsigned int &num) {
     m_numBlobs = num;
   }
