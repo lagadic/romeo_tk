@@ -57,10 +57,8 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
   m_cam = cam;
 
   //Initiaze tracker
-  m_tracker = new vpMbEdgeKltTracker;
-  //m_tracker = new vpMbEdgeTracker;
-
- // m_tracker = new vpMbKltTracker;
+ // m_tracker = new vpMbEdgeKltTracker;
+  m_tracker = new vpMbKltTracker;
 
   if(vpIoTools::checkFilename(m_model + ".xml")) {
     m_tracker->loadConfigFile(m_model + ".xml");
@@ -68,12 +66,13 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
 
   m_tracker->setCameraParameters(m_cam);
   m_tracker->setOgreVisibilityTest(false);
+  //m_tracker->setScanLineVisibilityTest(true);
 
   if(vpIoTools::checkFilename(m_model + ".cao"))
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
-  m_tracker->setDisplayFeatures(true);
+  m_tracker->setDisplayFeatures(false);
 
 
 
@@ -217,7 +216,8 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
           {
 
             //Tracker set pose
-            m_tracker->setPose(I, cMo_temp);
+            //m_tracker->setPose(I, cMo_temp);
+            m_tracker->initFromPose(I, cMo_temp);
             if (verbose)
             {
               std::cout << "Detection ok" << std::endl;
@@ -291,7 +291,8 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
           vpHomogeneousMatrix cMo;
           cMo.buildFrom(cMo_);
 
-          m_tracker->setPose(I,cMo);
+          //m_tracker->setPose(I,cMo);
+          m_tracker->initFromPose(I,cMo);
           m_counter_detection = 0;
           m_stack_cMo_detection.init();
 
@@ -315,6 +316,7 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 
 
   if (m_state == tracking ) {
+      m_tracker->setDisplayFeatures(true);
 
     //    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
 
@@ -335,7 +337,7 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
      // std::cout << "Exception tracking" << std::endl;
       m_state = detection;
 
-      std::cout << "Catch an exception: " << e << std::endl;
+      std::cout << "Catch an exception: " << e.getMessage() << std::endl;
       //m_tracker->resetTracker();
       //m_tracker->reInitModel(I,m_model,m_cMo);
 
