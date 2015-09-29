@@ -20,12 +20,12 @@
 	<sample>
 		<step>4</step>
 	</sample>
-	<camera> 
+<!--	<camera> 
   		<u0>338.7036994</u0> 
   		<v0>234.5083345</v0> 
   		<px>547.7367575</px> 
   		<py>542.0744058</py> 
-	</camera>
+	</camera> -->
 	<face>
 		<angle_appear>75</angle_appear> 
 		<angle_disappear>75</angle_disappear> 
@@ -34,6 +34,14 @@
 		<fov_clipping>1</fov_clipping>
 	</face>
 	<klt>
+<!--		<mask_border>2</mask_border> 
+  		<max_features>100</max_features> 
+  		<window_size>5</window_size> 
+  		<quality>0.015</quality> 
+  		<min_distance>5</min_distance> 
+  		<harris>0.005</harris>
+		<size_block>3</size_block> 
+  		<pyramid_lvl>3</pyramid_lvl> -->
 		<mask_border>0</mask_border> 
   		<max_features>1000</max_features> 
   		<window_size>5</window_size> 
@@ -41,7 +49,7 @@
   		<min_distance>2</min_distance> 
   		<harris>0.005</harris>
 		<size_block>3</size_block> 
-  		<pyramid_lvl>3</pyramid_lvl> 
+  		<pyramid_lvl>3</pyramid_lvl>  
 	</klt>
 </conf>
 
