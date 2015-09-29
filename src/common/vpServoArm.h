@@ -13,13 +13,27 @@ class vpServoArm
 public:
   vpServo m_task; // Visual servoing task for the hand
 
+  /*!
+    \enum vpServoArmType
+    Kind of visual servoing implemented.
+   */
+  typedef enum {
+    /*! Use Translation(cdMc) and ThetaU (vpFeatureThetaU::cdRc) features
+        Here we controll all the 6DOF*/
+    vs6dof,
+    /*! Use Translation(cMo) and ThetaUx and ThetaUy (vpFeatureThetaU::cdRc) features.
+        Here we controll 5DOF: Used to grasp cylindrical object*/
+    vs5dof_cyl
+  } vpServoArmType;
+
 protected:
   vpFeatureTranslation m_t;
   vpFeatureThetaU m_tu;
   double m_lambda;
 
 public:
-  vpServoArm();
+
+  vpServoArm(vpServoArmType n = vpServoArm::vs6dof);
   virtual ~vpServoArm() {
     m_task.kill();
   }
