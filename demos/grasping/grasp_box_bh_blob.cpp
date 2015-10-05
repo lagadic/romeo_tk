@@ -731,9 +731,13 @@ int main(int argc, const char* argv[])
   bool grasp_servo_converged = false;
   vpServoArm *servo_arm; // Initialize arm servoing
 
-  if (opt_box_name =="coca")
+  // Used only if we use a vpServoArm::vs6dof_cyl
+  vpColVector z_d(3);
+  z_d[2] = 1;
+
+  if (opt_box_name == "coca" || opt_box_name == "orangina")
   {
-    servo_arm = new vpServoArm(vpServoArm::vs5dof_cyl);
+    servo_arm = new vpServoArm(vpServoArm::vs6dof_cyl);
   }
   else
   {
@@ -1253,13 +1257,13 @@ int main(int argc, const char* argv[])
         if (opt_box_name == "tabascobox" ||opt_box_name == "tabascobox_green"  )
           tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a box of  \\emph=2\\ tabasco!  \\eos=1\\ " );
         else
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a can of \\emph=2\\ coke \\eos=1\\ " );
+          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a can \\eos=1\\ " );
 
       }
       vpImagePoint teabox_cog_cur;
       vpPoint P;
 
-      if (opt_box_name =="coca")
+      if (opt_box_name =="coca" || opt_box_name =="orangina")
         P.setWorldCoordinates(0.0, 0.0, -0.05);
       else
         P.setWorldCoordinates(0.05/2, 0.05/2, -0.15/2);
@@ -1308,7 +1312,7 @@ int main(int argc, const char* argv[])
           teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6/8 );
         else if (opt_box_name =="tabascobox")
           teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6.6/8 );
-        else if (opt_box_name =="coca")
+        else if (opt_box_name =="coca" || opt_box_name =="orangina")
           teabox_cog_des.set_ij( I.getHeight()*4.5/8, I.getWidth()*6/8 );
         else
           teabox_cog_des.set_ij( I.getHeight()*6/8, I.getWidth()*5.5/8 );
@@ -1447,8 +1451,10 @@ int main(int argc, const char* argv[])
 
     if (state_teabox_tracker == WaitGrasping && status_hand_tracker && status_teabox_tracker) {
       vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to start grasping", vpColor::red);
-      if (opt_box_name != "coca")
+      if (opt_box_name != "coca" &&  opt_box_name != "orangina")
         vpDisplay::displayFrame(I, cMo_teabox * oMh_Tea_Box_grasp , cam, 0.04, vpColor::none, 2);
+      else
+        vpDisplay::displayFrame(I, cMo_hand*oMh_Tea_Box_grasp.inverse() , cam, 0.025, vpColor::none, 2);
 
       if (click_done && button == vpMouseButton::button1) {
         state_teabox_tracker = Grasping;
@@ -1543,7 +1549,7 @@ int main(int argc, const char* argv[])
           servo_arm->setLambda(lambda);
 
 
-          if (opt_box_name == "coca")
+          if (opt_box_name == "coca" || opt_box_name == "orangina")
           {
             servo_arm->set_eJe(robot.get_eJe(chain_name));
             servo_arm->m_task.set_cVe(cylVe_Arm);
@@ -1554,8 +1560,11 @@ int main(int argc, const char* argv[])
 
             if (servo_arm->getServoArmType() == servo_arm->vs6dof_cyl)
             {
-              vpColVector z_c = (cMo_hand * oMh_Tea_Box_grasp.inverse()).getCol(2,0,3);
-              vpColVector z_d = cMo_teabox.getCol(2,0,3);
+
+              vpColVector z_c = cdMc.getCol(2,0,3);
+              //vpColVector z_c = (cMo_hand * oMh_Tea_Box_grasp.inverse()).getCol(2,0,3);
+              //vpColVector z_d = cMo_teabox.getCol(2,0,3);
+
               servo_arm->setCurrentFeature(cdMc, z_c, z_d) ;
 
             }
@@ -1604,6 +1613,7 @@ int main(int argc, const char* argv[])
           vpColVector u_error_grasp;
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
           std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+
 
           //          vpVelocityTwistMatrix cVo(cMo_hand);
           //          vpMatrix cJe = cVo * oJo;
