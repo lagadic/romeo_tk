@@ -7,6 +7,7 @@
 #include <visp/vpFeatureTranslation.h>
 #include <visp/vpServo.h>
 #include <visp/vpServoDisplay.h>
+#include <visp/vpGenericFeature.h>
 
 class vpServoArm
 {
@@ -15,21 +16,27 @@ public:
 
   /*!
     \enum vpServoArmType
-    Kind of visual servoing implemented.
+    Type of visual servoing implemented.
    */
   typedef enum {
     /*! Use Translation(cdMc) and ThetaU (vpFeatureThetaU::cdRc) features
         Here we controll all the 6DOF*/
     vs6dof,
-    /*! Use Translation(cMo) and ThetaUx and ThetaUy (vpFeatureThetaU::cdRc) features.
+    /*! Use Translation(cdMc) and ThetaUx and ThetaUy (vpFeatureThetaU::cdRc) features.
         Here we controll 5DOF: Used to grasp cylindrical object*/
-    vs5dof_cyl
+    vs5dof_cyl,
+    /*! Use Translation(cdMc) and a alignment z axis features.
+        Here we controll 5DOF (the interaction matrix has ranq = 5): Used to grasp
+        cylindrical object*/
+    vs6dof_cyl
   } vpServoArmType;
 
 protected:
   vpFeatureTranslation m_t;
   vpFeatureThetaU m_tu;
+  vpGenericFeature m_axis;
   double m_lambda;
+  vpServoArmType m_type;
 
 public:
 
@@ -49,6 +56,8 @@ public:
   }
   vpMatrix getTaskJacobian() {return m_task.getTaskJacobian();}
   vpMatrix getTaskJacobianPseudoInverse() {return m_task.getTaskJacobianPseudoInverse();}
+  vpServoArm::vpServoArmType getServoArmType(){return m_type;}
+
   vpColVector getError(){return m_task.getError();}
 
   void set_eJe(const vpMatrix &eJe) { m_task.set_eJe(eJe);}
@@ -56,9 +65,10 @@ public:
   void set_fVe(const vpVelocityTwistMatrix &fVe) { m_task.set_fVe(fVe);}
   void setCurrentFeature(const vpHomogeneousMatrix &cdMc)
   {
-   m_t.buildFrom(cdMc) ;
-   m_tu.buildFrom(cdMc) ;
+    m_t.buildFrom(cdMc) ;
+    m_tu.buildFrom(cdMc) ;
   }
+  void setCurrentFeature(const vpHomogeneousMatrix &cdMc, const vpColVector &z_c, const vpColVector &z_d);
   void setLambda(double lambda) {m_task.setLambda(lambda);}
   void setLambda(const vpAdaptiveGain &lambda) {m_task.setLambda(lambda);}
 
