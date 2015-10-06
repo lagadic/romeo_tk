@@ -44,6 +44,7 @@
 /*! \example face_detection_okao.cpp */
 #include <iostream>
 #include <string>
+#include <map>
 
 
 #include <alproxies/altexttospeechproxy.h>
@@ -57,7 +58,20 @@
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
 #include <vpServoHead.h>
+#include <vpFaceTrackerOkao.h>
 
+
+
+
+bool in_array(const std::string &value, const std::vector<std::string> &array)
+{
+  return std::find(array.begin(), array.end(), value) != array.end();
+}
+
+bool pred(const std::pair<std::string, int>& lhs, const std::pair<std::string, int>& rhs)
+{
+  return lhs.second < rhs.second;
+}
 
 /*!
 
@@ -70,69 +84,76 @@
 int main(int argc, const char* argv[])
 {
 
-    std::string opt_ip = "198.18.0.1";
+  std::string opt_ip = "198.18.0.1";
 
-    bool opt_language_english = false;
+  bool opt_language_english = true;
 
-    if (argc == 3) {
-      if (std::string(argv[1]) == "--ip")
-        opt_ip = argv[2];
-    }
+  if (argc == 3) {
+    if (std::string(argv[1]) == "--ip")
+      opt_ip = argv[2];
+  }
 
-    // Connect to the robot
-    vpNaoqiRobot robot;
-    if (! opt_ip.empty())
-      robot.setRobotIp(opt_ip);
-    robot.open();
-
-
-
-    // Open the grabber for the acquisition of the images from the robot
-    vpNaoqiGrabber g;
-    if (! opt_ip.empty())
-      g.setRobotIp(opt_ip);
-    g.setFramerate(15);
-    g.setCamera(2); // CameraLeftEye
-    g.open();
-    vpCameraParameters cam = g.getCameraParameters();
-    vpHomogeneousMatrix eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
+  // Connect to the robot
+  vpNaoqiRobot robot;
+  if (! opt_ip.empty())
+    robot.setRobotIp(opt_ip);
+  robot.open();
 
 
-    vpImage<unsigned char> I(g.getHeight(), g.getWidth());
-    vpDisplayX d(I);
-    vpDisplay::setTitle(I, "ViSP viewer");
+
+  // Open the grabber for the acquisition of the images from the robot
+  vpNaoqiGrabber g;
+  if (! opt_ip.empty())
+    g.setRobotIp(opt_ip);
+  g.setFramerate(15);
+  g.setCamera(2); // CameraLeftEye
+  g.open();
+  vpCameraParameters cam = g.getCameraParameters();
+  vpHomogeneousMatrix eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
 
 
-    std::vector<std::string> jointNames = robot.getBodyNames("Head");
-    jointNames.pop_back(); // We don't consider  the last joint of the head = HeadRoll
-    std::vector<std::string> jointNamesLEye = robot.getBodyNames("LEye");
-    std::vector<std::string> jointNamesREye = robot.getBodyNames("REye");
-
-    jointNames.insert(jointNames.end(), jointNamesLEye.begin(), jointNamesLEye.end());
-    std::vector<std::string> jointNames_tot = jointNames;
-    jointNames_tot.push_back(jointNamesREye.at(0));
-    jointNames_tot.push_back(jointNamesREye.at(1));
+  vpImage<unsigned char> I(g.getHeight(), g.getWidth());
+  vpDisplayX d(I);
+  vpDisplay::setTitle(I, "ViSP viewer");
 
 
-    vpMatrix MAP_head(6,5);
-    for (unsigned int i = 0; i < 3 ; i++)
-      MAP_head[i][i]= 1;
-    MAP_head[4][3]= 1;
-    MAP_head[5][4]= 1;
+  std::vector<std::string> jointNames = robot.getBodyNames("Head");
+  jointNames.pop_back(); // We don't consider  the last joint of the head = HeadRoll
+  std::vector<std::string> jointNamesLEye = robot.getBodyNames("LEye");
+  std::vector<std::string> jointNamesREye = robot.getBodyNames("REye");
+
+  jointNames.insert(jointNames.end(), jointNamesLEye.begin(), jointNamesLEye.end());
+  std::vector<std::string> jointNames_tot = jointNames;
+  jointNames_tot.push_back(jointNamesREye.at(0));
+  jointNames_tot.push_back(jointNamesREye.at(1));
 
 
-    std::vector<std::string> jointNames_head = robot.getBodyNames("Head");
+  vpMatrix MAP_head(6,5);
+  for (unsigned int i = 0; i < 3 ; i++)
+    MAP_head[i][i]= 1;
+  MAP_head[4][3]= 1;
+  MAP_head[5][4]= 1;
 
-    vpColVector head_pos(jointNames_head.size());
-    head_pos = 0;
-    head_pos[1] = vpMath::rad(-10.); // NeckPitch
-    head_pos[2] = vpMath::rad(-6.); // HeadPitch
-    robot.setPosition(jointNames_head, head_pos, 0.3);
 
-    vpTime::sleepMs(1000);
+  std::vector<std::string> jointNames_head = robot.getBodyNames("Head");
 
-    try
-    {
+  //  vpColVector head_pos(jointNames_head.size());
+  //  head_pos = 0;
+  //  head_pos[1] = vpMath::rad(-10.); // NeckPitch
+  //  head_pos[2] = vpMath::rad(-6.); // HeadPitch
+  //  robot.setPosition(jointNames_head, head_pos, 0.3);
+
+
+
+  vpTime::sleepMs(1000);
+
+  std::vector<std::string> recognized_names;
+  std::map<std::string,unsigned int> detected_face_map;
+  bool detection_phase = true;
+
+
+  try
+  {
     // Open Proxy for the speech
     AL::ALTextToSpeechProxy tts(opt_ip, 9559);
     std::string phraseToSay;
@@ -147,24 +168,11 @@ int main(int argc, const char* argv[])
       phraseToSay = " \\emph=2\\ Bonjour,\\pau=200\\ comment vas  tu ?";
     }
 
-    AL::ALFaceDetectionProxy df(opt_ip, 9559);
-
-
-    // Start the face recognition engine
-    const int period = 1;
-
-    df.subscribe("Face", period, 0.0);
-
-
-    AL::ALMemoryProxy memProxy(opt_ip, 9559);
-
-    float  mImageHeight = g.getHeight();
-    float  mImageWidth = g.getWidth();
-
     // Initialize head servoing
     vpServoHead servo_head;
     servo_head.setCameraParameters(cam);
     vpAdaptiveGain lambda(2, 1.5, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    //vpAdaptiveGain lambda(4, 2, 40);
     //vpAdaptiveGain lambda(3, 1., 30);
     servo_head.setLambda(lambda);
 
@@ -177,12 +185,12 @@ int main(int argc, const char* argv[])
 
     bool reinit_servo = true;
     bool speech = true;
+    unsigned int f_count = 0;
 
-
+    vpFaceTrackerOkao face_tracker(opt_ip,9559);
 
     while (1)
     {
-
       if (reinit_servo) {
         servo_time_init = vpTime::measureTimeSecond();
         reinit_servo = false;
@@ -191,54 +199,27 @@ int main(int argc, const char* argv[])
       g.acquire(I);
       vpDisplay::display(I);
 
+      bool result = face_tracker.detect();
 
-      AL::ALValue result = memProxy.getData("FaceDetected");
-
-      bool face_found = false;
-
-
-      if (result.getSize() >=2)
+      if (result)
       {
 
-        face_found = true;
+        std::ostringstream text;
+        text << "Found " << face_tracker.getNbObjects() << " face(s)";
+        vpDisplay::displayText(I, 10, 10, text.str(), vpColor::red);
+        for(size_t i=1; i < face_tracker.getNbObjects(); i++) {
+          vpDisplay::displayCross(I, face_tracker.getCog(i), 3, vpColor::red);
+          //vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+          //vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), face_tracker.getMessage(i) , vpColor::red);
+        }
 
-        //        for (unsigned int i = 0; i < info_face_array.getSize()-1; i++ )
-        //        {
+        vpRect bbox = face_tracker.getBBox(0);
+        std::string name = face_tracker.getMessage(0);
+        float score = face_tracker.getScore(0);
+        // vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+        vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
 
-        unsigned int i = 0;
-
-        //Extract face info
-
-        // Face Detected [1]/ First face [0]/ Shape Info [0]/ Alpha [1]
-        float alpha = result[1][0][0][1];
-        float beta = result[1][0][0][2];
-        float sx = result[1][0][0][3];
-        float sy = result[1][0][0][4];
-
-        std::string name = result[1][i][1][2];
-        float score = result[1][i][1][1];
-
-        // sizeX / sizeY are the face size in relation to the image
-
-        float sizeX = mImageHeight * sx;
-        float sizeY = mImageWidth * sy;
-
-        // Centre of face into the image
-        float x = mImageWidth / 2 - mImageWidth * alpha;
-        float y = mImageHeight / 2 + mImageHeight * beta;
-
-        vpDisplay::displayCross(I, y, x, 10, vpColor::red);
-        vpDisplay::displayRectangle(I,y,x,0.0,sizeX,sizeY,vpColor::cyan,1);
-
-        //          cv::Point p1(x - (sizeX / 2), y - (sizeY / 2));
-        //          cv::Point p2(x + (sizeX / 2), y + (sizeY / 2));
-
-        //          cv::rectangle(I, p1, p2, cv::Scalar(255,255,255));
-
-        //        }
-
-
-        head_cog_cur.set_uv(x,y);
+        head_cog_cur.set_uv(face_tracker.getCog(0).get_u(),face_tracker.getCog(0).get_v());
 
         servo_head.set_eJe( robot.get_eJe("LEye") * MAP_head );
         servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
@@ -254,25 +235,82 @@ int main(int argc, const char* argv[])
         q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
         q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
 
-        robot.setVelocity(jointNames_tot, q_dot_tot);
+        // Compute the distance in pixel between the target and the center of the image
+        double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
+        if (distance > distance < 0.03*I.getWidth())
+          robot.setVelocity(jointNames_tot, q_dot_tot);
 
         //std::cout << "q dot: " << q_dot_head.t() << std::endl;
 
-        // Compute the distance in pixel between the target and the center of the image
-        double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
+        //        if (distance < 0.03*I.getWidth() && speech) { // 3 % of the image witdh
+        //          // Call the say method
+        //          static bool firstTime = true;
+        //          if (firstTime) {
+        //            tts.post.say(phraseToSay);
+        //            firstTime = false;
+        //          }
+        //          speech = false;
+        //        }
+        //        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
+        //          speech = true;
 
-        if (distance < 0.03*I.getWidth() && speech) { // 3 % of the image witdh
-          // Call the say method
-          static bool firstTime = true;
-          if (firstTime) {
-            tts.post.say(phraseToSay);
-            firstTime = false;
+        if (detection_phase)
+        {
+
+          //std::cout << "score: " << score << std::endl;
+          //std::cout << "distance: " << distance << std::endl;
+          //std::cout << "size: " << bbox.getSize() << " < 4000 " << std::endl;
+
+          //if (score >= 0.4 && distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
+          if (distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
+          {
+            vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 1);
+            vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
+            detected_face_map[name]++;
+            f_count++;
           }
-          speech = false;
+          else
+          {
+            vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+            vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::green);
+          }
+          if (f_count>10)
+          {
+            detection_phase = false;
+            f_count = 0;
+          }
+        }
+        else
+        {
+          // std::cout << "Detected faces map:\n " << detected_face_map << std::endl;
+
+          //          std::cout << "Largest == "
+          //                    << std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second
+          //                    << '\n';
+
+          std::string recognized_person_name = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->first;
+          unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
+
+          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name != "Unknown") {
+            std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name;
+            std::cout << phraseToSay << std::endl;
+            tts.post.say(phraseToSay);
+            recognized_names.push_back(recognized_person_name);
+          }
+          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name == "Unknown"
+              && times > 9)
+          {
+            std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
+            std::cout << phraseToSay << std::endl;
+            tts.post.say(phraseToSay);
+            recognized_names.push_back(recognized_person_name);
+          }
+
+          detection_phase = true;
+          detected_face_map.clear();
+
 
         }
-        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
-          speech = true;
 
       }
       else {
@@ -283,17 +321,8 @@ int main(int argc, const char* argv[])
       vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
         break;
-        std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
-
+      //std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
     }
-
-
-
-    df.unsubscribe("Face");
-
-
-
-
 
   }
   catch (const vpException &e)
