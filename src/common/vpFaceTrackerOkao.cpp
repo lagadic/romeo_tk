@@ -104,3 +104,9 @@ bool vpFaceTrackerOkao::detect(const vpImage<unsigned char> &I)
 {
   return detect();
 }
+
+
+float vpFaceTrackerOkao::getScore(unsigned int i) const
+{
+  return m_scores[i];
+}

@@ -32,6 +32,9 @@ public:
 
   bool detect(const vpImage <unsigned char> &I);
   bool detect();
+
+  float getScore(unsigned int i) const;
+
 };
 
 #endif
