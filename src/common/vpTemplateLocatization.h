@@ -1,6 +1,9 @@
 #ifndef __vpTemplateLocatization_h__
 #define __vpTemplateLocatization_h__
 
+
+#include <visp/vpKeyPoint.h>
+#include <visp/vpMbEdgeKltTracker.h>
 #include <visp/vpCameraParameters.h>
 #include <visp/vpDetectorDataMatrixCode.h>
 #include <visp/vpDetectorQRCode.h>
@@ -21,7 +24,9 @@ public:
   } state_t;
 
 protected:
-  vpDetectorBase *m_detector;
+
+
+  //template tracker
   vpTemplateTrackerWarpHomography m_warp;
   vpTemplateTrackerSSDInverseCompositional *m_tracker;
   vpTemplateTrackerZone m_zone_ref, zone_cur;
@@ -39,13 +44,30 @@ protected:
   bool m_force_detection;
   std::string m_message;
 
+  // Detection
+  std::string m_configuration_file;
+  vpMbEdgeKltTracker * m_tracker_det;
+  std::string m_model;
+  vpKeyPoint * m_keypoint_learning;
+  vpKeyPoint * m_keypoint_detection;
+  vpImagePoint m_cog;
+  bool m_init_detection;
+  bool m_manual_detection;
+  bool m_only_detection;
+  bool m_status_single_detection;
+  unsigned int m_counter_detection;
+  unsigned int m_num_iteration_detection;
+  vpMatrix m_stack_cMo_detection;
+  bool (*m_checkValiditycMo)(vpHomogeneousMatrix);
+  bool verbose;
+
 public:
 
   /*!
    Default QRcode size is set to 0.06 meter.
    * \param barcode
    */
-  vpTemplateLocatization();
+  vpTemplateLocatization(const std::string &model, const std::string &configuration_file_folder, const vpCameraParameters &cam);
 
   virtual ~vpTemplateLocatization();
 
@@ -71,6 +93,16 @@ public:
 
   bool track(const vpImage<unsigned char> &I);
   bool track(const vpImage<unsigned char> &I, vpDetectorBase *&detector );
+
+  bool isIdentity (const vpHomogeneousMatrix &A) const;
+
+  void setForceDetection() {m_state = detection; }
+  void setManualDetection(){m_manual_detection = true;}
+  void setOnlyDetection(const bool only_detection){m_only_detection = only_detection;}
+  void setNumberDetectionIteration (unsigned int &num) { m_num_iteration_detection = num;}
+  void setValiditycMoFunction (bool (*funct)(vpHomogeneousMatrix)) { m_checkValiditycMo = funct;}
+  void initDetection(const std::string & name_file_learning_data);
+
 
 private:
   std::vector<vpImagePoint> getTemplateTrackerCorners(const vpTemplateTrackerZone &zone);
