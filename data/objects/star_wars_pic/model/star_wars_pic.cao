@@ -1,0 +1,23 @@
+V1
+# points
+4
+-0.0875   -0.06    0.000   # pt 0
+-0.0875   0.06     0.000   # pt 1
+0.0875    0.06     0.000   # pt 2
+0.0875    -0.06    0.000   # pt 3
+# lines
+4
+0 1
+1 2
+2 3
+3 0
+# faces from lines
+1
+4 0 1 2 3 
+# faces from point
+0
+# cercles
+0
+# 3D circles
+0
+
