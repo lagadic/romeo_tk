@@ -41,7 +41,7 @@ protected:
   std::vector<vpPoint> m_P; // Points of the qrcode model
   vpCameraParameters m_cam;
   vpHomogeneousMatrix m_cMo;
-  bool m_force_detection;
+  //bool m_force_detection;
   std::string m_message;
 
   // Detection
@@ -79,11 +79,17 @@ public:
   vpImagePoint getCog();
   std::vector<vpImagePoint> getCorners() const {return m_corners_tracked;}
 
+  vpCameraParameters getCameraParameters() {
+    vpCameraParameters cam;
+    m_tracker_det->getCameraParameters(cam);
+    return cam; }
+
+
   void setCameraParameters(const vpCameraParameters &cam) { m_cam = cam; }
 
-  void setForceDetection(bool force_detection) {
-    m_force_detection = force_detection;
-  }
+//  void setForceDetection(bool force_detection) {
+//    m_force_detection = force_detection;
+//  }
 
   void setMessage(const std::string &message) {
     m_message = message;
