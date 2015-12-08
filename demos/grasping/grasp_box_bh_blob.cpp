@@ -376,7 +376,7 @@ void printPose(const std::string &text, const vpHomogeneousMatrix &cMo)
 
 int main(int argc, const char* argv[])
 {
-  std::string opt_ip = "198.18.0.1";;
+  std::string opt_ip = "198.18.0.1";
   std::string opt_face_cascade_name = std::string(ROMEOTK_DATA_FOLDER) + "/face/haarcascade_frontalface_alt.xml";
 
   //  std::string opt_model = std::string(ROMEOTK_DATA_FOLDER) + "/milkbox/milkbox";
@@ -573,7 +573,6 @@ int main(int argc, const char* argv[])
   //Initialize opencv color image
   cv::Mat cvI = cv::Mat(cv::Size(g.getWidth(), g.getHeight()), CV_8UC3);
 
-
   // Initialization detection and localiztion teabox
   vpMbLocalization teabox_tracker(opt_model, config_detection_file_folder, cam);
   teabox_tracker.initDetection(learning_data_file_name);
@@ -620,11 +619,11 @@ int main(int argc, const char* argv[])
   if (opt_right_arm)
     hand_tracker.setLeftHandTarget(false);
 
+
   if(!hand_tracker.loadHSV(opt_name_file_color_target))
   {
     std::cout << "Error opening the file "<< opt_name_file_color_target << std::endl;
   }
-
 
   // Initialize head servoing
   vpServoHead servo_head;
@@ -677,12 +676,14 @@ int main(int argc, const char* argv[])
   vpColorDetection obj_color;
   obj_color.setName(opt_box_name);
   std::string filename_color = box_folder + "color/" + opt_box_name + "HSV.txt";
-  if (!obj_color.loadHSV(filename_color))
+  if (!opt_learning_detection)
   {
-    std::cout << "Cannot load file " << filename_color << std::endl;
-    return 0;
+    if (!obj_color.loadHSV(filename_color))
+    {
+      std::cout << "Cannot load file " << filename_color << std::endl;
+      return 0;
+    }
   }
-
   // Initialize constant parameters
   std::string learned_oMh_filename = "grasping_pose_blob.xml"; // This file contains the following two transf. matrix:
   std::string learned_oMh_path = box_folder + "grasping/" + chain_name; // This file contains the following two transf. matrix:
@@ -691,7 +692,7 @@ int main(int argc, const char* argv[])
   std::string name_oMh_grasp =  "oMh_close_loop_"+ camera_name; // Offset position Hand w.r.t the object to grasp it (Close loop)
 
   vpHomogeneousMatrix oMh_Tea_Box_grasp;
-  if (! opt_learn_grasp_position && ! opt_learn_open_loop_position) {
+  if (! opt_learn_grasp_position && !opt_learn_open_loop_position && !opt_learning_detection) {
     vpXmlParserHomogeneousMatrix pm; // Create a XML parser
 
     if (pm.parse(oMh_Tea_Box_grasp, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_grasp) != vpXmlParserHomogeneousMatrix::SEQUENCE_OK) {
@@ -1088,9 +1089,9 @@ int main(int argc, const char* argv[])
         AL::ALValue angles_head;
         if (opt_right_arm)
           //angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(11.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
-          angles_head      = AL::ALValue::array(vpMath::rad(3.5), vpMath::rad(21.0), vpMath::rad(13.0), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+          angles_head      = AL::ALValue::array(vpMath::rad(3.5), vpMath::rad(21.0), vpMath::rad(13.0), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         else
-          angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+          angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_tot_hroll, angles_head, fractionMaxSpeed);
 
@@ -1561,7 +1562,12 @@ int main(int argc, const char* argv[])
             if (servo_arm->getServoArmType() == servo_arm->vs6dof_cyl)
             {
 
-              vpColVector z_c = cdMc.getCol(2,0,3);
+              // TOMODIFY
+              vpColVector z_c = cdMc.getRotationMatrix().getCol(3);// getCol(2,0,3);
+//              z_c[0] = cdMc[2][0];
+//              z_c[1] = cdMc[2][1];
+//              z_c[2] = cdMc[2][2];
+
               //vpColVector z_c = (cMo_hand * oMh_Tea_Box_grasp.inverse()).getCol(2,0,3);
               //vpColVector z_d = cMo_teabox.getCol(2,0,3);
 
@@ -1671,10 +1677,10 @@ int main(int argc, const char* argv[])
             error_t_treshold = 0.003 ;
 
 
-          //  if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
+          if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
 
 
-          if ( click_done && button == vpMouseButton::button1  )
+            // if ( click_done && button == vpMouseButton::button1  )
 
           {
             robot.stop(joint_names_arm_head);
@@ -1792,7 +1798,7 @@ int main(int argc, const char* argv[])
             hand = "LHand";
 
           robot.getProxy()->setStiffnesses(hand, 1.0f);
-          AL::ALValue angle = 0.15;
+          AL::ALValue angle = 0.10;
           robot.getProxy()->setAngles(hand, angle, 0.15);
 
           if (opt_language_english == false)
