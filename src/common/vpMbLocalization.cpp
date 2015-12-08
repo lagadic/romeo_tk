@@ -57,8 +57,8 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
   m_cam = cam;
 
   //Initiaze tracker
- // m_tracker = new vpMbEdgeKltTracker;
-  m_tracker = new vpMbKltTracker;
+  m_tracker = new vpMbEdgeKltTracker;
+ // m_tracker = new vpMbKltTracker;
 
   if(vpIoTools::checkFilename(m_model + ".xml")) {
     m_tracker->loadConfigFile(m_model + ".xml");
@@ -72,7 +72,7 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
-  m_tracker->setDisplayFeatures(false);
+  m_tracker->setDisplayFeatures(true);
 
 
 
@@ -264,7 +264,8 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 
         //std::cout<< "Median: " << std::endl << cMo_<<std::endl;
         unsigned int pose_ok_counter = 0;
-        vpColVector translation_median = cMo_.getCol(0,0,3);
+        vpColVector translation_median = cMo_.getTranslationVector();
+
 
         //std::cout<< "translation_median " << translation_median <<std::endl;
 
@@ -316,7 +317,7 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 
 
   if (m_state == tracking ) {
-      m_tracker->setDisplayFeatures(true);
+     // m_tracker->setDisplayFeatures(true);
 
     //    vpDisplay::displayText(I, 12, 10, "Tracking...", vpColor::red);
 
