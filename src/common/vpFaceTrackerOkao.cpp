@@ -12,6 +12,11 @@ vpFaceTrackerOkao::vpFaceTrackerOkao(std::string ip, int port) :m_proxy(ip, port
   const int period = 50;
   m_proxy.subscribe("Face", period, 0.0);
   m_proxy.setResolution(AL::kQVGA);
+  m_proxy.enableTracking(true);
+  m_proxy.enableRecognition(true);
+
+  m_previuos_cog.set_uv(m_image_width / 2, m_image_height/2);
+
 
 }
 
@@ -51,6 +56,8 @@ bool vpFaceTrackerOkao::detect()
     //std::cout << "face" << std::endl;
     AL::ALValue info_face_array = result[1];
     target_found = true;
+    double min_dist = m_image_width*m_image_height;
+    unsigned int index_closest_cog = 0;
     for (unsigned int i = 0; i < info_face_array.getSize()-1; i++ )
     {
       //Extract face info
@@ -79,6 +86,15 @@ bool vpFaceTrackerOkao::detect()
       float x = m_image_width / 2 - m_image_width * alpha;
       float y = m_image_height / 2 + m_image_height * beta;
 
+      vpImagePoint cog(x,y);
+      double dist = vpImagePoint::distance(m_previuos_cog,cog);
+
+      if (dist< min_dist)
+      {
+        index_closest_cog = i;
+        min_dist = dist;
+      }
+
       std::vector<vpImagePoint> polygon;
       double x_corner = x - h/2;
       double y_corner = y - w/2;
@@ -93,8 +109,9 @@ bool vpFaceTrackerOkao::detect()
 
     }
 
+    if (index_closest_cog !=0)
+      std::swap(m_polygon[0], m_polygon[index_closest_cog]);
   }
-
 
   return target_found;
 }
@@ -110,3 +127,26 @@ float vpFaceTrackerOkao::getScore(unsigned int i) const
 {
   return m_scores[i];
 }
+
+/*!
+   Remove all learned faces from the database.
+
+   \return true if the operation succeeded
+ */
+bool vpFaceTrackerOkao::clearDatabase()
+{
+  return m_proxy.clearDatabase();
+}
+
+/*!
+   Delete from the database all learned faces corresponding to the specified person.
+
+  \param:	name – The name of the person to forget
+  \return: true if the operation succeeded
+
+ */
+bool vpFaceTrackerOkao::forgetPerson(const std::string& name)
+{
+  return m_proxy.forgetPerson(name);
+}
+

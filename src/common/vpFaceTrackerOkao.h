@@ -21,6 +21,8 @@ protected:
   std::vector<float> m_scores;
   const int m_image_height;
   const int m_image_width;
+  vpImagePoint m_previuos_cog;
+
 
 
 public:
@@ -30,8 +32,11 @@ public:
   vpFaceTrackerOkao(std::string ip, int port);
   ~vpFaceTrackerOkao();
 
+  bool clearDatabase();
   bool detect(const vpImage <unsigned char> &I);
   bool detect();
+  bool forgetPerson(const std::string& name);
+
 
   float getScore(unsigned int i) const;
 
