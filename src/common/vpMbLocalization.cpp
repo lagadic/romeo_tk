@@ -72,7 +72,7 @@ vpMbLocalization::vpMbLocalization(const std::string &model, const std::string &
     m_tracker->loadModel(m_model + ".cao");
   else if(vpIoTools::checkFilename(m_model + ".wrl"))
     m_tracker->loadModel(m_model + ".wrl");
-  m_tracker->setDisplayFeatures(true);
+  //m_tracker->setDisplayFeatures(true);
 
 
 
