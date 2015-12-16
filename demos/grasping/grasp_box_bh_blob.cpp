@@ -456,8 +456,8 @@ int main(int argc, const char* argv[])
       opt_plotter_q_sec_arm = true;
     else if (std::string(argv[i]) == "--no-interaction")
       opt_interaction = false;
-    else if (std::string(argv[i]) == "--english")
-      opt_language_english = true;
+    else if (std::string(argv[i]) == "--fr")
+      opt_language_english = false;
     else if (std::string(argv[i]) == "--opt-record-video")
       opt_record_video = true;
     else if (std::string(argv[i]) == "--Reye")
@@ -545,7 +545,7 @@ int main(int argc, const char* argv[])
   }
   else
   {
-    std::cout << "Using camera Eye Right" << std::endl;
+    std::cout << "Using camera Eye Left" << std::endl;
     g.setCamera(2); // CameraLeftEye
     eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
   }
@@ -977,6 +977,7 @@ int main(int argc, const char* argv[])
         head_pose[1] = vpMath::rad(-8.); // NeckPitch
         head_pose[2] = vpMath::rad(-13.); // HeadPitch
         robot.setPosition(jointNames_tot_hroll, head_pose, 0.06);
+        std::cout << "######################################################111111111111111" << std::endl;
         state_teabox_tracker = WaitHeadToZero;
       }
 
@@ -1082,7 +1083,11 @@ int main(int argc, const char* argv[])
         static bool find_box = true;
         if (find_box)
         {
-          tts.post.say(" \\rspd=87\\ \\emph=2\\ Let's see what there is on the table!  \\eos=1\\ " );
+          if(opt_language_english)
+            tts.post.say(" \\rspd=87\\ \\emph=2\\ Let's see what there is on the table!  \\eos=1\\ " );
+          else
+            tts.post.say(" \\rspd=87\\ \\emph=2\\ Allons voir ce qu'il y a sur la table!  \\eos=1\\ " );
+
           find_box = false;
         }
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
@@ -1256,9 +1261,20 @@ int main(int argc, const char* argv[])
         first_time_center_box = false;
 
         if (opt_box_name == "tabascobox" ||opt_box_name == "tabascobox_green"  )
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a box of  \\emph=2\\ tabasco!  \\eos=1\\ " );
+        {
+          if (opt_language_english)
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a box of  \\emph=2\\ tabasco!  \\eos=1\\ " );
+          else
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. Je vois une boîte de  \\emph=2\\ tabasco!  \\eos=1\\ " );
+        }
         else
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a can \\eos=1\\ " );
+        {
+          if (opt_language_english)
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I see a can \\eos=1\\ " );
+          else
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. Je vois une \\emph=2\\ canette!  \\eos=1\\ " );
+        }
+
 
       }
       vpImagePoint teabox_cog_cur;
@@ -1424,6 +1440,11 @@ int main(int argc, const char* argv[])
       }
       if (click_done) {
 
+        if (opt_language_english)
+          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. I will try to get it \\eos=1\\ " );
+        else
+          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok. J'essaye de la prendre  \\eos=1\\ " );
+
         vpHomogeneousMatrix handMbox_desired = getOpenLoopDesiredPose(robot, cMo_teabox, eMc, learned_oMh_path + "/" + learned_oMh_filename, name_oMh_open_loop, opt_Reye, chain_name);
         std::vector<float> handMbox_desired_;
         handMbox_desired.convert(handMbox_desired_);
@@ -1564,9 +1585,9 @@ int main(int argc, const char* argv[])
 
               // TOMODIFY
               vpColVector z_c = cdMc.getRotationMatrix().getCol(3);// getCol(2,0,3);
-//              z_c[0] = cdMc[2][0];
-//              z_c[1] = cdMc[2][1];
-//              z_c[2] = cdMc[2][2];
+              //              z_c[0] = cdMc[2][0];
+              //              z_c[1] = cdMc[2][1];
+              //              z_c[2] = cdMc[2][2];
 
               //vpColVector z_c = (cMo_hand * oMh_Tea_Box_grasp.inverse()).getCol(2,0,3);
               //vpColVector z_d = cMo_teabox.getCol(2,0,3);
@@ -1578,7 +1599,6 @@ int main(int argc, const char* argv[])
             {
               servo_arm->setCurrentFeature(cdMc) ;
             }
-
 
             vpDisplay::displayFrame(I, cMo_hand*oMh_Tea_Box_grasp.inverse() , cam, 0.025, vpColor::none, 2);
 
@@ -1802,7 +1822,7 @@ int main(int argc, const char* argv[])
           robot.getProxy()->setAngles(hand, angle, 0.15);
 
           if (opt_language_english == false)
-            phraseToSay = "Je vais attraper la boite.";
+            phraseToSay = "\\rspd=90\\ \\emph=2\\Je vais attraper la boite \\eos=1\\ ";
           else
             phraseToSay = "\\rspd=90\\ \\emph=2\\ I will grasp the box \\eos=1\\ ";
           tts.post.say(phraseToSay);
@@ -1994,10 +2014,19 @@ int main(int argc, const char* argv[])
           if (first_time) {
             servo_time_init = vpTime::measureTimeSecond();
             if(opt_right_arm)
-              tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my right! \\eos=1\\ " );
-            else
-              tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my left! \\eos=1\\ " );
+            {
+              if (opt_language_english)
+                tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my right! \\eos=1\\ " );
+              else
+                tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ Salut!  \\eos=1\\ \\pau=200\\ Passe a ma droite! \\eos=1\\ " );
 
+            }
+            else
+            {
+              if (opt_language_english)
+                tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ There you are!  \\eos=1\\ \\pau=200\\ Come on my left! \\eos=1\\ " );
+              else
+                tts.post.say(" \\rspd=80\\ \\pau=500\\ \\emph=2\\ Salut!  \\eos=1\\ \\pau=200\\ Passe a ma gauche! \\eos=1\\ " );            }
             first_time = false;
           }
 
@@ -2068,6 +2097,7 @@ int main(int argc, const char* argv[])
         head_pos[1] = vpMath::rad(-8.); // NeckPitch
         head_pos[2] = vpMath::rad(-13.); // HeadPitch
         robot.setPosition(jointNames_tot_hroll, head_pos, 0.06);
+        std::cout << "######################################################111111111111111" << std::endl;
         //robot.getProxy()->setAngles(jointNames_tot, angles_head, 0.06);
         interaction_status = WaitHeadInZero;
         break;
@@ -2077,7 +2107,10 @@ int main(int argc, const char* argv[])
         vpColVector head_pos_mes = robot.getPosition(jointNames_tot_hroll);
         if (sqrt((head_pos_mes-head_pos).sumSquare()) < vpMath::rad(4)) {
           interaction_status = HeadFollowFace;
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Who wants the box?  \\eos=1\\ " );
+          if (opt_language_english)
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Who wants the box?  \\eos=1\\ " );
+          else
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Quelqu'un veut prendre la boîte ? \\eos=1\\ " );
         }
         break;
       }
@@ -2086,7 +2119,11 @@ int main(int argc, const char* argv[])
         if (click_done && button == vpMouseButton::button1) {
           click_done = false;
           robot.stop(jointNames_tot);
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Now I will give it to you!  \\eos=1\\ " );
+          if (opt_language_english)
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Now I will give it to you!\\eos=1\\ \\emph=2\\ Take it please!  \\eos=1\\ " );
+          else
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Je vais te donner la boite !  \\eos=1\\ \\emph=2\\ Prenez-la s'il vous plaît !  \\eos=1\\" );
+
           interaction_status = MoveArm;
         }
         break;
@@ -2152,9 +2189,9 @@ int main(int argc, const char* argv[])
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to release the tea", vpColor::red);
         if (click_done && button == vpMouseButton::button1) {
           if (opt_language_english == false)
-            phraseToSay = "Je vais te donner la boite";
+            phraseToSay = "\\rspd=90\\ \\emph=2\\ voilà!  \\eos=1\\";
           else
-            phraseToSay = " \\rspd=90\\ \\emph=2\\ Take it please!  \\eos=1\\ " ;
+            phraseToSay = " \\rspd=90\\ \\emph=2\\ Thanks!  \\eos=1\\ " ;
           tts.post.say(phraseToSay);
           double angle = 1.0f;
           if (opt_right_arm)
@@ -2170,7 +2207,7 @@ int main(int argc, const char* argv[])
       case MoveArmToRestPosition: {
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to move arm to rest", vpColor::red);
         if (click_done && button == vpMouseButton::button1)  {
-          tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
+          //tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
           moveLArmToRestPosition(robot, chain_name); // move down to rest
           click_done = false;
           interaction_status = WaitForEnd;
@@ -2192,7 +2229,10 @@ int main(int argc, const char* argv[])
       robot.stop(jointNames_tot);
       robot.stop(jointNames_larm);
 
-      tts.post.say(" \\rspd=90\\ \\emph=2\\ Let's try again!  \\eos=1\\ " );
+      if (opt_language_english)
+        tts.post.say(" \\rspd=90\\ \\emph=2\\ Let's try again!  \\eos=1\\ " );
+      else
+        tts.post.say(" \\rspd=90\\ \\emph=2\\       Essayons encore!  \\eos=1\\ " );
 
       AL::ALValue pos0;
       if (opt_right_arm)
