@@ -105,8 +105,10 @@ int main(int argc, const char* argv[])
     }
     else if (std::string(argv[i]) == "--clear-database")
       opt_clear_database = true;
+    else if (std::string(argv[i]) == "--fr")
+      opt_language_english = false;
     else if (std::string(argv[i]) == "--help") {
-      std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--forget name_person_to_forget] [--clear-database]" << std::endl;
+      std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--forget name_person_to_forget] [--clear-database] [--fr]" << std::endl;
 
       return 0;
     }
@@ -315,15 +317,33 @@ int main(int argc, const char* argv[])
           unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
 
           if (!in_array(recognized_person_name, recognized_names) && recognized_person_name != "Unknown") {
-            std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name;
+
+            if (opt_language_english)
+            {
+              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ How are you ?";
+            }
+            else
+            {
+              phraseToSay = "\\emph=2\\ Salut \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ comment vas  tu ?";;
+            }
+
             std::cout << phraseToSay << std::endl;
             tts.post.say(phraseToSay);
             recognized_names.push_back(recognized_person_name);
           }
           if (!in_array(recognized_person_name, recognized_names) && recognized_person_name == "Unknown"
-              && times > 9)
+              && times > 15)
           {
-            std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
+
+            if (opt_language_english)
+            {
+              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
+            }
+            else
+            {
+              phraseToSay = " \\emph=2\\ Salut \\wait=200\\ \\emph=2\\. Je ne te connais pas! \\emph=2\\  Comment t'appelles-tu ?";
+            }
+
             std::cout << phraseToSay << std::endl;
             tts.post.say(phraseToSay);
             recognized_names.push_back(recognized_person_name);
