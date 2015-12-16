@@ -242,21 +242,8 @@ int main(int argc, const char* argv[])
 
         //std::cout << "q dot: " << q_dot_head.t() << std::endl;
 
-        //        if (distance < 0.03*I.getWidth() && speech) { // 3 % of the image witdh
-        //          // Call the say method
-        //          static bool firstTime = true;
-        //          if (firstTime) {
-        //            tts.post.say(phraseToSay);
-        //            firstTime = false;
-        //          }
-        //          speech = false;
-        //        }
-        //        else if (distance > 0.20*I.getWidth()) // 20 % of the image witdh
-        //          speech = true;
-
         if (detection_phase)
         {
-
           //std::cout << "score: " << score << std::endl;
           //std::cout << "distance: " << distance << std::endl;
           //std::cout << "size: " << bbox.getSize() << " < 4000 " << std::endl;
@@ -282,12 +269,6 @@ int main(int argc, const char* argv[])
         }
         else
         {
-          // std::cout << "Detected faces map:\n " << detected_face_map << std::endl;
-
-          //          std::cout << "Largest == "
-          //                    << std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second
-          //                    << '\n';
-
           std::string recognized_person_name = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->first;
           unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
 

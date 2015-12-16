@@ -40,6 +40,7 @@
 #include <vpFaceTracker.h>
 #include <vpServoHead.h>
 
+#include <visp/vpPlot.h>
 
 /*!
 
@@ -95,6 +96,33 @@ int main(int argc, const char* argv[])
   tts.setLanguage("French");
   const std::string phraseToSay = "Bonjour, bienvenue dans le laboratoire de recherche.";
 
+
+  // Plotting
+
+  // Head
+  std::vector <std::string > names_head = robot.getBodyNames("Head");
+
+  vpPlot plotter_diff_vel (4);
+  plotter_diff_vel.initGraph(0, 2);
+  plotter_diff_vel.initGraph(1, 2);
+  plotter_diff_vel.initGraph(2, 2);
+  plotter_diff_vel.initGraph(3, 2);
+  plotter_diff_vel.setTitle(0,  "NeckYaw");
+  plotter_diff_vel.setTitle(1,  "NeckPitch");
+  plotter_diff_vel.setTitle(2,  "HeadPitch");
+  plotter_diff_vel.setTitle(3,  "HeadRoll");
+
+  vpPlot plotter_error (4);
+  plotter_error.initGraph(0, 1);
+  plotter_error.initGraph(1, 1);
+  plotter_error.initGraph(2, 1);
+  plotter_error.initGraph(3, 1);
+  plotter_error.setTitle(0,  "NeckYaw");
+  plotter_error.setTitle(1,  "NeckPitch");
+  plotter_error.setTitle(2,  "HeadPitch");
+  plotter_error.setTitle(3,  "HeadRoll");
+
+
   try {
 
     vpImage<unsigned char> I(g.getHeight(), g.getWidth());
@@ -119,6 +147,7 @@ int main(int argc, const char* argv[])
 
     bool reinit_servo = true;
     bool speech = true;
+    unsigned long loop_iter = 0;
 
     while(1) {
       if (reinit_servo) {
@@ -130,6 +159,9 @@ int main(int argc, const char* argv[])
       g.acquire(I);
       vpDisplay::display(I);
       bool face_found = face_tracker.track(I);
+
+        vpColVector vel_head = robot.getJointVelocity(names_head);
+
       if (face_found) {
         vpDisplay::displayRectangle(I, face_tracker.getFace(), vpColor::red, false, 4);
         head_cog_cur = face_tracker.getFace().getCenter();
@@ -139,11 +171,22 @@ int main(int argc, const char* argv[])
 
         servo_head.setCurrentFeature(head_cog_cur);
         servo_head.setDesiredFeature(head_cog_des);
-        vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
+        vpDisplay::setFont(I, "-*-*-bold-*-*-*-*-*-*-*-*-*-*-*");
+        vpDisplay::displayText(I, face_tracker.getFace().getTopLeft()+vpImagePoint(-20,0), "Coraline", vpColor::red);
+        //vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
         q_dot_head = servo_head.computeControlLaw(servo_time_init);
         robot.setVelocity(jointNames_head, q_dot_head);
         std::cout << "q dot: " << q_dot_head.t() << std::endl;
+
+        //vpColVector vel_head = robot.getJointVelocity(names_head);
+        for (unsigned int i=0 ; i < names_head.size() ; i++) {
+          plotter_diff_vel.plot(i,1,loop_iter,q_dot_head[i]);
+          plotter_error.plot(i,0,loop_iter,vel_head[i] - q_dot_head[i]);
+        }
+
+        //      std::cout <<"getVel: " << vel << std::endl;
+        //      std::cout <<"__________________________: " << result << std::endl;
 
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
@@ -152,7 +195,7 @@ int main(int argc, const char* argv[])
           // Call the say method
           static bool firstTime = true;
           if (firstTime) {
-            tts.post.say(phraseToSay);
+            //tts.post.say(phraseToSay);
             firstTime = false;
           }
           speech = false;
@@ -167,11 +210,22 @@ int main(int argc, const char* argv[])
         reinit_servo = true;
       }
 
+
+      for (unsigned int i=0 ; i < names_head.size() ; i++) {
+        plotter_diff_vel.plot(i,0,loop_iter,vel_head[i]);
+        // plotter_diff_vel.plot(i,1,loop_iter,q_dot_head[i]);
+      }
+
+
       vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
         break;
+      loop_iter ++;
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
     }
+
+    vpDisplay::getClick(I, true);
+
   }
   catch(vpException &e) {
     std::cout << e.getMessage() << std::endl;
@@ -183,6 +237,9 @@ int main(int argc, const char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
   robot.stop(jointNames_head);
+
+
+
 
   return 0;
 }

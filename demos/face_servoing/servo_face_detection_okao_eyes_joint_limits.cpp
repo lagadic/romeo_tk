@@ -130,12 +130,18 @@ int main(int argc, const char* argv[])
 
 
   std::vector<std::string> jointNames_head = robot.getBodyNames("Head");
-
   vpColVector head_pos(jointNames_head.size());
   head_pos = 0;
-  head_pos[1] = vpMath::rad(-10.); // NeckPitch
-  head_pos[2] = vpMath::rad(0.); // HeadPitch
+  head_pos[1] = vpMath::rad(-3); // NeckPitch
+  head_pos[2] = vpMath::rad(-4.); // HeadPitch
+  head_pos[0] = vpMath::rad(-10.); // NeckYaw
   robot.setPosition(jointNames_head, head_pos, 0.3);
+
+  std::vector<std::string> jointNames_leye = robot.getBodyNames("LEye");
+  vpColVector eye_pos(jointNames_leye.size());
+  eye_pos = 0;
+  robot.setPosition(jointNames_leye, eye_pos, 0.3);
+
 
 
 
@@ -143,13 +149,23 @@ int main(int argc, const char* argv[])
   // Initialize the joint avoidance scheme from the joint limits
   vpColVector jointMin = robot.getJointMin("Head");
   //jointMin.stack(robot.getJointMin("LEye")); //Limits from AL
-  jointMin.stack(-0.29753);
-  jointMin.stack(-0.17940);
+  //  jointMin.stack(-0.29753);
+  //  jointMin.stack(-0.17940);
+  jointMin.stack(vpMath::rad(-16.8));
+  jointMin.stack(vpMath::rad(-14.8));
+
 
   vpColVector jointMax = robot.getJointMax("Head");
-  //jointMax.stack(robot.getJointMax("LEye")); //Limits from AL
-  jointMax.stack(0.297533);
-  jointMax.stack(0.273738);
+  // jointMax.stack(robot.getJointMax("LEye")); //Limits from AL
+  //  jointMax.stack(0.297533);
+  //  jointMax.stack(0.273738);
+
+  jointMax.stack(vpMath::rad(17.2));
+  jointMax.stack(vpMath::rad(15.3));
+
+
+  std::cout << "limit max:" << jointMax << std::endl;
+  std::cout << "limit min:" << jointMin << std::endl;
 
 
   // Vector secondary task
@@ -175,7 +191,7 @@ int main(int argc, const char* argv[])
   //  double ro1 = 0.4;
 
   double ro = 0.1;
-  double ro1 = 0.5;
+  double ro1 = 0.3;
 
   vpColVector q_l0_min(numJoints);
   vpColVector q_l0_max(numJoints);
@@ -346,6 +362,8 @@ int main(int argc, const char* argv[])
 
       bool face_found = false;
 
+      q = robot.getPosition(jointNames);
+
 
       if (result.getSize() >=2)
       {
@@ -380,40 +398,53 @@ int main(int argc, const char* argv[])
         vpDisplay::displayCross(I, y, x, 10, vpColor::red);
         vpDisplay::displayRectangle(I,y,x,0.0,sizeX,sizeY,vpColor::cyan,1);
 
-        head_cog_cur.set_uv(x,y);
+        if (x<= mImageWidth && y <= mImageHeight)
+        {
+          head_cog_cur.set_uv(x,y);
 
-        //servo_head.set_eJe( robot.get_eJe("LEye") * MAP_head );
-        servo_head.set_eJe( robot.get_eJe("LEye"));
-        servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
+          //servo_head.set_eJe( robot.get_eJe("LEye") * MAP_head );
+          servo_head.set_eJe( robot.get_eJe("LEye"));
+          servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
 
-        servo_head.setCurrentFeature(head_cog_cur);
-        servo_head.setDesiredFeature(head_cog_des);
-        vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
+          servo_head.setCurrentFeature(head_cog_cur);
+          servo_head.setDesiredFeature(head_cog_des);
+          vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
-        // q_dot_head = servo_head.computeControlLaw(servo_time_init);
-        q_dot_head = servo_head.computeControlLaw();
-        vpColVector e = servo_head.m_task_head.getError();
-        vpMatrix TaskJac = servo_head.m_task_head.getTaskJacobian();
-        vpMatrix TaskJacPseudoInv = servo_head.m_task_head.getTaskJacobianPseudoInverse();
+          // q_dot_head = servo_head.computeControlLaw(servo_time_init);
+          q_dot_head = servo_head.computeControlLaw();
+          vpColVector e = servo_head.m_task_head.getError();
+          vpMatrix TaskJac = servo_head.m_task_head.getTaskJacobian();
+          vpMatrix TaskJacPseudoInv = servo_head.m_task_head.getTaskJacobianPseudoInverse();
+          vpMatrix InteractionM = servo_head.m_task_head.getInteractionMatrix();
+          //q2 = computeQdotLimitAvoidance(e, TaskJac, TaskJacPseudoInv, jointMin, jointMax, q, q_dot_head, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
 
-
-        q = robot.getPosition(jointNames);
-
-        q2 = computeQdotLimitAvoidance(e, TaskJac, TaskJacPseudoInv, jointMin, jointMax, q, q_dot_head, ro, ro1, q_l0_min, q_l0_max, q_l1_min, q_l1_max );
-
-        if (q2.euclideanNorm()<10.0)
-        q_dot_head =  q_dot_head + q2;
-
-        // Add mirroring eyes
-        q_dot_tot = q_dot_head;
-        q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
-        q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
-        std::cout << "q2: " << q2 << std::endl;
-        robot.setVelocity(jointNames_tot, q_dot_tot);
+          vpColVector q_dot_head_real = robot.getJointVelocity(jointNames_tot);
+          q_dot_head_real.resize(6,false);
+          q2 = servo_head.m_task_head.secondaryTaskJointLimitAvoidance(q, q_dot_head, jointMin, jointMax);
 
 
-        //std::cout << "q dot: " << q_dot_head.t() << std::endl;
+          if (q2.euclideanNorm()<10.0)
+            q_dot_head =  q_dot_head + q2;
 
+          // Add mirroring eyes
+          q_dot_tot = q_dot_head;
+          q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);
+          q_dot_tot.stack(q_dot_head[q_dot_head.size()-1]);
+          std::cout << "q2: " << q2 << std::endl;
+          robot.setVelocity(jointNames_tot, q_dot_tot);
+
+
+        std::cout << "q dot: "<< std::endl << q_dot_head.t() << std::endl;
+        std::cout << "LEye: " << std::endl<< robot.get_eJe("LEye") << std::endl;
+
+        std::cout << "rank: "<< std::endl << servo_head.m_task_head.getTaskRank()<< std::endl;
+        std::cout << "InteractionM: "<< std::endl << InteractionM << std::endl;
+        std::cout << "TaskJacPseudoInv: "<< std::endl << TaskJacPseudoInv << std::endl;
+        std::cout << "e: " << std::endl<< e << std::endl;
+        std::cout << "head_cog_cur: " << std::endl<< head_cog_cur << std::endl;
+        std::cout << "head_cog_des: " << std::endl<< head_cog_des << std::endl;
+
+ }
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
 
@@ -431,77 +462,84 @@ int main(int argc, const char* argv[])
           speech = true;
 
 
-        if (opt_plotter_q_sep )
-        {
-
-          vpColVector info(7);
-          for (unsigned int i=0 ; i < numJoints ; i++) {
-            info[0] = jointMin[i];
-            info[1] = jointMax[i];
-            info[2] = q_l0_min[i];
-            info[3] = q_l0_max[i];
-            info[4] = q_l1_min[i];
-            info[5] = q_l1_max[i];
-            info[6] = q[i];
-
-            if (i < 4)
-              plotter_q_sep->plot(i,loop_iter,info);
-            else
-              plotter_q_sep1->plot(i-4,loop_iter,info);
-          }
 
 
-        }
-
-
-        if (opt_plotter_q  )
-        {
-
-          // q normalized between (entre -1 et 1)
-          for (unsigned int i=0 ; i < numJoints ; i++) {
-            data[i] = (q[i] - Qmiddle[i]) ;
-            data[i] /= (jointMax[i] - jointMin[i]) ;
-            data[i]*=2 ;
-          }
-
-          data[numJoints] = -1.0;
-          data[numJoints+1] = 1.0;
-
-          unsigned int joint = 0;
-          double tQmin_l0 = jointMin[joint] + ro *(jointMax[joint] - jointMin[joint]);
-          double tQmax_l0 = jointMax[joint] - ro *(jointMax[joint] - jointMin[joint]);
-
-          double tQmin_l1 =  tQmin_l0 - ro * ro1 * (jointMax[joint] - jointMin[joint]);
-          double tQmax_l1 =  tQmax_l0 + ro * ro1 * (jointMax[joint] - jointMin[joint]);
-
-          data[numJoints+2] = 2*(tQmin_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
-          data[numJoints+3] = 2*(tQmax_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
-
-          data[numJoints+4] =  2*(tQmin_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
-          data[numJoints+5] =  2*(tQmax_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
-
-          plotter_q->plot(0,0,loop_iter,data[0]);
-          plotter_q->plot(0,1,loop_iter,data[1]);
-          plotter_q->plot(0,2,loop_iter,data[2]);
-          plotter_q->plot(0,3,loop_iter,data[3]);
-          plotter_q->plot(0,4,loop_iter,data[4]);
-          plotter_q->plot(0,5,loop_iter,data[5]);
-          plotter_q->plot(0,6,loop_iter,data[6]);
-
-          plotter_q->plot(0,7,loop_iter,data[7]);
-          plotter_q->plot(0,8,loop_iter,data[8]);
-
-          plotter_q->plot(0,9,loop_iter,data[9]);
-          plotter_q->plot(0,10,loop_iter,data[10]);
-          plotter_q->plot(0,11,loop_iter,data[11]);
-
-
-        }
 
       }
       else {
         robot.stop(jointNames_tot);
         reinit_servo = true;
+      }
+
+
+
+      if (opt_plotter_q_sep )
+      {
+
+        vpColVector info(7);
+        for (unsigned int i=0 ; i < numJoints ; i++) {
+          info[0] = jointMin[i];
+          info[1] = jointMax[i];
+          info[2] = q_l0_min[i];
+          info[3] = q_l0_max[i];
+          info[4] = q_l1_min[i];
+          info[5] = q_l1_max[i];
+          info[6] = q[i];
+
+          if (i < 4)
+            plotter_q_sep->plot(i,loop_iter,info);
+          else
+            plotter_q_sep1->plot(i-4,loop_iter,info);
+        }
+
+
+      }
+
+
+
+
+      if (opt_plotter_q  )
+      {
+
+        // q normalized between (entre -1 et 1)
+        for (unsigned int i=0 ; i < numJoints ; i++) {
+          data[i] = (q[i] - Qmiddle[i]) ;
+          data[i] /= (jointMax[i] - jointMin[i]) ;
+          data[i]*=2 ;
+        }
+
+        data[numJoints] = -1.0;
+        data[numJoints+1] = 1.0;
+
+        unsigned int joint = 0;
+        double tQmin_l0 = jointMin[joint] + ro *(jointMax[joint] - jointMin[joint]);
+        double tQmax_l0 = jointMax[joint] - ro *(jointMax[joint] - jointMin[joint]);
+
+        double tQmin_l1 =  tQmin_l0 - ro * ro1 * (jointMax[joint] - jointMin[joint]);
+        double tQmax_l1 =  tQmax_l0 + ro * ro1 * (jointMax[joint] - jointMin[joint]);
+
+        data[numJoints+2] = 2*(tQmin_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+        data[numJoints+3] = 2*(tQmax_l0 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+        data[numJoints+4] =  2*(tQmin_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+        data[numJoints+5] =  2*(tQmax_l1 - Qmiddle[joint])/(jointMax[joint] - jointMin[joint]);
+
+        plotter_q->plot(0,0,loop_iter,data[0]);
+        plotter_q->plot(0,1,loop_iter,data[1]);
+        plotter_q->plot(0,2,loop_iter,data[2]);
+        plotter_q->plot(0,3,loop_iter,data[3]);
+        plotter_q->plot(0,4,loop_iter,data[4]);
+        plotter_q->plot(0,5,loop_iter,data[5]);
+        plotter_q->plot(0,6,loop_iter,data[6]);
+
+        plotter_q->plot(0,7,loop_iter,data[7]);
+        plotter_q->plot(0,8,loop_iter,data[8]);
+
+        plotter_q->plot(0,9,loop_iter,data[9]);
+        plotter_q->plot(0,10,loop_iter,data[10]);
+        plotter_q->plot(0,11,loop_iter,data[11]);
+
+
       }
 
 
