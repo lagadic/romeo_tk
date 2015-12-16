@@ -58,6 +58,7 @@ bool vpFaceTrackerOkao::detect()
     target_found = true;
     double min_dist = m_image_width*m_image_height;
     unsigned int index_closest_cog = 0;
+    vpImagePoint closest_cog;
     for (unsigned int i = 0; i < info_face_array.getSize()-1; i++ )
     {
       //Extract face info
@@ -82,7 +83,7 @@ bool vpFaceTrackerOkao::detect()
       float h = m_image_height * sx;
       float w = m_image_width * sy;
 
-      // Centre of face into the image
+      // Center of face into the image
       float x = m_image_width / 2 - m_image_width * alpha;
       float y = m_image_height / 2 + m_image_height * beta;
 
@@ -91,6 +92,7 @@ bool vpFaceTrackerOkao::detect()
 
       if (dist< min_dist)
       {
+        closest_cog = cog;
         index_closest_cog = i;
         min_dist = dist;
       }
@@ -111,6 +113,7 @@ bool vpFaceTrackerOkao::detect()
 
     if (index_closest_cog !=0)
       std::swap(m_polygon[0], m_polygon[index_closest_cog]);
+    m_previuos_cog = closest_cog;
   }
 
   return target_found;
