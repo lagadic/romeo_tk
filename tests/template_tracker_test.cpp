@@ -41,8 +41,10 @@
 #include <iostream>
 #include <string>
 
-#include <visp/vpDisplayX.h>
-#include <visp/vpImage.h>
+#include <visp3/gui/vpDisplayX.h>
+#include <visp3/core/vpImage.h>
+#include <visp3/ar/vpAROgre.h>
+
 
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiConfig.h>
@@ -171,6 +173,27 @@ int main(int argc, const char* argv[])
     bool onlyDetection = true;
     t_tracker.setOnlyDetection(onlyDetection);
 
+    // Create a vpRAOgre object with color background
+    vpAROgre ogre(cam, g.getWidth(), g.getHeight());
+    // Initialize it
+    ogre.init(I);
+    ogre.load("Robot", "robot.mesh");
+    ogre.setScale("Robot", 0.001f,0.001f,0.001f);
+    ogre.setRotation("Robot", vpRotationMatrix(vpRxyzVector(M_PI/2, -M_PI/2, M_PI)));
+   // ogre.setRotation("Robot", vpRotationMatrix(vpRxyzVector(0, 0, 0)));
+
+    // Add an optional point light source
+    Ogre::Light * light = ogre.getSceneManager()->createLight();
+    light->setDiffuseColour(1, 1, 1); // scaled RGB values
+    light->setSpecularColour(1, 1, 1); // scaled RGB values
+    light->setPosition(-5, -5, 10);
+    light->setType(Ogre::Light::LT_POINT);
+
+
+    t_tracker.getCameraParameters().printParameters();
+
+    vpDisplay::getClick(I,true);
+
 
 
     while(1)
@@ -189,6 +212,10 @@ int main(int argc, const char* argv[])
           printPose("cMo qrcode: ", cMo_t);
           vpDisplay::displayFrame(I, cMo_t, cam, 0.04, vpColor::none, 3);
           vpDisplay::displayPolygon(I, t_tracker.getCorners(), vpColor::green, 2);
+
+          // Display with ogre
+          ogre.display(I,cMo_t);
+
       }
 
 

@@ -162,7 +162,7 @@ int main(int argc, const char* argv[])
             objects[i].setCameraParameters(cam);
             firstTime[i] = true;
             objects[i].setPoints(points);
-            objects[i].setLeftHandTarget(false);
+            objects[i].setLeftHandTarget(true);
            // objects[i].setManualBlobInit(true);
 
             //      color_rects.at(i).id = vpColor::vpColorIdentifier( std::rand() % ( 18 + 1 ) );
