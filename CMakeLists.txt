@@ -1,6 +1,7 @@
-
 cmake_minimum_required(VERSION 2.6.4 FATAL_ERROR)
+
 project(romeo_tk)
+
 # this lets you find the qibuild cmake frameworl
 find_package(qibuild)
 
@@ -39,6 +40,10 @@ qi_create_lib(romeo_tk
     src/common/vpJointLimitAvoidance.h
     src/common/vpBlobsTargetTracker.h
     src/common/vpBlobsTargetTracker.cpp
+    src/common/vpFaceTrackerOkao.h
+    src/common/vpFaceTrackerOkao.cpp
+    src/common/vpTemplateLocatization.h
+    src/common/vpTemplateLocatization.cpp
 )
 
 qi_use_lib(romeo_tk visp_naoqi VISP ALCOMMON ALPROXIES ALVISION)
