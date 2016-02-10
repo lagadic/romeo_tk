@@ -34,7 +34,7 @@ public:
   vpFaceTracker();
   ~vpFaceTracker();
 
-  vpRect getFace() const { return m_target;};
+  vpRect getFace() const { return m_target;}
   void setFaceCascade(const std::string &filename);
   bool track(const vpImage<unsigned char> &I);
 };

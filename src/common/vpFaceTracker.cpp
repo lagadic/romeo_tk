@@ -1,6 +1,6 @@
 
 #include <vpFaceTracker.h>
-
+#include <visp/vpImageConvert.h>
 
 vpFaceTracker::vpFaceTracker() : m_warp(), m_tracker(NULL), m_faces(), m_state(detection),
   m_face_cascade(), m_frame_gray(), m_zone_ref(), m_zone_cur(),
@@ -29,6 +29,7 @@ void vpFaceTracker::setFaceCascade(const std::string &filename)
 bool vpFaceTracker::track(const vpImage<unsigned char> &I)
 {
   vpImageConvert::convert(I, m_frame_gray);
+
 
   //std::cout << "state: " << m_state << std::endl;
   //-- Detect faces
