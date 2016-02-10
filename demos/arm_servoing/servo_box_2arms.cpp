@@ -789,7 +789,7 @@ int main(int argc, const char* argv[])
                     double theta_error_grasp;
                     vpColVector u_error_grasp;
                     tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
-                    std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+                    std::cout << "error: " << t_error_grasp << " " << vpMath::deg(theta_error_grasp) << std::endl;
 
 
                     //                    if (cpt_iter_servo_grasp[0] > 100) {

@@ -1,6 +1,7 @@
 set(source 
   face_detection_visp.cpp
   face_detection_okao.cpp
+  face_detection_okao_class.cpp
   ) 
 
 foreach(src ${source})

@@ -131,6 +131,7 @@ int main(int argc, const char* argv[])
   vpQRCodeTracker qrcode_tracker;
   qrcode_tracker.setCameraParameters(cam);
   qrcode_tracker.setQRCodeSize(0.035);
+  qrcode_tracker.setMessage("romeo_left_arm");
 
 
   // Constant transformation Target Frame to LArm end-effector (LWristPitch)
@@ -222,21 +223,21 @@ int main(int argc, const char* argv[])
 
     bool click_done = vpDisplay::getClick(I, button, false);
 
-    if (click_done && button == vpMouseButton::button1) {
-      std::vector<float> LArmShoulderElbowYaw_pos;
-      LArmShoulderElbowYaw_pos.push_back(shoulderYaw_pos);
-      LArmShoulderElbowYaw_pos.push_back(vpMath::rad(-40.));
-      std::vector<std::string> LArmShoulderElbowYaw_name;
-      LArmShoulderElbowYaw_name.push_back("LShoulderYaw");
-      LArmShoulderElbowYaw_name.push_back("LElbowYaw");
+//    if (click_done && button == vpMouseButton::button1) {
+//      std::vector<float> LArmShoulderElbowYaw_pos;
+//      LArmShoulderElbowYaw_pos.push_back(shoulderYaw_pos);
+//      LArmShoulderElbowYaw_pos.push_back(vpMath::rad(-40.));
+//      std::vector<std::string> LArmShoulderElbowYaw_name;
+//      LArmShoulderElbowYaw_name.push_back("LShoulderYaw");
+//      LArmShoulderElbowYaw_name.push_back("LElbowYaw");
 
-     robot.getProxy()->setAngles(LArmShoulderElbowYaw_name, LArmShoulderElbowYaw_pos, 0.08);
+//     robot.getProxy()->setAngles(LArmShoulderElbowYaw_name, LArmShoulderElbowYaw_pos, 0.08);
 
-      click_done = false;
-    }
+//      click_done = false;
+//    }
 
 
-#if 0
+#if 1
 
     // track qrcode
     status_qrcode_tracker = qrcode_tracker.track(I);

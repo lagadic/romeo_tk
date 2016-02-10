@@ -435,26 +435,31 @@ int main(int argc, const char* argv[])
   /** Initialization drawing*/
 
 
-  vpHomogeneousMatrix p1(0.03, 0.0, 0.0, 0.0, 0.0, 0.0);
-  vpHomogeneousMatrix p2(0.03, 0.03, 0.0, 0.0, 0.0, 0.0);
-  vpHomogeneousMatrix p3(0.0, 0.03, 0.0, 0.0, 0.0, 0.0);
-  vpHomogeneousMatrix p4(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  //  vpHomogeneousMatrix p1(0.03, 0.0, 0.0, 0.0, 0.0, 0.0);
+  //  vpHomogeneousMatrix p2(0.03, 0.03, 0.0, 0.0, 0.0, 0.0);
+  //  vpHomogeneousMatrix p3(0.0, 0.03, 0.0, 0.0, 0.0, 0.0);
+  //  vpHomogeneousMatrix p4(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
   std::vector<vpHomogeneousMatrix> P;
 
-  P.push_back(p1);
-  P.push_back(p2);
-  P.push_back(p3);
-  P.push_back(p4);
+  //  P.push_back(p1);
+  //  P.push_back(p2);
+  //  P.push_back(p3);
+  //  P.push_back(p4);
 
+
+  for (unsigned int i = 0;i<50;i++ )
+  {
+    vpHomogeneousMatrix p1(0.002*i, 0.0, 0.0, 0.0, 0.0, 0.0);
+    P.push_back(p1);
+  }
 
   /************************************************************************************************/
 
   vpMouseButton::vpMouseButtonType button;
 
-  vpHomogeneousMatrix elMb; // Homogeneous matrix from right wrist roll to pen
-  vpHomogeneousMatrix cMpen_d; // Desired pen final pose
-
+  std::vector<vpHomogeneousMatrix> cMpen_d;
+  unsigned int index_p = 0;
 
 
   //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
@@ -532,36 +537,36 @@ int main(int argc, const char* argv[])
       //         \|_____ y
       //
 
-      else if (s == "4") //-y
-      {
-        M_offset.buildFrom(0.0, -d_t, 0.0, 0.0, -d_r, 0.0) ;
-      }
+      //      else if (s == "4") //-y
+      //      {
+      //        M_offset.buildFrom(0.0, -d_t, 0.0, 0.0, -d_r, 0.0) ;
+      //      }
 
-      else if (s == "6")  //+y
-      {
-        M_offset.buildFrom(0.0, d_t, 0.0, 0.0, d_r, 0.0) ;
-      }
+      //      else if (s == "6")  //+y
+      //      {
+      //        M_offset.buildFrom(0.0, d_t, 0.0, 0.0, d_r, 0.0) ;
+      //      }
 
-      else if (s == "8")  //+x
-      {
-        M_offset.buildFrom(d_t, 0.0, 0.0, d_r, 0.0, 0.0) ;
-      }
+      //      else if (s == "8")  //+x
+      //      {
+      //        M_offset.buildFrom(d_t, 0.0, 0.0, d_r, 0.0, 0.0) ;
+      //      }
 
-      else if (s == "2") //-x
-      {
-        M_offset.buildFrom(-d_t, 0.0, 0.0, -d_r, 0.0, 0.0) ;
-      }
+      //      else if (s == "2") //-x
+      //      {
+      //        M_offset.buildFrom(-d_t, 0.0, 0.0, -d_r, 0.0, 0.0) ;
+      //      }
 
-      //            else if (s == "7")//-z
-      //            {
-      //                M_offset.buildFrom(0.0, 0.0, -d_t, 0.0, 0.0, -d_r) ;
-      //            }
-      //            else if (s == "9") //+z
-      //            {
-      //                M_offset.buildFrom(0.0, 0.0, d_t, 0.0, 0.0, d_r) ;
-      //            }
+      //      //            else if (s == "7")//-z
+      //      //            {
+      //      //                M_offset.buildFrom(0.0, 0.0, -d_t, 0.0, 0.0, -d_r) ;
+      //      //            }
+      //      //            else if (s == "9") //+z
+      //      //            {
+      //      //                M_offset.buildFrom(0.0, 0.0, d_t, 0.0, 0.0, d_r) ;
+      //      //            }
 
-      cMpen_d = cMpen_d * M_offset;
+      //      cMpen_d = cMpen_d[index_p] * M_offset;
 
 
     }
@@ -646,32 +651,42 @@ int main(int argc, const char* argv[])
         vpDisplay::displayFrame(I, cM_tab, cam, 0.07, vpColor::none, 2);
       }
 
+      // Point of the pen wrt camera with same orientation of pen target
       vpHomogeneousMatrix cM_point = cMpen * pen_M_point;
 
-      // vpDisplay::displayFrame(I, cM_point, cam, 0.03, vpColor::none, 2);
 
-      //      vpHomogeneousMatrix cP1 = cM_tab * P1;
-
+      // Point of the pen wrt camera with same orientation of the table
       vpHomogeneousMatrix cMpen_t = cM_tab;
       cMpen_t[0][3] = cM_point[0][3];
       cMpen_t[1][3] = cM_point[1][3];
       cMpen_t[2][3] = cM_point[2][3];
 
-      vpHomogeneousMatrix cMpen_p1 = cMpen_t * p1;
-      vpDisplay::displayFrame(I, cMpen_t, cam, 0.03, vpColor::none, 2);
 
-      vpDisplay::displayFrame(I, cMpen_p1, cam, 0.03, vpColor::none, 2);
+      for (unsigned int i = 0; i < P.size(); i++)
+      {
+        // Point of the pen wrt camera with table R at P[i]
+        vpHomogeneousMatrix cMpen_p1 = cMpen_t * P[i];
 
-      vpHomogeneousMatrix cMpen_p1_rot_hand = cMpen;
-      cMpen_p1_rot_hand[0][3] = cMpen_p1[0][3];
-      cMpen_p1_rot_hand[1][3] = cMpen_p1[1][3];
-      cMpen_p1_rot_hand[2][3] = cMpen_p1[2][3];
-      vpDisplay::displayFrame(I, cMpen_p1_rot_hand, cam, 0.03, vpColor::none, 2);
+        vpDisplay::displayFrame(I, cMpen_t, cam, 0.03, vpColor::none, 2);
+
+        //vpDisplay::displayFrame(I, cMpen_p1, cam, 0.03, vpColor::none, 2);
+
+        // Point of the pen wrt camera with pen target R at P[i]
+        vpHomogeneousMatrix cMpen_p1_rot_hand = cMpen;
+        cMpen_p1_rot_hand[0][3] = cMpen_p1[0][3];
+        cMpen_p1_rot_hand[1][3] = cMpen_p1[1][3];
+        cMpen_p1_rot_hand[2][3] = cMpen_p1[2][3];
+        //vpDisplay::displayFrame(I, cMpen_p1_rot_hand, cam, 0.03, vpColor::none, 2);
 
 
+        // Desired pose Pen target at P[i]
+        cMpen_d.push_back( cMpen_p1_rot_hand * pen_M_point.inverse());
+        vpDisplay::displayFrame(I, cMpen_d[i], cam, 0.01, vpColor::none, 1);
 
-      cMpen_d = cMpen_p1_rot_hand * pen_M_point.inverse();
-      vpDisplay::displayFrame(I, cMpen_d, cam, 0.03, vpColor::none, 2);
+
+      }
+
+
 
       if (click_done && button == vpMouseButton::button1 ) {
 
@@ -693,7 +708,9 @@ int main(int argc, const char* argv[])
       //        first_time_pen_pose = false;
       //      }
 
-      vpDisplay::displayFrame(I, cMpen_d , cam, 0.05, vpColor::none, 3);
+      for (unsigned int i = 0; i < P.size(); i++)
+        vpDisplay::displayFrame(I, cMpen_d[i], cam, 0.01, vpColor::none, 1);
+
       //      vpDisplay::displayFrame(I, cMpen *pen_Mhand[1] , cam, 0.05, vpColor::none, 3);
       //      vpDisplay::displayFrame(I, cMpen *pen_Mhand[0] , cam, 0.05, vpColor::none, 3);
 
@@ -721,9 +738,9 @@ int main(int argc, const char* argv[])
 
           unsigned int i = 0;
           //vpAdaptiveGain lambda(0.8, 0.05, 8);
-          vpAdaptiveGain lambda(0.4, 0.02, 4);
+          // vpAdaptiveGain lambda(0.2, 0.01, 2);
 
-          //servo_larm[i]->setLambda(lambda);
+          // servo_larm[i]->setLambda(lambda);
           servo_larm[i]->setLambda(0.2);
 
 
@@ -732,13 +749,13 @@ int main(int argc, const char* argv[])
           servo_larm[i]->set_eJe(eJe[i]);
           servo_larm[i]->m_task.set_cVe(pen_Ve_Arm[i]);
 
-          pen_dMpen[i] = cMpen_d.inverse() * cMpen;
+          pen_dMpen[i] = cMpen_d[index_p].inverse() * cMpen;
           //          printPose("pen_dMpen: ", pen_dMpen[i]);
 
 
           servo_larm[i]->setCurrentFeature(pen_dMpen[i]) ;
 
-          vpDisplay::displayFrame(I, cMpen_d , cam, 0.05, vpColor::none, 3);
+          vpDisplay::displayFrame(I, cMpen_d[index_p] , cam, 0.05, vpColor::none, 3);
 
 
           //                    vpDisplay::displayFrame(I, cMpen *pen_Mhand[1] , cam, 0.05, vpColor::none, 3);
@@ -810,6 +827,12 @@ int main(int argc, const char* argv[])
 
     if (click_done && button == vpMouseButton::button3) { // Quit the loop
       break;
+    }
+
+    else     if (click_done && button == vpMouseButton::button1) { // Quit the loop
+
+      if (index_p < P.size())
+        index_p ++;
     }
     //std::cout << "Loop time: " << vpTime::measureTimeMs() - loop_time_start << std::endl;
 

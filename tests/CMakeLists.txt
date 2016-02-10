@@ -6,6 +6,10 @@ set(source
   speech_recognition.cpp
   dcm_test.cpp
   get_velocity.cpp
+  color_detection_romeo.cpp
+  red_ball_detection_romeo.cpp
+  tracker_cylinder.cpp
+  get_pose_plot.cpp
   )
 
 foreach(src ${source})
@@ -20,6 +24,7 @@ set(source1
   tracking_box_color.cpp
   vpBlobsTargetTrackerExample.cpp
   test_calibration.cpp
+  #template_tracker_test.cpp
 )
 
 foreach(src ${source1})

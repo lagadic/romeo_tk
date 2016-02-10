@@ -28,12 +28,13 @@ vpMatrix computeP(const vpColVector & e, const vpMatrix & J, const vpMatrix & J_
   vpMatrix P(n,n);
 
   vpMatrix I(n,n);
-  I.setIdentity();
+  I.eye();
+
 
   vpMatrix P_e(n,n);
   P_e =  I - J_pinv * J; // vpMatrix 	I_WpW in Visp vpServo
 
-  double pp = (e.transpose() * J * J.transpose() * e)[0];
+  double pp = (e.t() * J * J.transpose() * e);
 
   vpMatrix  ee_t(n,n);
   ee_t =  e * e.t();
@@ -138,7 +139,7 @@ vpColVector computeQsec(const vpMatrix &P, const vpColVector &jointMin, const vp
           if (q[i] >= q_l0_max[i] && q[i] <= q_l1_max[i] )
           {
             //     std::cout << "---- caso 2"  << std::endl;
-            lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_max[i]) / (q_l1_min[i] - q_l0_max[i])  ) + 6 ) );
+            lambda_l = 1 / (1 + exp(-12 *( (q[i] - q_l0_max[i]) / (q_l1_max[i] - q_l0_max[i])  ) + 6 ) );
           }
           else if (q[i] >= q_l1_min[i] && q[i] < q_l0_min[i])
           {

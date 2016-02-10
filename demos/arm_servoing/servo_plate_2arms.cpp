@@ -161,7 +161,7 @@ int main(int argc, const char* argv[])
   bool status_box_tracker;
   vpHomogeneousMatrix cMbox;
 
-  const double L = 0.05/2;
+  const double L = 0.04/2;
   std::vector <vpPoint> points(4);
   points[2].setWorldCoordinates(-L,-L, 0) ;
   points[1].setWorldCoordinates(-L,L, 0) ;
@@ -171,6 +171,8 @@ int main(int argc, const char* argv[])
   box_tracker.setName("plate");
   box_tracker.setCameraParameters(cam);
   box_tracker.setPoints(points);
+  box_tracker.setGrayLevelMaxBlob(60);
+
 
   box_tracker.setLeftHandTarget(false);
 
@@ -195,11 +197,18 @@ int main(int argc, const char* argv[])
   std::vector<bool>  status_hand_tracker(2);
   std::vector<vpHomogeneousMatrix>  cMo_hand(2);
 
+  const double L1 = 0.025/2;
+  std::vector <vpPoint> points1(4);
+  points1[2].setWorldCoordinates(-L1,-L1, 0) ;
+  points1[1].setWorldCoordinates(-L1,L1, 0) ;
+  points1[0].setWorldCoordinates(L1,L1, 0) ;
+  points1[3].setWorldCoordinates(L1,-L1,0) ;
+
 
   vpBlobsTargetTracker hand_tracker_l;
   hand_tracker_l.setName(chain_name[0]);
   hand_tracker_l.setCameraParameters(cam);
-  hand_tracker_l.setPoints(points);
+  hand_tracker_l.setPoints(points1);
   hand_tracker_l.setLeftHandTarget(true);
 
   if(!hand_tracker_l.loadHSV(opt_name_file_color_target_l))
@@ -391,9 +400,11 @@ int main(int argc, const char* argv[])
   state = CalibrateRigthArm;
 
 
-  //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
-
-  AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-23.2), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+  //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","REyeYaw", "REyePitch" );
+// Big Plate
+ // AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-23.2), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+  // small plate
+    AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(-15.2), vpMath::rad(17.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , vpMath::rad(9.8), 0.0, 0.0  );
   float fractionMaxSpeed  = 0.1f;
   robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
 
@@ -414,9 +425,6 @@ int main(int argc, const char* argv[])
     char key[10];
     bool ret = vpDisplay::getKeyboardEvent(I, key, false);
     std::string s = key;
-
-
-
 
     if (ret)
     {
@@ -504,7 +512,7 @@ int main(int argc, const char* argv[])
 
       if (status_hand_tracker[index_hand] ) { // display the tracking results
         cMo_hand[index_hand] = hand_tracker[index_hand]->get_cMo();
-        //printPose("cMo qrcode: ", cMo_hand);
+        printPose("cMo right arm: ", cMo_hand[index_hand]);
         // The qrcode frame is only displayed when PBVS is active or learning
 
         vpDisplay::displayFrame(I, cMo_hand[index_hand], cam, 0.04, vpColor::none, 3);
@@ -517,7 +525,7 @@ int main(int argc, const char* argv[])
     status_box_tracker = box_tracker.track(cvI,I);
     if (status_box_tracker ) { // display the tracking results
       cMbox = box_tracker.get_cMo();
-      //printPose("cMo qrcode: ", cMo_hand);
+      printPose("cMo box: ", cMbox);
       // The qrcode frame is only displayed when PBVS is active or learning
 
       vpDisplay::displayFrame(I, cMbox, cam, 0.04, vpColor::none, 1);
@@ -554,8 +562,13 @@ int main(int argc, const char* argv[])
         box_Ve_Arm[index_hand].buildFrom(box_Me_Arm);
         index_hand = 0;
         state = CalibrateLeftArm;
+
+        // BIG plate
         //AL::ALValue names_head     = AL::ALValue::array("NeckYaw","NeckPitch","HeadPitch","HeadRoll","LEyeYaw", "LEyePitch","LEyeYaw", "LEyePitch" );
-        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(8.7), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+  //      AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(8.7), vpMath::rad(16.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , 0.0, 0.0, 0.0  );
+        // Small Plate
+        AL::ALValue angles_head      = AL::ALValue::array(vpMath::rad(2.4), vpMath::rad(17.6), vpMath::rad(10.3), vpMath::rad(0.0), 0.0 , vpMath::rad(9.8), 0.0, 0.0  );
+
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointHeadNames_tot, angles_head, fractionMaxSpeed);
 
@@ -789,7 +802,7 @@ int main(int argc, const char* argv[])
           double theta_error_grasp;
           vpColVector u_error_grasp;
           tu_error_grasp.extract(theta_error_grasp, u_error_grasp);
-          std::cout << "error: " << sqrt(t_error_grasp.sumSquare()) << " " << vpMath::deg(theta_error_grasp) << std::endl;
+          std::cout << "error: " << t_error_grasp << " " << vpMath::deg(theta_error_grasp) << std::endl;
 
 
           //                    if (cpt_iter_servo_grasp[0] > 100) {

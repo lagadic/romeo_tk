@@ -102,7 +102,7 @@ AL::ALLedsProxy ledp(opt_ip, 9559);
     asr.setVisualExpression(false);
     asr.setLanguage("English");
     std::vector<std::string> vocabulary;
-    vocabulary.push_back("yes");
+    vocabulary.push_back("Read");
     vocabulary.push_back("no");
 
     // Set the vocabulary

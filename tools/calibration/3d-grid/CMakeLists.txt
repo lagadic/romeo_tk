@@ -1,5 +1,5 @@
 set(source
-  calibrate3dGrid-Lagadic.cpp
+ # calibrate3dGrid-Lagadic.cpp
   data-acquisition.cpp
   )
 
