@@ -61,10 +61,6 @@
 #include <vpServoHead.h>
 #include <vpJointLimitAvoidance.h>
 
-
-
-
-
 /*!
 
   Connect to Romeo robot, grab, display images using ViSP and start face detection with Okao library running on the robot.

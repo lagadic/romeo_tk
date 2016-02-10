@@ -49,7 +49,7 @@
 
 #include <alproxies/altexttospeechproxy.h>
 #include <alproxies/almemoryproxy.h>
-#include<alproxies/alfacedetectionproxy.h>
+#include <alproxies/alfacedetectionproxy.h>
 
 
 #include <visp/vpDisplayX.h>
@@ -89,12 +89,6 @@ int main(int argc, const char* argv[])
   bool opt_forget_person = false;
   std::string opt_name_to_forget = "";
 
-  //  if (argc == 3) {
-  //    if (std::string(argv[1]) == "--ip")
-  //      opt_ip = argv[2];
-  //  }
-
-
   for (unsigned int i=0; i<argc; i++) {
     if (std::string(argv[i]) == "--ip")
       opt_ip = argv[i+1];
@@ -113,8 +107,6 @@ int main(int argc, const char* argv[])
       return 0;
     }
   }
-
-
 
   // Connect to the robot
   vpNaoqiRobot robot;
@@ -158,6 +150,30 @@ int main(int argc, const char* argv[])
     MAP_head[i][i]= 1;
   MAP_head[5][4]= 1;
   MAP_head[6][5]= 1;
+
+  // Initialize the joint avoidance scheme from the joint limits
+  vpColVector jointMin(jointNames.size());// = robot.getJointMin(jointNames);
+  vpColVector jointMax(jointNames.size());//= robot.getJointMax(jointNames);
+
+  robot.getJointMinAndMax(jointNames, jointMin,jointMax);
+  jointMin[0]=vpMath::rad(-16.8);
+  jointMin[jointNames.size()-2]=vpMath::rad(-16.8);
+  jointMin[jointNames.size()-1]=vpMath::rad(-14.8);
+
+  jointMax[jointNames.size()-2]= vpMath::rad(17.2);
+  jointMax[jointNames.size()-1]= vpMath::rad(15.3);
+
+  std::cout << "limit max:" << jointMax << std::endl;
+  std::cout << "limit min:" << jointMin << std::endl;
+
+  vpColVector qmoy(jointNames.size());
+  for (unsigned int i = 0; i<qmoy.size(); i++)
+  {
+    qmoy[i] = jointMax[i] -jointMin[i];
+  }
+
+  // Vector secondary task
+  vpColVector q2 (jointNames.size());
 
   vpColVector head_pos(jointNames_tot.size());
   head_pos = 0;
@@ -203,13 +219,13 @@ int main(int argc, const char* argv[])
     vpImagePoint head_cog_des(I.getHeight()/2, I.getWidth()/2);
     vpColVector q_dot_head;
     vpColVector q_dot_tot;
+    vpColVector q;
 
     bool reinit_servo = true;
     bool speech = true;
     unsigned int f_count = 0;
 
     vpFaceTrackerOkao face_tracker(opt_ip,9559);
-
 
     if (opt_clear_database)
     {
@@ -238,6 +254,10 @@ int main(int argc, const char* argv[])
       double t = vpTime::measureTimeMs();
       g.acquire(I);
       vpDisplay::display(I);
+
+      //Get actual position joint of the robot
+      q = robot.getPosition(jointNames);
+      q[0] = -q[0];
 
       bool result = face_tracker.detect();
 
@@ -272,6 +292,29 @@ int main(int argc, const char* argv[])
         vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
         q_dot_head = servo_head.computeControlLaw(servo_time_init);
+
+        //        q2 = servo_head.m_task_head.secondaryTaskJointLimitAvoidance(q, q_dot_head, jointMin, jointMax);
+
+        //        if (q2.euclideanNorm()<10.0)
+        //          q_dot_head =  q_dot_head + q2;
+
+        std::cout << "q2: " << q2 << std::endl;
+        vpMatrix P = servo_head.m_task_head.getI_WpW();
+        //vpMatrix P = servo_head.m_task_head.getLargeP();
+        double alpha = -0.08;
+
+        vpColVector z_q2 (q_dot_head.size());
+        //z_q2[1] = 2 * alpha * (q[1] - qmoy[1])/(jointMax[1]- jointMin[1]);
+        //z_q2[4] = 2 * alpha * (q[4] - qmoy[4])/(jointMax[4]- jointMin[4]);
+        z_q2[1] = 2 * alpha * q[1]/ pow((jointMax[1]- jointMin[1]),2);
+        z_q2[4] = 2 * alpha * q[4]/pow((jointMax[4]- jointMin[4]),2);
+        z_q2[5] = 2 * alpha * q[5]/pow((jointMax[5]- jointMin[5]),2);
+
+        vpColVector q3 = P * z_q2;
+        std::cout << "q3: " << q3 << std::endl;
+        if (q3.euclideanNorm()<10.0)
+          q_dot_head =  q_dot_head + q3;
+
 
         //q_dot_head[0] = -q_dot_head[0];
         // Add mirroring eyes
@@ -351,7 +394,6 @@ int main(int argc, const char* argv[])
 
           detection_phase = true;
           detected_face_map.clear();
-
 
         }
 
