@@ -895,8 +895,7 @@ int main(int argc, const char* argv[])
 
         bool click_done = vpDisplay::getClick(I, button, false);
 
-
-        if(state_teabox_tracker == HeadToZero) {
+       if(state_teabox_tracker == HeadToZero) {
 
             if(opt_learn_grasp_position || opt_learn_open_loop_position)
             {
@@ -1348,7 +1347,6 @@ int main(int argc, const char* argv[])
                 // servo head to center qrcode and teabox
                 static int cpt_iter_servo_grasp = 0;
 
-
                 vpImagePoint teabox_cog_cur;
                 vpImagePoint qrcode_cog_cur;
                 vpPoint P;
@@ -1387,7 +1385,7 @@ int main(int argc, const char* argv[])
                         //g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
                     }
 
-                    q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
+                q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
 
                 }
 
@@ -1587,12 +1585,14 @@ int main(int argc, const char* argv[])
                     else
                         eJe_head = robot.get_eJe("LEye");
 
+                   // servo_head.m_task_head.init();
+
                     servo_head.set_eJe(eJe_head);
                     servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
                     //servo_head.setLambda(0.4);
                     //static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-                    vpAdaptiveGain lambda(2.5, 1., 15);
-                    //static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+                    // vpAdaptiveGain lambda(2.5, 1., 15);
+                    static vpAdaptiveGain lambda(1.0, 0.2, 10); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
                     servo_head.setLambda(lambda);
                     servo_head.setCurrentFeature( qrcode_cog_cur );
                     if(opt_right_arm)

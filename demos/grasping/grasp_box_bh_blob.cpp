@@ -343,7 +343,7 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
   //  else
   //  {
 
-  //    Mhack[1][3] = -0.010; // add Y - 0.025 offset
+  //    Mhack[1][3] = -0.020; // add Y - 0.025 offset
   //    tMh_desired = tMh_desired * Mhack;
   //  }
 
@@ -472,7 +472,7 @@ int main(int argc, const char* argv[])
       std::cout << "       [--learn-grasp-position] [--plot-time] [--plot-arm] [--plot-qrcode-pose] [--plot-q] "<< std::endl;
       std::cout << "  add  [--rarm] tu use the right arm, nothing to use the left "<< std::endl;
       std::cout << "       [--data-folder] [--learn-detection-box] [--Reye] "<< std::endl;
-      std::cout << "       [--english] [--opt-record-video] [--help]" << std::endl;
+      std::cout << "       [--fr] [--opt-record-video] [--help]" << std::endl;
       return 0;
     }
   }
@@ -941,13 +941,14 @@ int main(int argc, const char* argv[])
     plotter_time->initGraph(0, 1);
   }
 
+
+
   while(1) {
     double loop_time_start = vpTime::measureTimeMs();
     //std::cout << "Loop iteration: " << loop_iter << std::endl;
 
     g.acquire(cvI);
     vpImageConvert::convert(cvI, I);
-
 
     //g.acquire(I);
 
@@ -977,7 +978,6 @@ int main(int argc, const char* argv[])
         head_pose[1] = vpMath::rad(-8.); // NeckPitch
         head_pose[2] = vpMath::rad(-13.); // HeadPitch
         robot.setPosition(jointNames_tot_hroll, head_pose, 0.06);
-        std::cout << "######################################################111111111111111" << std::endl;
         state_teabox_tracker = WaitHeadToZero;
       }
 
@@ -1076,11 +1076,13 @@ int main(int argc, const char* argv[])
       if (! opt_record_video && !opt_learning_detection)
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click: automatic detection, Central: manual", vpColor::red);
 
+
       // Move the head in the default position
-      if(!opt_learn_grasp_position && !opt_learn_open_loop_position && first_time_look_table)// && opt_no_color_tracking )
+      if(!opt_learn_grasp_position && !opt_learn_open_loop_position && first_time_look_table && click_done && button == vpMouseButton::button1)// && opt_no_color_tracking )
       {
         first_time_look_table = false;
         static bool find_box = true;
+        click_done = false;
         if (find_box)
         {
           if(opt_language_english)
@@ -1099,9 +1101,7 @@ int main(int argc, const char* argv[])
           angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_tot_hroll, angles_head, fractionMaxSpeed);
-
       }
-
 
       if (opt_learning_detection)
       {
@@ -1576,7 +1576,6 @@ int main(int argc, const char* argv[])
             servo_arm->set_eJe(robot.get_eJe(chain_name));
             servo_arm->m_task.set_cVe(cylVe_Arm);
 
-
             cdMc = (oMh_Tea_Box_grasp * cMo_hand.inverse() * cMo_teabox ).inverse();
             printPose("cdMc: ", cdMc);
 
@@ -1584,7 +1583,8 @@ int main(int argc, const char* argv[])
             {
 
               // TOMODIFY
-              vpColVector z_c = cdMc.getRotationMatrix().getCol(3);// getCol(2,0,3);
+              vpColVector z_c = cdMc.getRotationMatrix().getCol(2);
+
               //              z_c[0] = cdMc[2][0];
               //              z_c[1] = cdMc[2][1];
               //              z_c[2] = cdMc[2][2];
@@ -1694,14 +1694,15 @@ int main(int argc, const char* argv[])
           if (opt_right_arm)
             error_t_treshold = 0.001;
           else
-            error_t_treshold = 0.003 ;
+          {
+            if (opt_box_name == "coca" || opt_box_name == "orangina")
+              error_t_treshold = 0.007;
+            else
+              error_t_treshold = 0.003;
+          }
 
-
-          if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
-
-
-            // if ( click_done && button == vpMouseButton::button1  )
-
+         if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
+         //if ( click_done && button == vpMouseButton::button1  )
           {
             robot.stop(joint_names_arm_head);
             state_teabox_tracker = TakeTea;
@@ -1712,16 +1713,11 @@ int main(int argc, const char* argv[])
             //              click_done = false;
             //            }
 
-
             if (click_done && button == vpMouseButton::button1)
               click_done = false;
           }
-
-
         }
         cpt_iter_servo_grasp ++;
-
-
 
       }
       else {
@@ -1759,7 +1755,8 @@ int main(int argc, const char* argv[])
       }
 
       // servo head to center qrcode
-      if (grasp_status >= CloseHand  && grasp_status != Finished) {
+      // if (grasp_status >= CloseHand  && grasp_status != Finished) {
+      if (grasp_status >= CloseHand  && grasp_status < WaitPullOutHand) {
         if (status_hand_tracker) {
 
           vpImagePoint qrcode_cog_cur;
@@ -1774,9 +1771,9 @@ int main(int argc, const char* argv[])
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
           //servo_head.setLambda(0.4);
-          //static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-          vpAdaptiveGain lambda(2.5, 1., 15);
-          //static vpAdaptiveGain lambda(1.5, 0.2, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          //vpAdaptiveGain lambda(2.5, 1., 15);
+         // static vpAdaptiveGain lambda(1., 2.0, 10); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
           servo_head.setCurrentFeature( qrcode_cog_cur );
           if(opt_right_arm)
@@ -1824,7 +1821,7 @@ int main(int argc, const char* argv[])
           if (opt_language_english == false)
             phraseToSay = "\\rspd=90\\ \\emph=2\\Je vais attraper la boite \\eos=1\\ ";
           else
-            phraseToSay = "\\rspd=90\\ \\emph=2\\ I will grasp the box \\eos=1\\ ";
+            phraseToSay = "\\rspd=90\\ \\emph=2\\ I will grasp it \\eos=1\\ ";
           tts.post.say(phraseToSay);
           click_done = false;
           grasp_status = WaitLiftTeabox;
@@ -1869,9 +1866,13 @@ int main(int argc, const char* argv[])
         else {
           robot.stop(moveCartesian.getJointNames());
           if (! opt_interaction)
+          {
+            robot.stop(jointNames_tot);
             grasp_status = WaitDeposeTeabox;
+          }
           else {
             robot.stop(jointNames_tot);
+            grasp_status = Finished;
             state_teabox_tracker = Interaction;
           }
         }
@@ -1893,6 +1894,7 @@ int main(int argc, const char* argv[])
 
       case WaitDeposeTeabox: {
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to depose the teabox", vpColor::red);
+        robot.stop(joint_names_arm_head);
         if (click_done && button == vpMouseButton::button1) {
           click_done = false;
           grasp_status = DeposeTeabox;
@@ -1903,8 +1905,10 @@ int main(int argc, const char* argv[])
       case DeposeTeabox: {
         // Open loop upward motion of the hand
         vpColVector cart_delta_pos(6, 0);
-        cart_delta_pos[2] = 0.12;
-        double delta_t = 5;
+        cart_delta_pos[0] = -0.04;
+        cart_delta_pos[1] = 0.10;
+        cart_delta_pos[2] = 0.08;
+        double delta_t = 3.2;
 
         static vpCartesianDisplacement moveCartesian;
         if (moveCartesian.computeVelocity(robot, cart_delta_pos, delta_t, "LArm", hVe_Arm)) {
@@ -1912,6 +1916,7 @@ int main(int argc, const char* argv[])
         }
         else {
           robot.stop(moveCartesian.getJointNames());
+          robot.stop(jointNames_tot);
           grasp_status = OpenHand;
         }
         break;
@@ -1940,7 +1945,7 @@ int main(int argc, const char* argv[])
       case PullOutHandUp: {
         // Open loop upward motion of the hand
         vpColVector cart_delta_pos(6, 0);
-        cart_delta_pos[2] = 0.05;
+        cart_delta_pos[1] = -0.05;
         double delta_t = 2;
 
         static vpCartesianDisplacement moveCartesian;
@@ -1949,14 +1954,14 @@ int main(int argc, const char* argv[])
         }
         else {
           robot.stop(moveCartesian.getJointNames());
-          grasp_status = PullOutHandLeft;
+          grasp_status = MoveArmToRestPosition;
         }
         break;
       }
       case PullOutHandLeft: {
         // Open loop upward motion of the hand
         vpColVector cart_delta_pos(6, 0);
-        cart_delta_pos[0] = 0.08;
+        cart_delta_pos[2] = 0.08;
         double delta_t = 3;
 
         static vpCartesianDisplacement moveCartesian;
@@ -1975,11 +1980,24 @@ int main(int argc, const char* argv[])
         if (click_done && button == vpMouseButton::button1) { // Quit the loop
           robot.stop(jointNames_tot);
           robot.stop(jointNames_larm);
-          grasp_status = Finished;
+          grasp_status = MoveArmToRestPosition;
           click_done = false;
         }
         break;
       }
+
+      case MoveArmToRestPosition: {
+        vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to move arm to rest", vpColor::red);
+        //if (click_done && button == vpMouseButton::button1)  {
+          //tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
+          moveLArmToRestPosition(robot, chain_name); // move down to rest
+         // click_done = false;
+          grasp_status = Finished;
+        //}
+        break;
+      }
+
+
       }
     }
 
@@ -1996,6 +2014,7 @@ int main(int argc, const char* argv[])
         WaitForEnd
       } InteractionStatus_t;
       static InteractionStatus_t interaction_status = WaitMoveHeadToZero;
+
       static vpColVector head_pos(jointNames_tot_hroll.size(), 0);
       bool face_found = false;
 
@@ -2122,7 +2141,7 @@ int main(int argc, const char* argv[])
           if (opt_language_english)
             tts.post.say(" \\rspd=90\\ \\emph=2\\ Now I will give it to you!\\eos=1\\ \\emph=2\\ Take it please!  \\eos=1\\ " );
           else
-            tts.post.say(" \\rspd=90\\ \\emph=2\\ Je vais te donner la boite !  \\eos=1\\ \\emph=2\\ Prenez-la s'il vous plaît !  \\eos=1\\" );
+            tts.post.say(" \\rspd=90\\ \\emph=2\\ Je vais te donner la boite !  \\eos=1\\ \\emph=2\\ Prend la s'il te plaît !  \\eos=1\\" );
 
           interaction_status = MoveArm;
         }
