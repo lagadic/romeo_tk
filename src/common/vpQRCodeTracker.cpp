@@ -79,6 +79,7 @@ bool vpQRCodeTracker::track(const vpImage<unsigned char> &I, vpDetectorBase * &d
       for (size_t i=0; i < detector->getNbObjects(); i++) {
         if (detector->getMessage(i) == m_message) {
           m_corners_detected = detector->getPolygon(i);
+
           m_state = init_tracking;
 
           //          vpDisplay::displayText(I, I.getHeight()-20, 10, "Bar code message: " + m_detector->get_message(i), vpColor::green);

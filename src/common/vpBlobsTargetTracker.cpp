@@ -6,7 +6,7 @@
 vpBlobsTargetTracker::vpBlobsTargetTracker()
   : m_colBlob(),  m_state(detection), m_target_found(false), m_P(), m_force_detection(false), m_name("target_blob"),
     m_blob_list(), m_cog(0,0), m_initPose(true), m_numBlobs(4), m_manual_blob_init(false), m_left_hand_target(true),
-    m_grayLevelMinBlob(0), m_grayLevelMaxBlob(40), m_full_manual(false)
+    m_grayLevelMinBlob(0), m_grayLevelMaxBlob(50), m_full_manual(false)
 {
 
   //m_colBlob = new vpColorDetection;
@@ -90,6 +90,7 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
             vpDisplay::displayText(I, vpImagePoint(I.getHeight() - 10, 10), "Click on the colored blob", vpColor::red);
             vpDisplay::flush(I);
             blob.initTracking(I);
+            m_manual_blob_init = false;
           }
           else
           {
@@ -101,15 +102,15 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
 
 
 
-          printf("Dot characteristics: \n");
-          printf("  width : %lf\n", blob.getWidth());
-          printf("  height: %lf\n", blob.getHeight());
-          printf("  area: %lf\n", blob.getArea());
-          printf("  gray level min: %d\n", blob.getGrayLevelMin());
-          printf("  gray level max: %d\n", blob.getGrayLevelMax());
-          printf("  grayLevelPrecision: %lf\n", blob.getGrayLevelPrecision());
-          printf("  sizePrecision: %lf\n", blob.getSizePrecision());
-          printf("  ellipsoidShapePrecision: %lf\n", blob.getEllipsoidShapePrecision());
+//          printf("Dot characteristics: \n");
+//          printf("  width : %lf\n", blob.getWidth());
+//          printf("  height: %lf\n", blob.getHeight());
+//          printf("  area: %lf\n", blob.getArea());
+//          printf("  gray level min: %d\n", blob.getGrayLevelMin());
+//          printf("  gray level max: %d\n", blob.getGrayLevelMax());
+//          printf("  grayLevelPrecision: %lf\n", blob.getGrayLevelPrecision());
+//          printf("  sizePrecision: %lf\n", blob.getSizePrecision());
+//          printf("  ellipsoidShapePrecision: %lf\n", blob.getEllipsoidShapePrecision());
 
           vpDot2 black_blob = blob;
           black_blob.setGrayLevelMax(m_grayLevelMaxBlob);
@@ -147,8 +148,18 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
           if(m_blob_list.size() == m_numBlobs)
           {
             for(std::list<vpDot2>::iterator it = m_blob_list.begin(); it != m_blob_list.end(); ++it)
-              it->setEllipsoidShapePrecision(0.9);
+            {
+              //it->setEllipsoidShapePrecision(0.8);
+              it->setEllipsoidShapePrecision(0.75);
+            }
+            if (1){
+              for(std::list<vpDot2>::iterator it = m_blob_list.begin(); it != m_blob_list.end(); ++it)
+              {
+                it->initTracking(I, it->getCog());
 
+              }
+              std::cout << "##############New code" << std::endl;
+            }
             m_state = tracking;
             m_force_detection = false;
           }
@@ -156,8 +167,8 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
             std::cout << "Number blobs found is "<< m_blob_list.size() << ". Expected number: " << m_numBlobs << std::endl;
         }
       }
-      catch(...) {
-        std::cout << "Exception tracking" << std::endl;
+      catch(vpException &e) {
+        std::cout << "Exception tracking detection: " << e.getStringMessage() << std::endl;
         m_target_found = false;
       }
 
@@ -271,8 +282,8 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
         m_target_found = true;
 
     }
-    catch(...) {
-      std::cout << "Exception tracking" << std::endl;
+    catch(vpException &e) {
+      std::cout << "Exception tracking: " << e.getStringMessage() << std::endl;
       m_state = detection;
       m_target_found = false;
     }
