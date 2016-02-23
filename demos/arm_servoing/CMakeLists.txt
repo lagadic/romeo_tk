@@ -1,10 +1,12 @@
 set(source 
     servo_arm_qrcode.cpp
-    servo_arm_qrcode_joint_avoidance.cpp
+    servo_arm_joint_avoidance.cpp
     servo_arm_qrcode_joint_avoidance_2dFeatures.cpp
     servo_arm_qrcode_manipulability.cpp
     servo_2arms_qrcode.cpp
     servo_box_2arms.cpp
+    servo_plate_2arms.cpp
+    servo_plate_2arms_template.cpp
   ) 
 
 foreach(src ${source})

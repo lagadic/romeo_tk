@@ -142,23 +142,6 @@ int main(int argc, const char* argv[])
   //Initialize opencv color image
   cv::Mat cvI = cv::Mat(cv::Size(g.getWidth(), g.getHeight()), CV_8UC3);
 
-
-  //    // Initialize the qrcode tracker
-  //    bool status_qrcode_tracker;
-  //    vpHomogeneousMatrix cMo_qrcode;
-  //    vpQRCodeTracker qrcode_tracker;
-  //    qrcode_tracker.setCameraParameters(cam);
-  //    if (opt_right_arm)
-  //    {
-  //        qrcode_tracker.setQRCodeSize(0.045);
-  //        qrcode_tracker.setMessage("romeo_right_arm");
-  //    }
-  //    else
-  //    {
-  //        qrcode_tracker.setQRCodeSize(0.045);
-  //        qrcode_tracker.setMessage("romeo_left_arm");
-  //    }
-
   std::string opt_data_folder = std::string(ROMEOTK_DATA_FOLDER);
 
   std::string opt_name_file_color_target = opt_data_folder + "/" +"target/"+ chain_name +"/color.txt";
@@ -178,6 +161,7 @@ int main(int argc, const char* argv[])
   hand_tracker.setName(chain_name);
   hand_tracker.setCameraParameters(cam);
   hand_tracker.setPoints(points);
+  hand_tracker.setFullManual(true);
 
   if (opt_right_arm)
     hand_tracker.setLeftHandTarget(false);
@@ -186,10 +170,6 @@ int main(int argc, const char* argv[])
   {
     std::cout << "Error opening the file "<< opt_name_file_color_target << std::endl;
   }
-
-
-
-
 
 
   // Constant transformation Target Frame to Arm end-effector (WristPitch)
@@ -212,19 +192,26 @@ int main(int argc, const char* argv[])
   bool grasp_servo_converged = false;
   vpServoArm servo_arm; // Initialize arm servoing
 
-  std::vector<std::string> jointNames_arm =  robot.getBodyNames(chain_name);
-  jointNames_arm.pop_back(); // Delete last joints LHand, that we don't consider in the servo
+  std::vector<std::string> jointNames_arm;
+  jointNames_arm.push_back("TrunkYaw");
+
+  std::vector<std::string> jointNames_only_arm =  robot.getBodyNames(chain_name);
+  jointNames_only_arm.pop_back(); // Delete last joints LHand, that we don't consider in the servo
+  jointNames_arm.insert(jointNames_arm.end(),jointNames_only_arm.begin(),jointNames_only_arm.end());
 
 
   int numJoints = jointNames_arm.size();
 
   // Initialize the joint avoidance scheme from the joint limits
-  vpColVector jointMin = robot.getJointMin(chain_name);
-  vpColVector jointMax = robot.getJointMax(chain_name);
+  vpColVector jointMin(numJoints);// = robot.getJointMin(chain_name);
+  vpColVector jointMax(numJoints);// = robot.getJointMax(chain_name);
 
-  jointMin.resize(numJoints,false);
-  jointMax.resize(numJoints,false);
+  //jointMin.resize(numJoints,false);
+//  jointMax.resize(numJoints,false);
 
+
+
+  robot.getJointMinAndMax(jointNames_arm, jointMin,jointMax);
   // Vector secondary task
   vpColVector q2 (numJoints);
 
@@ -403,8 +390,6 @@ int main(int argc, const char* argv[])
 
 
 
-
-
   vpHomogeneousMatrix cdMo_learned;
 
   if (! opt_learn) {
@@ -539,7 +524,7 @@ int main(int argc, const char* argv[])
 
         //servo_arm.setLambda(lambda);
 
-        servo_arm.set_eJe(robot.get_eJe(chain_name));
+        servo_arm.set_eJe(robot.get_eJe("LArm_t"));
         servo_arm.m_task.set_cVe(oVe_LArm);
 
 
@@ -553,10 +538,10 @@ int main(int argc, const char* argv[])
 
         std::cout << "Vel arm: " << q_dot_larm.t() << std::endl;
 
-        vpColVector e = servo_arm.getError();
-        vpMatrix TaskJac = servo_arm.getTaskJacobian();
-        vpMatrix TaskJacPseudoInv = servo_arm.getTaskJacobianPseudoInverse();
-        vpMatrix L = servo_arm.m_task.getInteractionMatrix();
+//        vpColVector e = servo_arm.getError();
+//        vpMatrix TaskJac = servo_arm.getTaskJacobian();
+//        vpMatrix TaskJacPseudoInv = servo_arm.getTaskJacobianPseudoInverse();
+//        vpMatrix L = servo_arm.m_task.getInteractionMatrix();
 
         //        vpMatrix Ieye;
         //        Ieye.eye(q_dot_larm.size());
