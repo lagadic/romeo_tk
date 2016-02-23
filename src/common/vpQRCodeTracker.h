@@ -9,6 +9,9 @@
 #include <visp/vpTemplateTrackerWarpHomography.h>
 #include <visp/vpPixelMeterConversion.h>
 
+#ifndef VISP_HAVE_ZBAR
+#  error "Cannot build the project, libzbar is missing. Install libzbar using apt-get install libzbar-dev and rebuild ViSP."
+#endif
 
 class vpQRCodeTracker
 {

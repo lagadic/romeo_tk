@@ -10,8 +10,10 @@ vpQRCodeTracker::vpQRCodeTracker(int barcode)
     m_detector = new vpDetectorQRCode;
     std::cout << "vpDetectorQRCode"<< std::endl;
    }
+#ifdef VISP_HAVE_DMTX
   else
     m_detector = new vpDetectorDataMatrixCode;
+#endif
 
   m_tracker = new vpTemplateTrackerSSDInverseCompositional(&m_warp);
   m_tracker->setSampling(2,2);
