@@ -1,7 +1,7 @@
 
 #include <vpFaceTrackerOkao.h>
 #include <visp/vpImageConvert.h>
-#include<alvision/alvisiondefinitions.h>
+#include <alvision/alvisiondefinitions.h>
 
 vpFaceTrackerOkao::vpFaceTrackerOkao(std::string ip, int port) :m_proxy(ip, port), m_mem_proxy(ip, port),
   m_scores(), m_image_height(240), m_image_width(320)
