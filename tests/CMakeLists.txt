@@ -24,6 +24,7 @@ set(source1
   tracking_box_color.cpp
   vpBlobsTargetTrackerExample.cpp
   test_calibration.cpp
+  vpBlobsTargetTracker_two_cameras.cpp
   #template_tracker_test.cpp
 )
 
@@ -37,3 +38,7 @@ endforeach()
 #qi_use_lib(  detection-object-mbt_class romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 #qi_use_lib(  vpColoDetectionExample romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 #qi_use_lib(  tracking_box_color romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
+
+
+subdirs(audio)
