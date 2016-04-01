@@ -392,7 +392,7 @@ int main(int argc, const char* argv[])
     bool opt_language_english = true;
     bool opt_record_video = false;
     bool opt_learning_detection = false;
-    bool opt_no_color_tracking = true;
+    bool opt_no_color_tracking = false;
     std::vector<bool> opt_Reye(2);
     opt_Reye [0] = false;
     opt_Reye [1] = true;
@@ -1083,11 +1083,8 @@ int main(int argc, const char* argv[])
 
                     std::cout << "new J_b_1r" << std::endl << J_b_1r << std::endl;std::cout << std::endl;
 
-
-
                     J_b = J_b_1l;
                     J_b.stackMatrices( J_b_1r);
-
 
                     std::cout << "J_b" << std::endl << J_b << std::endl;std::cout << std::endl;
 
@@ -1155,7 +1152,7 @@ int main(int argc, const char* argv[])
             }
 
 
-            status_hand_tracker[i] = hand_tracker[i]->track(cvI[i],I[i]);
+           // status_hand_tracker[i] = hand_tracker[i]->track(cvI[i],I[i]);
 
             if (status_hand_tracker[i]) { // display the tracking results
                 cMo_hand[i] = hand_tracker[i]->get_cMo();
