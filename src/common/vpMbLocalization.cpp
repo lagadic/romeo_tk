@@ -230,7 +230,7 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
 
             vpPoseVector cPo;
             cPo.buildFrom(cMo_temp);
-            m_stack_cMo_detection.stackMatrices(cPo.t());
+            m_stack_cMo_detection.stack(cPo.t());
             if (m_only_detection)
             {
               unsigned int nbMatch = m_keypoint_detection->matchPoint(I);
@@ -295,7 +295,7 @@ bool vpMbLocalization::track(const vpImage<unsigned char> &I)
           //m_tracker->setPose(I,cMo);
           m_tracker->initFromPose(I,cMo);
           m_counter_detection = 0;
-          m_stack_cMo_detection.init();
+          m_stack_cMo_detection.eye();
 
           m_state = tracking;
 

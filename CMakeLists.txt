@@ -9,6 +9,8 @@ find_package(VISP REQUIRED)
 
 find_package(visp_naoqi REQUIRED)
 
+message("VISP_NAOQI_LIBRARIES: ${VISP_NAOQI_LIBRARIES}")
+
 set(ROMEOTK_DATA_FOLDER ${PROJECT_SOURCE_DIR}/data)
 
 configure_file(${PROJECT_SOURCE_DIR}/src/common/vpRomeoTkConfig.h.cmake
@@ -33,6 +35,7 @@ qi_create_lib(romeo_tk
     src/common/vpServoHead.h
     src/common/vpServoHead.cpp
     src/common/vpCartesianDisplacement.h
+    src/common/vpCartesianDisplacement.cpp
     src/common/vpMbLocalization.h
     src/common/vpMbLocalization.cpp
     src/common/vpColorDetection.h
@@ -46,6 +49,6 @@ qi_create_lib(romeo_tk
     src/common/vpTemplateLocatization.cpp
 )
 
-qi_use_lib(romeo_tk visp_naoqi VISP ALCOMMON ALPROXIES ALVISION)
+qi_use_lib(romeo_tk visp_naoqi)
 
 qi_stage_lib(romeo_tk)

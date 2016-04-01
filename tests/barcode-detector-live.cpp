@@ -166,8 +166,10 @@ int main(int argc, const char** argv)
     vpDetectorBase *detector;
     if (opt_barcode == 0)
       detector = new vpDetectorQRCode;
+#ifdef VISP_HAVE_DMTX
     else
       detector = new vpDetectorDataMatrixCode;
+#endif
 
     vpTemplateTrackerWarpAffine warp;
     vpTemplateTrackerSSDInverseCompositional tracker(&warp);
