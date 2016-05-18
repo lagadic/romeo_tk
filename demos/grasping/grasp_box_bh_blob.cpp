@@ -25,6 +25,10 @@
 #include <visp/vpPlot.h>
 #include <visp/vpPoint.h>
 
+
+#include <visp/vpIoTools.h>
+#include <visp/vpImageIo.h>
+
 #include <visp_naoqi/vpNaoqiGrabber.h>
 #include <visp_naoqi/vpNaoqiRobot.h>
 #include <visp_naoqi/vpNaoqiConfig.h>
@@ -39,6 +43,8 @@
 #include <vpColorDetection.h>
 #include <vpJointLimitAvoidance.h>
 #include <vpBlobsTargetTracker.h>
+
+
 
 #define SAVE 0
 #define USE_PLOTTER
@@ -340,12 +346,12 @@ vpHomogeneousMatrix getOpenLoopDesiredPose(const vpNaoqiRobot &robot, const vpHo
     tMh_desired = tMh_desired * Mhack;
 
   }
-  //  else
-  //  {
+  else
+  {
 
-  //    Mhack[1][3] = -0.020; // add Y - 0.025 offset
-  //    tMh_desired = tMh_desired * Mhack;
-  //  }
+    Mhack[1][3] = -0.029; // add Y - 0.025 offset
+    tMh_desired = tMh_desired * Mhack;
+  }
 
 
 
@@ -507,7 +513,7 @@ int main(int argc, const char* argv[])
   std::string objects_folder = "objects/" + opt_box_name  + "/";
   std::string box_folder = opt_data_folder +"/" + objects_folder;
   std::string config_detection_file_folder = box_folder + "detection/";
-  std::string objects_folder_det_learning = config_detection_file_folder + "learning/20/";
+  std::string objects_folder_det_learning = config_detection_file_folder + "learning/";
   std::string opt_model = box_folder + "model/" + opt_box_name;
   std::string learning_detection_file = "learning_data.bin";
   std::string learning_data_file_name = objects_folder_det_learning + learning_detection_file;
@@ -941,6 +947,17 @@ int main(int argc, const char* argv[])
     plotter_time->initGraph(0, 1);
   }
 
+  //Create directory
+  std::string str_currentDate = currentDateTime();
+  std::string output_img_dir = "images/" + str_currentDate + "/";
+  if (1)
+  {
+    std::cout << "Creating directory to store images" << std::endl;
+    vpIoTools::makeDirectory("images");
+    vpIoTools::makeDirectory("images/" + str_currentDate);
+    vpIoTools::makeDirectory(output_img_dir);
+
+  }
 
 
   while(1) {
@@ -951,6 +968,17 @@ int main(int argc, const char* argv[])
     vpImageConvert::convert(cvI, I);
 
     //g.acquire(I);
+    if (1)
+    {
+      //Save frame
+      char buffer[50];
+      std::string format_name = "/image_%04d.png";
+      sprintf (buffer, format_name.c_str(), loop_iter);
+      std::string filename = buffer;
+      filename = output_img_dir + filename;
+      vpImageIo::write(I, filename);
+
+    }
 
     vpDisplay::display(I);
 
@@ -1098,7 +1126,8 @@ int main(int argc, const char* argv[])
           //angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(11.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
           angles_head      = AL::ALValue::array(vpMath::rad(3.5), vpMath::rad(21.0), vpMath::rad(13.0), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         else
-          angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
+          angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(26.3), vpMath::rad(10.0), vpMath::rad(0.0), 0.0 , vpMath::rad(7.0), 0.0, vpMath::rad(7.0)  );
+        //angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_tot_hroll, angles_head, fractionMaxSpeed);
       }
@@ -1327,12 +1356,12 @@ int main(int argc, const char* argv[])
           teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*7/8 );
         else if (opt_box_name =="spraybox")
           teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6/8 );
-        else if (opt_box_name =="tabascobox")
+        else if (opt_box_name =="tabascobox" )
           teabox_cog_des.set_ij( I.getHeight()*5/8, I.getWidth()*6.6/8 );
         else if (opt_box_name =="coca" || opt_box_name =="orangina")
           teabox_cog_des.set_ij( I.getHeight()*4.5/8, I.getWidth()*6/8 );
         else
-          teabox_cog_des.set_ij( I.getHeight()*6/8, I.getWidth()*5.5/8 );
+          teabox_cog_des.set_ij( I.getHeight()*5.7/8, I.getWidth()*6.2/8 ); // (y,x)
       }
 
       servo_head.setDesiredFeature( teabox_cog_des );
@@ -1701,8 +1730,8 @@ int main(int argc, const char* argv[])
               error_t_treshold = 0.003;
           }
 
-         if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
-         //if ( click_done && button == vpMouseButton::button1  )
+          if ( (sqrt(t_error_grasp.sumSquare()) < error_t_treshold) && (theta_error_grasp < vpMath::rad(3)) || (click_done && button == vpMouseButton::button1 /*&& cpt_iter_servo_grasp > 150*/) )
+            //if ( click_done && button == vpMouseButton::button1  )
           {
             robot.stop(joint_names_arm_head);
             state_teabox_tracker = TakeTea;
@@ -1773,7 +1802,7 @@ int main(int argc, const char* argv[])
           //servo_head.setLambda(0.4);
           static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           //vpAdaptiveGain lambda(2.5, 1., 15);
-         // static vpAdaptiveGain lambda(1., 2.0, 10); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          // static vpAdaptiveGain lambda(1., 2.0, 10); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
           servo_head.setCurrentFeature( qrcode_cog_cur );
           if(opt_right_arm)
@@ -1989,10 +2018,10 @@ int main(int argc, const char* argv[])
       case MoveArmToRestPosition: {
         vpDisplay::displayText(I, vpImagePoint(10,10), "Left click to move arm to rest", vpColor::red);
         //if (click_done && button == vpMouseButton::button1)  {
-          //tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
-          moveLArmToRestPosition(robot, chain_name); // move down to rest
-         // click_done = false;
-          grasp_status = Finished;
+        //tts.post.say(" \\rspd=90\\ \\emph=2\\ Ok!  \\eos=1\\ " );
+        moveLArmToRestPosition(robot, chain_name); // move down to rest
+        // click_done = false;
+        grasp_status = Finished;
         //}
         break;
       }
