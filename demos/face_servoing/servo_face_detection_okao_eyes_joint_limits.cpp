@@ -416,6 +416,7 @@ int main(int argc, const char* argv[])
 
           vpColVector q_dot_head_real = robot.getJointVelocity(jointNames_tot);
           q_dot_head_real.resize(6,false);
+          std::cout << "q_dot_head_real"<< q_dot_head_real << std::endl;
           q2 = servo_head.m_task_head.secondaryTaskJointLimitAvoidance(q, q_dot_head, jointMin, jointMax);
 
 

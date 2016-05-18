@@ -298,7 +298,7 @@ int main(int argc, const char* argv[])
         //        if (q2.euclideanNorm()<10.0)
         //          q_dot_head =  q_dot_head + q2;
 
-        std::cout << "q2: " << q2 << std::endl;
+        //std::cout << "q2: " << q2 << std::endl;
         vpMatrix P = servo_head.m_task_head.getI_WpW();
         //vpMatrix P = servo_head.m_task_head.getLargeP();
         double alpha = -0.08;
@@ -311,7 +311,7 @@ int main(int argc, const char* argv[])
         z_q2[5] = 2 * alpha * q[5]/pow((jointMax[5]- jointMin[5]),2);
 
         vpColVector q3 = P * z_q2;
-        std::cout << "q3: " << q3 << std::endl;
+        //std::cout << "q3: " << q3 << std::endl;
         if (q3.euclideanNorm()<10.0)
           q_dot_head =  q_dot_head + q3;
 
