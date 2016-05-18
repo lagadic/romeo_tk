@@ -158,7 +158,6 @@ bool vpBlobsTargetTracker::track(const cv::Mat &cvI, const vpImage<unsigned char
                 it->initTracking(I, it->getCog());
 
               }
-              std::cout << "##############New code" << std::endl;
             }
             m_state = tracking;
             m_force_detection = false;
