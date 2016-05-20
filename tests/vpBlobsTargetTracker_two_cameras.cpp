@@ -452,7 +452,7 @@ int main(int argc, const char* argv[])
                     std::cout << "new J_b_1r" << std::endl << J_b_1r << std::endl;std::cout << std::endl;
 
                     J_b = J_b_1l;
-                    J_b.stackMatrices( J_b_1r);
+                    J_b.stack( J_b_1r);
 
                     std::cout << "J_b" << std::endl << J_b << std::endl;std::cout << std::endl;
 

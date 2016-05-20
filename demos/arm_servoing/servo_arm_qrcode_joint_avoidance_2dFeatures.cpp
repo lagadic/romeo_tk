@@ -63,7 +63,7 @@ vpMatrix computeP(const vpColVector & e, const vpMatrix & J, const vpMatrix & J_
     vpMatrix P(n,n);
 
     vpMatrix I(n,n);
-    I.setIdentity();
+    I.eye();
 
     vpMatrix P_e(n,n);
     P_e =  I - J_pinv * J; // vpMatrix 	I_WpW in Visp vpServo
