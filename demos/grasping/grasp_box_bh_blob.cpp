@@ -1072,7 +1072,7 @@ int main(int argc, const char* argv[])
         vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
         // Add mirroring eyes
         q_dot_tot = q_dot_head;
         std::cout << "q = " << q_dot_tot << std::endl;
@@ -1370,7 +1370,7 @@ int main(int argc, const char* argv[])
         vpDisplay::displayCross(I, teabox_cog_cur, 15, vpColor::blue, 3); // current feature
       vpDisplay::displayCross(I, teabox_cog_des, 15, vpColor::green, 3); // desired feature
 
-      q_dot_head = servo_head.computeControlLaw(servo_time_init);
+      q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
       // Add mirroring eyes
       q_dot_tot = q_dot_head;
@@ -1558,7 +1558,7 @@ int main(int argc, const char* argv[])
             //g.setCameraParameter(AL::kCameraAutoWhiteBalanceID, 0);
           }
 
-          q_dot_head = servo_head.computeControlLaw(servo_head_time_init);
+          q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_head_time_init);
           //          q_dot_head = q_dot_head *0.0; // HACK
 
         }
@@ -1652,7 +1652,7 @@ int main(int argc, const char* argv[])
             first_time_arm_servo = false;
           }
 
-          q_dot_larm =  - servo_arm->computeControlLaw(servo_arm_time_init);
+          q_dot_larm =  - servo_arm->computeControlLaw(vpTime::measureTimeSecond() - servo_arm_time_init);
 
 
           vpMatrix L = servo_arm->m_task.getInteractionMatrix();
@@ -1800,7 +1800,7 @@ int main(int argc, const char* argv[])
           servo_head.set_eJe(eJe_head);
           servo_head.set_cVe( vpVelocityTwistMatrix(eMc.inverse()) );
           //servo_head.setLambda(0.4);
-          static vpAdaptiveGain lambda(2, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+          static vpAdaptiveGain lambda(1.4, 0.7, 20); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           //vpAdaptiveGain lambda(2.5, 1., 15);
           // static vpAdaptiveGain lambda(1., 2.0, 10); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
           servo_head.setLambda(lambda);
@@ -1818,7 +1818,7 @@ int main(int argc, const char* argv[])
             servo_init = vpTime::measureTimeSecond();
             first_time_servo = false;
           }
-          vpColVector q_dot_head = servo_head.computeControlLaw(servo_init);
+          vpColVector q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_init);
 
           // Add mirroring eyes
           q_dot_tot = q_dot_head;
@@ -2101,7 +2101,7 @@ int main(int argc, const char* argv[])
           else
             vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 1);
 
-          q_dot_head = servo_head.computeControlLaw(servo_time_init);
+          q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
           // Add mirroring eyes
           q_dot_tot = q_dot_head;
           q_dot_tot.stack(q_dot_head[q_dot_head.size()-2]);

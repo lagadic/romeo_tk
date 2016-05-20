@@ -228,7 +228,7 @@ int main(int argc, const char* argv[])
         servo_head.setDesiredFeature(head_cog_des);
         vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
         // Add mirroring eyes
         q_dot_tot = q_dot_head;

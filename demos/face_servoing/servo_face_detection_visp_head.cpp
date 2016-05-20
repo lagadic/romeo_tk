@@ -175,7 +175,7 @@ int main(int argc, const char* argv[])
         vpDisplay::displayText(I, face_tracker.getFace().getTopLeft()+vpImagePoint(-20,0), "Coraline", vpColor::red);
         //vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
         robot.setVelocity(jointNames_head, q_dot_head);
         std::cout << "q dot: " << q_dot_head.t() << std::endl;
 

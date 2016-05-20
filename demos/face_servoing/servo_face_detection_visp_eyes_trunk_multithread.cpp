@@ -470,7 +470,7 @@ vpThread::Return servoHeadComFunction(vpThread::Args args)
         servo_head.setCurrentFeature(head_cog_cur);
         servo_head.setDesiredFeature(head_cog_des);
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
         //std::cout << "q2: " << q2 << std::endl;
         vpMatrix P = servo_head.m_task_head.getI_WpW();

@@ -291,7 +291,7 @@ int main(int argc, const char* argv[])
         servo_head.setDesiredFeature(head_cog_des);
         vpServoDisplay::display(servo_head.m_task_head, cam, I, vpColor::green, vpColor::red, 3);
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
         //        q2 = servo_head.m_task_head.secondaryTaskJointLimitAvoidance(q, q_dot_head, jointMin, jointMax);
 
@@ -324,7 +324,7 @@ int main(int argc, const char* argv[])
 
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
-        if (distance > distance < 0.03*I.getWidth())
+        if (distance > 0.03*I.getWidth())
           robot.setVelocity(jointNames_tot, q_dot_tot);
 
         std::cout << "q dot: " << q_dot_head.t() << std::endl;
