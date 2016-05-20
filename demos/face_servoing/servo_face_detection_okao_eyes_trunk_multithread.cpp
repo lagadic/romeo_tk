@@ -58,7 +58,7 @@ t_CaptureState s_capture_state = capture_waiting;
 
 bool s_face_available = false;
 bool opt_Reye = false;
-bool opt_language_english = false;
+bool opt_language_english = true;
 double s_distance;
 std::string opt_ip = "198.18.0.1";
 vpImagePoint s_head_cog_des;
@@ -69,12 +69,25 @@ vpImage<unsigned char> s_frame;
 #elif defined(VISP_HAVE_OPENCV)
 cv::Mat s_frame;
 #endif
+double s_face_size;
+double s_distance_servo;
 
 vpMutex s_mutex_capture;
 vpMutex s_mutex_frame;
 vpMutex s_mutex_face;
 vpMutex s_mutex_cogs;
 vpMutex s_mutex_distance;
+vpMutex s_mutex_face_size;
+
+bool in_array(const std::string &value, const std::vector<std::string> &array)
+{
+  return std::find(array.begin(), array.end(), value) != array.end();
+}
+
+bool pred(const std::pair<std::string, int>& lhs, const std::pair<std::string, int>& rhs)
+{
+  return lhs.second < rhs.second;
+}
 
 vpThread::Return captureFunction(vpThread::Args args)
 {
@@ -94,6 +107,7 @@ vpThread::Return captureFunction(vpThread::Args args)
   {
     vpMutex::vpScopedLock lock(s_mutex_cogs);
     s_head_cog_des.set_uv(frame_.getWidth()/2, frame_.getHeight()/2);
+    s_distance_servo = 0.03*frame_.getWidth();
   }
 
   while (!stop_capture_) {
@@ -138,6 +152,27 @@ vpThread::Return displayFunction(vpThread::Args args)
 #endif
 
   vpFaceTrackerOkao face_tracker(opt_ip,9559);
+
+  std::vector<std::string> recognized_names;
+  std::map<std::string,unsigned int> detected_face_map;
+  bool detection_phase = true;
+  double face_size = 0;
+  unsigned int f_count = 0;
+
+
+  // Open Proxy for the speech
+  AL::ALTextToSpeechProxy tts(opt_ip, 9559);
+  std::string phraseToSay;
+  if (opt_language_english)
+  {
+    tts.setLanguage("English");
+    phraseToSay = " \\emph=2\\ Hi,\\pau=200\\ How are you ?";
+  }
+  else
+  {
+    tts.setLanguage("French");
+    phraseToSay = " \\emph=2\\ Bonjour,\\pau=200\\ comment vas  tu ?";
+  }
 
   do {
     {
@@ -197,6 +232,11 @@ vpThread::Return displayFunction(vpThread::Args args)
         vpRect bbox = face_tracker.getBBox(0);
         std::string name = face_tracker.getMessage(0);
 
+        {
+          vpMutex::vpScopedLock lock(s_mutex_face_size);
+          s_face_size = bbox.getSize();
+        }
+
         //Get the distance between the target and the center
         {
           vpMutex::vpScopedLock lock(s_mutex_distance);
@@ -221,6 +261,62 @@ vpThread::Return displayFunction(vpThread::Args args)
             vpMutex::vpScopedLock lock(s_mutex_face);
             s_head_cog_cur.set_uv(u,v);
           }
+        }
+
+        if (detection_phase)
+        {
+          if (distance < 0.06*frame_.getWidth() && bbox.getSize() > 3000)
+          {
+            detected_face_map[name]++;
+            f_count++;
+          }
+          if (f_count>10)
+          {
+            detection_phase = false;
+            f_count = 0;
+          }
+        }
+        else
+        {
+          std::string recognized_person_name = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->first;
+          unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
+
+          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name != "Unknown") {
+
+            if (opt_language_english)
+            {
+              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ How are you ?";
+            }
+            else
+            {
+              phraseToSay = "\\emph=2\\ Salut \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ comment vas  tu ?";;
+            }
+
+            std::cout << phraseToSay << std::endl;
+            tts.post.say(phraseToSay);
+            recognized_names.push_back(recognized_person_name);
+          }
+          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name == "Unknown"
+              && times > 15)
+          {
+
+            if (opt_language_english)
+            {
+              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
+            }
+            else
+            {
+              phraseToSay = " \\emph=2\\ Salut \\wait=200\\ \\emph=2\\. Je ne te connais pas! \\emph=2\\  Comment t'appelles-tu ?";
+            }
+
+            std::cout << phraseToSay << std::endl;
+            tts.post.say(phraseToSay);
+            recognized_names.push_back(recognized_person_name);
+          }
+
+          detection_phase = true;
+          detected_face_map.clear();
+
         }
 
         face_available_ = false;
@@ -300,6 +396,7 @@ vpThread::Return servoHeadFunction(vpThread::Args args)
   jointNames_tot.push_back(jointNamesLEye.at(0));
   jointNames_tot.push_back(jointNamesLEye.at(1));
 
+  std::cout <<" Joint Names: " << jointNames_tot << std::endl;
 
   vpMatrix MAP_head(7,6);
   for (unsigned int i = 0; i < 4 ; i++)
@@ -332,35 +429,23 @@ vpThread::Return servoHeadFunction(vpThread::Args args)
   // Vector secondary task
   vpColVector q2 (jointNames.size());
 
-  vpColVector head_pos(jointNames_head.size());
+  vpColVector head_pos(jointNames_tot.size());
   head_pos = 0;
-  head_pos[1] = vpMath::rad(-10.); // NeckPitch
-  head_pos[2] = vpMath::rad(0.); // HeadPitch
-  robot.setPosition(jointNames_head, head_pos, 0.3);
+  head_pos[2] = vpMath::rad(-10.); // NeckPitch
+  head_pos[3] = vpMath::rad(-6.); // HeadPitch
+  robot.setPosition(jointNames_tot, head_pos, 0.3);
 
   vpTime::sleepMs(1000);
 
-  // Open Proxy for the speech
-  AL::ALTextToSpeechProxy tts(opt_ip, 9559);
-  std::string phraseToSay;
-  if (opt_language_english)
-  {
-    tts.setLanguage("English");
-    phraseToSay = " \\emph=2\\ Hi,\\pau=200\\ How are you ?";
-  }
-  else
-  {
-    tts.setLanguage("French");
-    phraseToSay = " \\emph=2\\ Bonjour,\\pau=200\\ comment vas  tu ?";
-  }
+
   try {
 
     // Initialize head servoing
     vpServoHead servo_head;
     servo_head.setCameraParameters(cam);
-    vpAdaptiveGain lambda(2, 1.8, 35); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-//    vpAdaptiveGain lambda(2, 1.5, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-//    vpAdaptiveGain lambda(3, 1., 30);
+    vpAdaptiveGain lambda(2, 1.8,  35); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    //    vpAdaptiveGain lambda(2, 1.8,  35); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    //    vpAdaptiveGain lambda(3, 1., 30);
     servo_head.setLambda(lambda);
 
     double servo_time_init = 0;
@@ -439,7 +524,7 @@ vpThread::Return servoHeadFunction(vpThread::Args args)
         servo_head.setCurrentFeature(head_cog_cur);
         servo_head.setDesiredFeature(head_cog_des);
 
-        q_dot_head = servo_head.computeControlLaw(servo_time_init);
+        q_dot_head = servo_head.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
         ///Integral term///
         sum_dedt += servo_head.m_task_head.error;
@@ -477,21 +562,27 @@ vpThread::Return servoHeadFunction(vpThread::Args args)
 
         {
           vpMutex::vpScopedLock lock(s_mutex_distance);
-          s_distance=distance;
+          s_distance = distance;
         }
 
-        if (distance < 0.03*frame_.getWidth() && speech) { // 3 % of the image witdh
-          // Call the say method
-          static bool firstTime = true;
-          if (firstTime) {
-            tts.post.say(phraseToSay);
-            firstTime = false;
-          }
-          speech = false;
+        //        if (distance < 0.03*frame_.getWidth() && speech) { // 3 % of the image witdh
+        //          // Call the say method
+        //          static bool firstTime = true;
+        //          if (firstTime) {
+        //            tts.post.say(phraseToSay);
+        //            firstTime = false;
+        //          }
+        //          speech = false;
 
-        }
-        else if (distance > 0.20*frame_.getWidth()) // 20 % of the image witdh
-          speech = true;
+        //        }
+        //        else if (distance > 0.20*frame_.getWidth()) // 20 % of the image witdh
+        //          speech = true;
+
+        // Compute the distance in pixel between the target and the center of the image
+        if (distance > s_distance_servo)
+          robot.setVelocity(jointNames_tot, q_dot_tot);
+
+        std::cout << "q dot: " << q_dot_head.t() << std::endl;
 
       }
       else {
@@ -531,8 +622,8 @@ int main(int argc, const char* argv[])
       opt_ip = argv[i+1];
     else if (std::string(argv[i]) == "--haar")
       opt_face_cascade_name = std::string(argv[i+1]);
-    else if (std::string(argv[i]) == "--english")
-      opt_language_english = true;
+    else if (std::string(argv[i]) == "--fr")
+      opt_language_english = false;
     else if (std::string(argv[i]) == "--Reye")
       opt_Reye = true;
     else if (std::string(argv[i]) == "--help") {
