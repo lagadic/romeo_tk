@@ -404,9 +404,11 @@ int main(int argc, const char* argv[])
   bool opt_record_video = false;
   bool opt_learning_detection = false;
   bool opt_no_color_tracking = false;
+  bool opt_add_noise = false;
   bool opt_Reye = false;
   bool opt_plotter_q = false;
   bool opt_plotter_q_sec_arm = false;
+  bool opt_plotter_error = false;
   bool opt_right_arm = false;
 
   // Learning folder in /tmp/$USERNAME
@@ -450,6 +452,8 @@ int main(int argc, const char* argv[])
       opt_learning_detection = true;
     else if (std::string(argv[i]) == "--opt_no_color_tracking")
       opt_no_color_tracking = true;
+    else if (std::string(argv[i]) == "--add_noise")
+      opt_add_noise = true;
     else if (std::string(argv[i]) == "--plot-time")
       opt_plotter_time = true;
     else if (std::string(argv[i]) == "--plot-arm")
@@ -460,6 +464,8 @@ int main(int argc, const char* argv[])
       opt_plotter_q = true;
     else if (std::string(argv[i]) == "--plot-q2-joint-avoidance")
       opt_plotter_q_sec_arm = true;
+    else if (std::string(argv[i]) == "--plot-error")
+      opt_plotter_error = true;
     else if (std::string(argv[i]) == "--no-interaction")
       opt_interaction = false;
     else if (std::string(argv[i]) == "--fr")
@@ -513,7 +519,7 @@ int main(int argc, const char* argv[])
   std::string objects_folder = "objects/" + opt_box_name  + "/";
   std::string box_folder = opt_data_folder +"/" + objects_folder;
   std::string config_detection_file_folder = box_folder + "detection/";
-  std::string objects_folder_det_learning = config_detection_file_folder + "learning/";
+  std::string objects_folder_det_learning = config_detection_file_folder + "learning/20/";
   std::string opt_model = box_folder + "model/" + opt_box_name;
   std::string learning_detection_file = "learning_data.bin";
   std::string learning_data_file_name = objects_folder_det_learning + learning_detection_file;
@@ -556,6 +562,21 @@ int main(int argc, const char* argv[])
     eMc = g.get_eMc(vpCameraParameters::perspectiveProjWithDistortion,"CameraLeftEye");
   }
   std::cout << "eMc: " << eMc << std::endl;
+
+  if (opt_add_noise) // Add bias to the extrinsic camera parameters
+  {
+    vpRxyzVector rxyz(0.03,0.03,0.03) ;
+    vpRotationMatrix R (rxyz);
+    vpTranslationVector t (0.03,0.03,0.03);
+
+    vpHomogeneousMatrix N(t,R);
+    eMc = eMc * N;
+
+    std::cout << "Added Noise to eMc:" << std::endl << eMc;
+  }
+
+
+
   if (! opt_ip.empty())
     g.setRobotIp(opt_ip);
   g.open();
@@ -564,6 +585,16 @@ int main(int argc, const char* argv[])
 
   vpCameraParameters cam = g.getCameraParameters(vpCameraParameters::perspectiveProjWithoutDistortion);
   std::cout << "Camera parameters: " << cam << std::endl;
+
+  if (opt_add_noise) // Add bias to the intrinsic camera parameters
+  {
+
+    std::cout << "Camera parameters original:" << std::endl << cam;
+
+    vpCameraParameters cam_noise(cam.get_px()+40,cam.get_py()+40,cam.get_u0()+10,cam.get_v0()+10);
+    cam = cam_noise;
+    std::cout << "Camera parameters with noise:" << std::endl << cam;
+  }
 
   /** Create a new istance NaoqiRobot*/
   vpNaoqiRobot robot;
@@ -692,6 +723,10 @@ int main(int argc, const char* argv[])
   }
   // Initialize constant parameters
   std::string learned_oMh_filename = "grasping_pose_blob.xml"; // This file contains the following two transf. matrix:
+
+  if (opt_add_noise)
+    learned_oMh_filename = "grasping_pose_noise.xml"; // This file contains the following two transf. matrix:
+
   std::string learned_oMh_path = box_folder + "grasping/" + chain_name; // This file contains the following two transf. matrix:
 
   std::string name_oMh_open_loop =  "oMh_open_loop_" + camera_name; // Offset position Hand w.r.t the object (Open loop)
@@ -947,6 +982,24 @@ int main(int argc, const char* argv[])
     plotter_time->initGraph(0, 1);
   }
 
+  vpPlot *plotter_error;
+  if (opt_plotter_error) {
+    plotter_error = new vpPlot(2, I.getHeight()*2, I.getWidth()*2, I.display->getWindowXPosition()+I.getWidth()+90, I.display->getWindowYPosition(), "Visual servoing");
+    plotter_error->initGraph(0, 3); // Translation
+    plotter_error->initGraph(1, 3); // Rotation
+    plotter_error->setTitle(0, "Translation Error");
+    plotter_error->setTitle(1, "Rotation Error");
+    plotter_error->setLegend(0, 0, "tx");
+    plotter_error->setLegend(0, 1, "ty");
+    plotter_error->setLegend(0, 2, "tz");
+    plotter_error->setLegend(1, 0, "tux");
+    plotter_error->setLegend(1, 1, "tuy");
+    plotter_error->setLegend(1, 2, "tuz");
+  }
+
+
+
+
   //Create directory
   std::string str_currentDate = currentDateTime();
   std::string output_img_dir = "images/" + str_currentDate + "/";
@@ -1126,7 +1179,10 @@ int main(int argc, const char* argv[])
           //angles_head      = AL::ALValue::array(vpMath::rad(-8.3), vpMath::rad(19), vpMath::rad(11.4), vpMath::rad(0), 0.0 , 0.0, 0.0, 0.0  );
           angles_head      = AL::ALValue::array(vpMath::rad(3.5), vpMath::rad(21.0), vpMath::rad(13.0), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         else
-          angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(26.3), vpMath::rad(10.0), vpMath::rad(0.0), 0.0 , vpMath::rad(7.0), 0.0, vpMath::rad(7.0)  );
+          if (opt_box_name =="coca" || opt_box_name =="orangina")
+            angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(18.6), vpMath::rad(10.0), vpMath::rad(0.0), 0.0 , vpMath::rad(7.0), 0.0, vpMath::rad(7.0)  );
+          else
+            angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(26.3), vpMath::rad(10.0), vpMath::rad(0.0), 0.0 , vpMath::rad(7.0), 0.0, vpMath::rad(7.0)  );
         //angles_head      = AL::ALValue::array(vpMath::rad(4.3), vpMath::rad(24.3), vpMath::rad(8.7), vpMath::rad(0.0), 0.0 , vpMath::rad(4.3), 0.0, vpMath::rad(4.3)  );
         float fractionMaxSpeed  = 0.1f;
         robot.getProxy()->setAngles(jointNames_tot_hroll, angles_head, fractionMaxSpeed);
@@ -1596,6 +1652,7 @@ int main(int argc, const char* argv[])
 
 
           //vpAdaptiveGain lambda(0.8, 0.05, 8);
+          // vpAdaptiveGain lambda(0.6, 0.02, 4); // Gain used for the plot
           vpAdaptiveGain lambda(1.0, 0.09, 8);
           servo_arm->setLambda(lambda);
 
@@ -1701,15 +1758,26 @@ int main(int argc, const char* argv[])
 
           robot.setVelocity(joint_names_arm_head,q_dot_arm_head);
 
+          double t1 = vpTime::measureTimeSecond() - servo_arm_time_init;
+
           if (opt_plotter_arm) {
-            plotter_arm->plot(0, cpt_iter_servo_grasp, servo_arm->m_task.getError());
-            plotter_arm->plot(1, cpt_iter_servo_grasp, q_dot_larm);
+            plotter_arm->plot(0, t1, servo_arm->m_task.getError());
+            plotter_arm->plot(1, t1, q_dot_larm);
           }
+
 
           if (opt_plotter_q_sec_arm)
           {
-            plotter_q_sec_arm->plot(0,loop_iter,q2_dot);
-            plotter_q_sec_arm->plot(1,loop_iter,q_dot_larm + q2_dot);
+            plotter_q_sec_arm->plot(0,t1,q2_dot);
+            plotter_q_sec_arm->plot(1,t1,q_dot_larm + q2_dot);
+          }
+
+          if (opt_plotter_error)
+          {
+            vpColVector error = servo_arm->m_task.getError();
+
+            plotter_error->plot(0, t1, error.extract(0,3));
+            plotter_error->plot(1, t1, error.extract(3,3));
           }
 
 
@@ -1759,6 +1827,16 @@ int main(int argc, const char* argv[])
 
     if (state_teabox_tracker == TakeTea)
     {
+
+      if (opt_plotter_error)
+      {
+        plotter_error->saveData(0, "error_translation.dat");
+        plotter_error->saveData(1, "error_orientation.dat");
+      }
+      if (opt_plotter_arm)
+        plotter_arm->saveData(1, "qdot.dat");
+
+
       typedef enum {
         CloseHand,
         OpenHand,
@@ -2145,7 +2223,6 @@ int main(int argc, const char* argv[])
         head_pos[1] = vpMath::rad(-8.); // NeckPitch
         head_pos[2] = vpMath::rad(-13.); // HeadPitch
         robot.setPosition(jointNames_tot_hroll, head_pos, 0.06);
-        std::cout << "######################################################111111111111111" << std::endl;
         //robot.getProxy()->setAngles(jointNames_tot, angles_head, 0.06);
         interaction_status = WaitHeadInZero;
         break;
