@@ -251,7 +251,7 @@ int main(int argc, char ** argv) {
           if (checkValiditycMo(cMo))
           {
             cPo.buildFrom(cMo);
-            Poses.stackMatrices(cPo.t());
+            Poses.stack(cPo.t());
             counter_detection ++;
           }
         }
