@@ -8,7 +8,9 @@
 
 #include <alproxies/altexttospeechproxy.h>
 #include <alproxies/almemoryproxy.h>
+#include <alproxies/alspeechrecognitionproxy.h>
 #include <alproxies/alpeopleperceptionproxy.h>
+#include <alproxies/alledsproxy.h>
 
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -66,25 +68,31 @@ int main(int argc, const char* argv[])
 {
   std::string opt_ip = "131.254.10.126";
   bool opt_language_english = true;
+  bool opt_debug = false;
 
   for (unsigned int i=0; i<argc; i++) {
     if (std::string(argv[i]) == "--ip")
       opt_ip = argv[i+1];
     else if (std::string(argv[i]) == "--fr")
       opt_language_english = false;
+    else if (std::string(argv[i]) == "--debug")
+      opt_debug = false;
     else if (std::string(argv[i]) == "--help") {
       std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--fr]" << std::endl;
       return 0;
     }
   }
 
+
+
+  // Start Velocity controller proxy
   qi::SessionPtr session = qi::makeSession();
-  session->connect("tcp://131.254.10.126:9559");
+  std::string connection_string = "tcp://" + opt_ip +":9559";
+  session->connect(connection_string);
   qi::AnyObject proxy = session->service("pepper_control");
 
   proxy.call<void >("start");
 
-  // -------------------------------------
   std::string camera_name = "CameraTopPepper";
 
   // Open the grabber for the acquisition of the images from the robot
@@ -94,6 +102,8 @@ int main(int argc, const char* argv[])
   g.setFramerate(30);
   g.setCamera(0);
   g.open();
+
+
   vpCameraParameters cam = vpNaoqiGrabber::getIntrinsicCameraParameters(AL::kQVGA,camera_name, vpCameraParameters::perspectiveProjWithDistortion);
   vpHomogeneousMatrix eMc = vpNaoqiGrabber::getExtrinsicCameraParameters(camera_name,vpCameraParameters::perspectiveProjWithDistortion);
 
@@ -134,32 +144,59 @@ int main(int argc, const char* argv[])
   people_proxy.subscribe("People", 30, 0.0);
   std::cout << "period: " << people_proxy.getCurrentPeriod() << std::endl;
 
+  // Open Proxy for the recognition speech
+  AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
 
-  // Plotting
-  vpPlot plotter_diff_vel (2);
-  plotter_diff_vel.initGraph(0, 2);
-  plotter_diff_vel.initGraph(1, 2);
-  plotter_diff_vel.setTitle(0,  "HeadYaw");
-  plotter_diff_vel.setTitle(1,  "HeadPitch");
+  //  asr.unsubscribe("Test_ASR");
 
-  vpPlot plotter_vel (1);
-  plotter_vel.initGraph(0, 5);
-  plotter_vel.setLegend(0, 0, "vx");
-  plotter_vel.setLegend(0, 1, "vy");
-  plotter_vel.setLegend(0, 2, "wz");
-  plotter_vel.setLegend(0, 3, "q_yaw");
-  plotter_vel.setLegend(0, 4, "q_pitch");
+  asr.setVisualExpression(false);
+  asr.setLanguage("English");
+  std::vector<std::string> vocabulary;
+  vocabulary.push_back("move");
+  vocabulary.push_back("stop");
 
-  vpPlot plotter_error (1);
-  plotter_error.initGraph(0, 3);
-  plotter_error.setLegend(0, 0, "x");
-  plotter_error.setLegend(0, 1, "y");
-  plotter_error.setLegend(0, 2, "Z");
+  // Set the vocabulary
+  asr.setVocabulary(vocabulary,false);
 
-  vpPlot plotter_distance (1);
-  plotter_distance.initGraph(0, 1);
-  plotter_distance.setLegend(0, 0, "dist");
+  // Start the speech recognition engine with user Test_ASR
+  asr.subscribe("Test_ASR");
+  std::cout << "Speech recognition engine started" << std::endl;
 
+  // Proxy to control the leds
+  AL::ALLedsProxy led_proxy(opt_ip, 9559);
+
+
+
+  vpPlot * plotter_diff_vel; vpPlot *plotter_vel;
+  vpPlot *plotter_error;  vpPlot * plotter_distance;
+
+  if (opt_debug)
+  {
+    // Plotting
+    plotter_diff_vel = new vpPlot (2);
+    plotter_diff_vel->initGraph(0, 2);
+    plotter_diff_vel->initGraph(1, 2);
+    plotter_diff_vel->setTitle(0,  "HeadYaw");
+    plotter_diff_vel->setTitle(1,  "HeadPitch");
+
+    plotter_vel= new vpPlot (1);
+    plotter_vel->initGraph(0, 5);
+    plotter_vel->setLegend(0, 0, "vx");
+    plotter_vel->setLegend(0, 1, "vy");
+    plotter_vel->setLegend(0, 2, "wz");
+    plotter_vel->setLegend(0, 3, "q_yaw");
+    plotter_vel->setLegend(0, 4, "q_pitch");
+
+    plotter_error = new vpPlot(1);
+    plotter_error->initGraph(0, 3);
+    plotter_error->setLegend(0, 0, "x");
+    plotter_error->setLegend(0, 1, "y");
+    plotter_error->setLegend(0, 2, "Z");
+
+    plotter_distance = new vpPlot (1);
+    plotter_distance->initGraph(0, 1);
+    plotter_distance->setLegend(0, 0, "dist");
+  }
 
   try {
     vpImage<unsigned char> I(g.getHeight(), g.getWidth());
@@ -176,12 +213,16 @@ int main(int argc, const char* argv[])
     task.setInteractionMatrixType(vpServo::CURRENT, vpServo::PSEUDO_INVERSE);
     //    vpAdaptiveGain lambda_adapt;
     //    lambda_adapt.initStandard(1.6, 1.8, 15);
-    vpAdaptiveGain lambda(2.3, 0.5, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-    task.setLambda(lambda) ;
+    vpAdaptiveGain lambda_base(2.3, 0.7, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    vpAdaptiveGain lambda_nobase(4, 0.5, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    task.setLambda(lambda_base) ;
 
     double Z = 1.2;
     double Zd = 1.2;
     bool stop_vxy = false;
+    bool move_base = true;
+    bool move_base_prev = true;
+
 
     // Create the desired  visual feature
     vpFeaturePoint s;
@@ -192,6 +233,10 @@ int main(int argc, const char* argv[])
     vpFeatureBuilder::create(sd, cam, ip);
 
     //   sd.buildFrom( I.getWidth()/2, I.getHeight()/2, Zd);
+
+    AL::ALValue limit_yaw = robot.getProxy()->getLimits("HeadYaw");
+
+    std::cout << limit_yaw[0][0] << " " << limit_yaw[0][1] << std::endl;
 
     // Add the feature
     task.addFeature(s, sd) ;
@@ -223,6 +268,9 @@ int main(int argc, const char* argv[])
     std::map<std::string,unsigned int> detected_face_map;
     bool detection_phase = true;
     unsigned int f_count = 0;
+    AL::ALValue leg_names  = AL::ALValue::array("HipRoll","HipPitch", "KneePitch" );
+    AL::ALValue values  = AL::ALValue::array(0.0, 0.0, 0.0 );
+
 
     double t_prev = vpTime::measureTimeSecond();
 
@@ -231,16 +279,58 @@ int main(int argc, const char* argv[])
         servo_time_init = vpTime::measureTimeSecond();
         t_prev = vpTime::measureTimeSecond();
         reinit_servo = false;
-        //proxy.call<void >("start");
-
+        led_proxy.fadeRGB("FaceLeds","white",0.1);
       }
 
       double t = vpTime::measureTimeMs();
-      g.acquire(I);
-      vpDisplay::display(I);
+      if (opt_debug)
+      {
+        g.acquire(I);
+        vpDisplay::display(I);
+      }
+      // Detect face
       bool face_found = face_tracker.detect();
       stop_vxy = false;
 
+      std::cout << "Loop time face_tracker: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+
+      // Check speech recognition result
+
+      AL::ALValue result_speech = m_memProxy.getData("WordRecognized");
+
+      if ( ((result_speech[0]) == vocabulary[0]) && (double (result_speech[1]) > 0.4 )) //move
+      {
+        std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
+        task.setLambda(lambda_base) ;
+
+        move_base = true;
+      }
+      else if ( (result_speech[0] == vocabulary[1]) && (double(result_speech[1]) > 0.4 )) //stop
+      {
+        std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
+        task.setLambda(lambda_nobase) ;
+        move_base = false;
+      }
+
+      if (move_base != move_base_prev)
+      {
+        if (move_base)
+        {
+          phraseToSay = "Ok, I will follow you.";
+          tts.post.say(phraseToSay);
+        }
+        else
+        {
+          phraseToSay = "Ok, I will stop.";
+          tts.post.say(phraseToSay);
+        }
+
+      }
+
+      std::cout << "Loop time check_speech: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+
+
+      move_base_prev = move_base;
 
       if (face_found) {
         std::ostringstream text;
@@ -255,6 +345,10 @@ int main(int argc, const char* argv[])
           vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), face_tracker.getMessage(i) , vpColor::red);
         }
 
+        led_proxy.post.fadeRGB("FaceLeds","blue",0.1);
+
+
+
         double u = face_tracker.getCog(0).get_u();
         double v = face_tracker.getCog(0).get_v();
         if (u<= g.getWidth() && v <= g.getHeight())
@@ -264,29 +358,50 @@ int main(int argc, const char* argv[])
         std::string name = face_tracker.getMessage(0);
 
 
+        std::cout << "Loop time face print " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+
+
+
         AL::ALValue result = m_memProxy.getData("PeoplePerception/VisiblePeopleList");
+
+        std::cout << "Loop time get Data PeoplePerception " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+
         if (result.getSize() > 0)
         {
           AL::ALValue info = m_memProxy.getData("PeoplePerception/PeopleDetected");
-          float alpha =  info[1][0][2];
-          float beta =  info[1][0][3];
-          //Z = Zd;
-          // Centre of face into the image
-          float x =  g.getWidth()/2 -  g.getWidth() * beta;
-          float y =  g.getHeight()/2  + g.getHeight() * alpha;
 
-          vpImagePoint cog_face(y,x);
+          int num_people = info[1].getSize();
+
+          bool found_person = false;
+          vpImagePoint cog_face;
+          double dist_min = 1000;
+          unsigned int index_person = 0;
+
+          for (unsigned int i = 0; i < num_people; i++)
+          {
+
+            float alpha =  info[1][i][2];
+            float beta =  info[1][i][3];
+            //Z = Zd;
+            // Centre of face into the image
+            float x =  g.getWidth()/2 -  g.getWidth() * beta;
+            float y =  g.getHeight()/2  + g.getHeight() * alpha;
+            cog_face.set_uv(x,y);
+            dist = vpImagePoint::distance(cog_face, head_cog_cur);
+
+            if (dist < dist_min)
+            {
+              dist_min = dist;
+              index_person  = i;
+            }
+          }
 
           vpDisplay::displayCross(I, cog_face, 10, vpColor::red);
 
-          dist = vpImagePoint::distance(cog_face,head_cog_cur);
-          if (dist < 55.)
-            Z = info[1][0][1]; // Current distance
+          if (dist_min < 55.)
+            Z = info[1][index_person][1]; // Current distance
           else
             stop_vxy = true;
-          //   Z = Zd;
-          // std::cout << "dist: " << dist << std::endl;
-          //  std::cout << "Z: " << Z << std::endl;
         }
         else
         {
@@ -294,6 +409,28 @@ int main(int argc, const char* argv[])
           stop_vxy = true;
           //Z = Zd;
         }
+        //          float alpha =  info[1][0][2];
+        //          float beta =  info[1][0][3];
+        //          //Z = Zd;
+        //          // Centre of face into the image
+        //          float x =  g.getWidth()/2 -  g.getWidth() * beta;
+        //          float y =  g.getHeight()/2  + g.getHeight() * alpha;
+
+        //          vpImagePoint cog_face(y,x);
+        //          dist = vpImagePoint::distance(cog_face,head_cog_cur);
+        //          if (dist < 55.)
+        //            Z = info[1][0][1]; // Current distance
+        //          else
+        //            stop_vxy = true;
+        //        }
+        //        else
+        //        {
+        //          std::cout << "No distance computed " << std::endl;
+        //          stop_vxy = true;
+        //          //Z = Zd;
+        //        }
+
+        std::cout << "Loop time before VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
         // Get Head Jacobian (6x2)
         vpMatrix torso_eJe_head;
@@ -342,10 +479,24 @@ int main(int argc, const char* argv[])
 
         q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
+        std::cout << "Loop time compute VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+
+
+        //        vpMatrix P = task.getI_WpW();
+        //        double alpha = -4.3;
+
+        //        double min = limit_yaw[0][0];
+        //        double max = limit_yaw[0][1];
+
+        //        vpColVector z_q2 (q_dot.size());
+        //        z_q2[3] = 2 * alpha * q_dot[3]/ pow((max - min),2);
+
+        //        vpColVector q3 = P * z_q2;
+        //       std::cout << "q3: " << q3 << std::endl;
+        //        if (q3.euclideanNorm()<10.0)
+        //          q_dot =  q_dot + q3;
+
         std::vector<float> vel(jointNames_head.size());
-        //        for (unsigned int i=0 ; i < jointNames_head.size() ; i++) {
-        //          vel[i] = q_dot[i+3];
-        //        }
         vel[0] = q_dot[3];
         vel[1] = q_dot[4];
 
@@ -357,41 +508,50 @@ int main(int argc, const char* argv[])
 
 
         proxy.async<void >("setDesJointVelocity", jointNames_head, vel );
+        // robot.getProxy()->setAngles(leg_names,values,1.0);
+
 
         std::cout << "errorZ: " << task.getError()[2] << std::endl;
-
         std::cout << "stop_vxy: " << stop_vxy << std::endl;
 
-
-        if (std::fabs(Z -Zd) < 0.05 || stop_vxy)
+        if (std::fabs(Z -Zd) < 0.05 || stop_vxy || !move_base)
           robot.getProxy()->move(0.0, 0.0, q_dot[2]);
         else
           robot.getProxy()->move(q_dot[0], q_dot[1], q_dot[2]);
 
-        vpColVector vel_head = robot.getJointVelocity(jointNames_head);
-        for (unsigned int i=0 ; i < jointNames_head.size() ; i++) {
-          plotter_diff_vel.plot(i, 1, loop_iter, q_dot[i]);
-          plotter_diff_vel.plot(i, 0, loop_iter, vel_head[i]);
+        if (opt_debug)
+        {
+          vpColVector vel_head = robot.getJointVelocity(jointNames_head);
+          for (unsigned int i=0 ; i < jointNames_head.size() ; i++) {
+            plotter_diff_vel->plot(i, 1, loop_iter, q_dot[i]);
+            plotter_diff_vel->plot(i, 0, loop_iter, vel_head[i]);
+          }
+          plotter_error->plot(0,loop_iter,task.getError());
+          plotter_vel->plot(0,loop_iter, q_dot);
+          plotter_distance->plot(0,0,loop_iter,Z);
         }
 
-        plotter_error.plot(0,loop_iter,task.getError());
-        plotter_vel.plot(0,loop_iter, q_dot);
-        plotter_distance.plot(0,0,loop_iter,Z);
         if (detection_phase)
         {
 
           //if (score >= 0.4 && distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
           if (distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
           {
-            vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 1);
-            vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
+            if (opt_debug)
+            {
+              vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 1);
+              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
+            }
             detected_face_map[name]++;
             f_count++;
           }
           else
           {
-            vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
-            vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::green);
+            if (opt_debug)
+            {
+              vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::green);
+            }
           }
           if (f_count>10)
           {
@@ -448,7 +608,8 @@ int main(int argc, const char* argv[])
         reinit_servo = true;
       }
 
-      vpDisplay::flush(I);
+      if (opt_debug)
+        vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
         break;
       loop_iter ++;
@@ -456,6 +617,8 @@ int main(int argc, const char* argv[])
     }
     proxy.call<void >("stopJoint");
     robot.getProxy()->move(0.0, 0.0, 0.0);
+
+    asr.unsubscribe("Test_ASR");
 
     vpDisplay::getClick(I, true);
 
@@ -474,6 +637,7 @@ int main(int argc, const char* argv[])
   proxy.call<void >("stopJoint");
   robot.getProxy()->move(0.0, 0.0, 0.0);
   proxy.call<void >("stop");
+  led_proxy.fadeRGB("FaceLeds","white",0.1);
 
 
 
