@@ -83,16 +83,6 @@ int main(int argc, const char* argv[])
     }
   }
 
-
-
-  //  // Start Velocity controller proxy
-  //  qi::SessionPtr session = qi::makeSession();
-  //  std::string connection_string = "tcp://" + opt_ip +":9559";
-  //  session->connect(connection_string);
-  //  qi::AnyObject proxy = session->service("pepper_control");
-
-  //  proxy.call<void >("start");
-
   std::string camera_name = "CameraTopPepper";
 
   // Open the grabber for the acquisition of the images from the robot
@@ -148,7 +138,6 @@ int main(int argc, const char* argv[])
 
   // Open Proxy for the recognition speech
   AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
-
   //  asr.unsubscribe("Test_ASR");
 
   asr.setVisualExpression(false);
@@ -167,10 +156,9 @@ int main(int argc, const char* argv[])
   // Proxy to control the leds
   AL::ALLedsProxy led_proxy(opt_ip, 9559);
 
-
-
-  vpPlot * plotter_diff_vel; vpPlot *plotter_vel;
-  vpPlot *plotter_error;  vpPlot * plotter_distance;
+  //Declare plots
+  vpPlot * plotter_diff_vel; vpPlot * plotter_vel;
+  vpPlot * plotter_error;  vpPlot * plotter_distance;
 
   if (opt_debug)
   {
@@ -225,7 +213,6 @@ int main(int argc, const char* argv[])
     bool move_base = true;
     bool move_base_prev = true;
 
-
     // Create the desired  visual feature
     vpFeaturePoint s;
     vpFeaturePoint sd;
@@ -237,7 +224,6 @@ int main(int argc, const char* argv[])
     //   sd.buildFrom( I.getWidth()/2, I.getHeight()/2, Zd);
 
     AL::ALValue limit_yaw = robot.getProxy()->getLimits("HeadYaw");
-
     std::cout << limit_yaw[0][0] << " " << limit_yaw[0][1] << std::endl;
 
     // Add the feature
@@ -331,7 +317,6 @@ int main(int argc, const char* argv[])
 
       std::cout << "Loop time check_speech: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
-
       move_base_prev = move_base;
 
       if (face_found) {
@@ -359,10 +344,7 @@ int main(int argc, const char* argv[])
         vpRect bbox = face_tracker.getBBox(0);
         std::string name = face_tracker.getMessage(0);
 
-
         std::cout << "Loop time face print " << vpTime::measureTimeMs() - t << " ms" << std::endl;
-
-
 
         AL::ALValue result = m_memProxy.getData("PeoplePerception/VisiblePeopleList");
 
@@ -508,10 +490,7 @@ int main(int argc, const char* argv[])
         //  std::cout << "e:" << std::endl << task.getError() << std::endl;
         //  std::cout << "vel" << std::endl << q_dot << std::endl;
 
-
-        // proxy.async<void >("setDesJointVelocity", jointNames_head, vel );
         robot.setVelocity(jointNames_head,vel);
-        //
         // robot.getProxy()->setAngles(leg_names,values,1.0);
 
 
@@ -520,7 +499,6 @@ int main(int argc, const char* argv[])
 
         if (std::fabs(Z -Zd) < 0.05 || stop_vxy || !move_base)
           robot.setBaseVelocity(0.0, 0.0, q_dot[2]);
-        //TODO robot.setBaseVelocity()
         else
           robot.setBaseVelocity(q_dot[0], q_dot[1], q_dot[2]);
 
@@ -607,7 +585,6 @@ int main(int argc, const char* argv[])
         }
       }
       else {
-        //proxy.call<void >("stopJoint");
         robot.stop(jointNames_head);
         robot.stopBase();
         std::cout << "Stop!" << std::endl;
@@ -621,14 +598,12 @@ int main(int argc, const char* argv[])
       loop_iter ++;
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
     }
-    //proxy.call<void >("stopJoint");
     robot.stop(jointNames_head);
     robot.stopBase();
 
     asr.unsubscribe("Test_ASR");
 
     vpDisplay::getClick(I, true);
-
 
   }
   catch(vpException &e) {
@@ -641,14 +616,9 @@ int main(int argc, const char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
 
-  //proxy.call<void >("stopJoint");
   robot.stop(jointNames_head);
-
   robot.stopBase();
-  //proxy.call<void >("stop");
   led_proxy.fadeRGB("FaceLeds","white",0.1);
-
-
 
   return 0;
 }
