@@ -2,6 +2,10 @@
 #include <string>
 #include <time.h>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+#include <visp_naoqi/vpNaoqiRobot.h>
+#include <visp_naoqi/vpNaoqiConfig.h>
+
 // Aldebaran includes.
 #include <almath/tools/almath.h>
 #include <almath/tools/altransformhelpers.h>
@@ -17,10 +21,6 @@
 #include <visp/vpXmlParserHomogeneousMatrix.h>
 #include <visp/vpPlot.h>
 #include <visp/vpPoint.h>
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
-#include <visp_naoqi/vpNaoqiRobot.h>
-#include <visp_naoqi/vpNaoqiConfig.h>
 
 #include <vpQRCodeTracker.h>
 #include <vpServoHead.h>

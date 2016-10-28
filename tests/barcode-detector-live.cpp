@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <map>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+
 #include <visp/vpCameraParameters.h>
 #include <visp/vpDisplayX.h>
 #include <visp/vpImageConvert.h>
@@ -12,9 +14,6 @@
 #include <visp/vpPose.h>
 #include <visp/vpTemplateTrackerSSDInverseCompositional.h>
 #include <visp/vpTemplateTrackerWarpAffine.h>
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
-
 
 typedef enum {
   detection,

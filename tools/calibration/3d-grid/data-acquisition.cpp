@@ -44,14 +44,14 @@
 #include <sstream>
 #include <iomanip>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+#include <visp_naoqi/vpNaoqiRobot.h>
+
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageIo.h>
 #include <visp/vpIoTools.h>
 #include <visp/vpXmlParserHomogeneousMatrix.h>
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
-#include <visp_naoqi/vpNaoqiRobot.h>
 
 /*!
 

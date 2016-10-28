@@ -40,6 +40,10 @@
 #include <iostream>
 #include <string>
 
+#include <visp_naoqi/vpNaoqiRobot.h>
+#include <visp_naoqi/vpNaoqiGrabber.h>
+#include <vpRomeoTkConfig.h>
+
 #include <visp/vpMath.h>
 #include <visp/vpTime.h>
 #include <visp/vpColVector.h>
@@ -48,11 +52,6 @@
 #include <visp/vpImage.h>
 #include <visp/vpExponentialMap.h>
 #include <visp/vpXmlParserHomogeneousMatrix.h>
-
-#include <visp_naoqi/vpNaoqiRobot.h>
-#include <visp_naoqi/vpNaoqiGrabber.h>
-#include <vpRomeoTkConfig.h>
-
 
 void moveArmCartesianPosition(/*const*/ vpNaoqiRobot &robot, const vpColVector &cart_delta_pos,
                            const std::string &end_effector_name, float delta_t, vpVelocityTwistMatrix oVe)

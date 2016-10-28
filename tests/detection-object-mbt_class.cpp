@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
 
 #include <visp/vpConfig.h>
 #include <visp/vpDisplayX.h>
@@ -13,12 +14,10 @@
 #include <visp/vpVideoReader.h>
 #include <visp/vpKeyPoint.h>
 #include <visp/vpImage.h>
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
-#include <vpMbLocalization.h>
-
-#include <vpRomeoTkConfig.h>
 #include <visp/vpPlot.h>
+
+#include <vpMbLocalization.h>
+#include <vpRomeoTkConfig.h>
 
 
 bool checkValiditycMo(vpHomogeneousMatrix cMo)

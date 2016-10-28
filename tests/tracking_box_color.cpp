@@ -40,21 +40,21 @@
 #include <iostream>
 #include <string>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+#include <visp_naoqi/vpNaoqiRobot.h>
+
 //OpenCV
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 //Visp
-
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageConvert.h>
 
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
-#include <visp_naoqi/vpNaoqiRobot.h>
 #include <vpColorDetection.h>
 #include <vpServoHead.h>
+
 using namespace cv;
 
 int main(int argc, const char* argv[])

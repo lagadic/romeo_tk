@@ -49,6 +49,8 @@
 #include <iostream>
 #include <string>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -63,8 +65,6 @@
 #include <visp/vpTemplateTrackerZNCCInverseCompositional.h>
 #include <visp/vpTemplateTrackerSSDESM.h>
 #include <visp/vpTemplateTrackerWarpSRT.h>
-
-#include <visp_naoqi/vpNaoqiGrabber.h>
 
 #include <vpFaceTracker.h>
 
