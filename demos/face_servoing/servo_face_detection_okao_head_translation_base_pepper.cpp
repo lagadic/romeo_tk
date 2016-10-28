@@ -45,7 +45,7 @@ The aim is to control the head joints (HeadYaw and HeadPitch) and the base (Vx, 
 
 By default, this example connects to a robot with IP address: 131.254.10.126.
 
-If you want to connect to another robot, run:
+If you want to connect to another pepper robot, run:
   ./servo_face_detection_okao_head_translation_base_pepper --ip <robot ip address>
 
   Example:
@@ -85,13 +85,13 @@ int main(int argc, const char* argv[])
 
 
 
-  // Start Velocity controller proxy
-  qi::SessionPtr session = qi::makeSession();
-  std::string connection_string = "tcp://" + opt_ip +":9559";
-  session->connect(connection_string);
-  qi::AnyObject proxy = session->service("pepper_control");
+  //  // Start Velocity controller proxy
+  //  qi::SessionPtr session = qi::makeSession();
+  //  std::string connection_string = "tcp://" + opt_ip +":9559";
+  //  session->connect(connection_string);
+  //  qi::AnyObject proxy = session->service("pepper_control");
 
-  proxy.call<void >("start");
+  //  proxy.call<void >("start");
 
   std::string camera_name = "CameraTopPepper";
 
@@ -109,12 +109,14 @@ int main(int argc, const char* argv[])
 
   std::cout << "eMc:" << std::endl << eMc << std::endl;
   std::cout << "cam:" << std::endl << cam << std::endl;
+  vpNaoqiRobot robot;
 
   // Connect to the robot
-  vpNaoqiRobot robot;
   if (! opt_ip.empty())
     robot.setRobotIp(opt_ip);
   robot.open();
+
+
 
   if (robot.getRobotType() != vpNaoqiRobot::Pepper)
   {
@@ -152,7 +154,7 @@ int main(int argc, const char* argv[])
   asr.setVisualExpression(false);
   asr.setLanguage("English");
   std::vector<std::string> vocabulary;
-  vocabulary.push_back("move");
+  vocabulary.push_back("follow me");
   vocabulary.push_back("stop");
 
   // Set the vocabulary
@@ -507,7 +509,9 @@ int main(int argc, const char* argv[])
         //  std::cout << "vel" << std::endl << q_dot << std::endl;
 
 
-        proxy.async<void >("setDesJointVelocity", jointNames_head, vel );
+        // proxy.async<void >("setDesJointVelocity", jointNames_head, vel );
+        robot.setVelocity(jointNames_head,vel);
+        //
         // robot.getProxy()->setAngles(leg_names,values,1.0);
 
 
@@ -515,9 +519,10 @@ int main(int argc, const char* argv[])
         std::cout << "stop_vxy: " << stop_vxy << std::endl;
 
         if (std::fabs(Z -Zd) < 0.05 || stop_vxy || !move_base)
-          robot.getProxy()->move(0.0, 0.0, q_dot[2]);
+          robot.setBaseVelocity(0.0, 0.0, q_dot[2]);
+        //TODO robot.setBaseVelocity()
         else
-          robot.getProxy()->move(q_dot[0], q_dot[1], q_dot[2]);
+          robot.setBaseVelocity(q_dot[0], q_dot[1], q_dot[2]);
 
         if (opt_debug)
         {
@@ -602,8 +607,9 @@ int main(int argc, const char* argv[])
         }
       }
       else {
-        proxy.call<void >("stopJoint");
-        robot.getProxy()->move(0.0, 0.0, 0.0);
+        //proxy.call<void >("stopJoint");
+        robot.stop(jointNames_head);
+        robot.stopBase();
         std::cout << "Stop!" << std::endl;
         reinit_servo = true;
       }
@@ -615,8 +621,9 @@ int main(int argc, const char* argv[])
       loop_iter ++;
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
     }
-    proxy.call<void >("stopJoint");
-    robot.getProxy()->move(0.0, 0.0, 0.0);
+    //proxy.call<void >("stopJoint");
+    robot.stop(jointNames_head);
+    robot.stopBase();
 
     asr.unsubscribe("Test_ASR");
 
@@ -634,9 +641,11 @@ int main(int argc, const char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
 
-  proxy.call<void >("stopJoint");
-  robot.getProxy()->move(0.0, 0.0, 0.0);
-  proxy.call<void >("stop");
+  //proxy.call<void >("stopJoint");
+  robot.stop(jointNames_head);
+
+  robot.stopBase();
+  //proxy.call<void >("stop");
   led_proxy.fadeRGB("FaceLeds","white",0.1);
 
 
