@@ -114,6 +114,12 @@ int main(int argc, const char* argv[])
     robot.setRobotIp(opt_ip);
   robot.open();
 
+
+  if (robot.getRobotType() != vpNaoqiRobot::Romeo)
+  {
+    std::cout << "Please check the IP to connect to Romeo. You are using: " << robot.getRobotName() << std::endl;
+  }
+
   // Open the grabber for the acquisition of the images from the robot
   vpNaoqiGrabber g;
   if (! opt_ip.empty())
@@ -208,12 +214,13 @@ int main(int argc, const char* argv[])
     // Initialize head servoing
     vpServoHead servo_head;
     servo_head.setCameraParameters(cam);
-    vpAdaptiveGain lambda(2, 1.5, 30); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    vpAdaptiveGain lambda(1.4, 1.3, 17); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
     //vpAdaptiveGain lambda(4, 2, 40);
     //vpAdaptiveGain lambda(3, 1., 30);
     servo_head.setLambda(lambda);
     //servo_head.setLambda(2.0);
     double servo_time_init = 0;
+    
 
     vpImagePoint head_cog_cur;
     vpImagePoint head_cog_des(I.getHeight()/2, I.getWidth()/2);

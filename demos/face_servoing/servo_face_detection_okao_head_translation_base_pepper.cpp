@@ -76,7 +76,7 @@ int main(int argc, const char* argv[])
     else if (std::string(argv[i]) == "--fr")
       opt_language_english = false;
     else if (std::string(argv[i]) == "--debug")
-      opt_debug = false;
+      opt_debug = true;
     else if (std::string(argv[i]) == "--help") {
       std::cout << "Usage: " << argv[0] << "[--ip <robot address>] [--fr]" << std::endl;
       return 0;
@@ -139,6 +139,7 @@ int main(int argc, const char* argv[])
   // Open Proxy for the recognition speech
   AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
   //  asr.unsubscribe("Test_ASR");
+  //   return 0 ;
 
   asr.setVisualExpression(false);
   asr.setLanguage("English");
@@ -203,8 +204,8 @@ int main(int argc, const char* argv[])
     task.setInteractionMatrixType(vpServo::CURRENT, vpServo::PSEUDO_INVERSE);
     //    vpAdaptiveGain lambda_adapt;
     //    lambda_adapt.initStandard(1.6, 1.8, 15);
-    vpAdaptiveGain lambda_base(2.3, 0.7, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
-    vpAdaptiveGain lambda_nobase(4, 0.5, 15); // lambda(0)=2, lambda(oo)=0.1 and lambda_dot(0)=10
+    vpAdaptiveGain lambda_base(1.2, 1.0, 10); // 2.3, 0.7, 15
+    vpAdaptiveGain lambda_nobase(5, 2.9, 15); // 4, 0.5, 15
     task.setLambda(lambda_base) ;
 
     double Z = 1.2;
@@ -256,9 +257,32 @@ int main(int argc, const char* argv[])
     std::map<std::string,unsigned int> detected_face_map;
     bool detection_phase = true;
     unsigned int f_count = 0;
-    AL::ALValue leg_names  = AL::ALValue::array("HipRoll","HipPitch", "KneePitch" );
-    AL::ALValue values  = AL::ALValue::array(0.0, 0.0, 0.0 );
+    //    AL::ALValue leg_names  = AL::ALValue::array("HipRoll","HipPitch", "KneePitch" );
+    //    AL::ALValue values  = AL::ALValue::array(0.0, 0.0, 0.0 );
 
+
+
+    // robot.getProxy()->setMoveArmsEnabled(false,false);
+    std::vector<std::string> arm_names = robot.getBodyNames("LArm");
+    std::vector<std::string> rarm_names = robot.getBodyNames("RArm");
+    std::vector<std::string> leg_names(3);
+    leg_names[0]= "HipRoll";
+    leg_names[1]= "HipPitch";
+    leg_names[2]= "KneePitch";
+
+
+    arm_names.insert( arm_names.end(), rarm_names.begin(), rarm_names.end() );
+    arm_names.insert( arm_names.end(), leg_names.begin(), leg_names.end() );
+
+    std::vector<float> arm_values(arm_names.size(),0.0);
+
+    for (unsigned int i = 0; i < arm_names.size(); i++ )
+      std::cout << arm_names[i]<< std::endl;
+
+    robot.getPosition(arm_names, arm_values,false);
+
+    vpImagePoint best_cog_face_peoplep;
+    bool person_found = false;
 
     double t_prev = vpTime::measureTimeSecond();
 
@@ -271,16 +295,16 @@ int main(int argc, const char* argv[])
       }
 
       double t = vpTime::measureTimeMs();
-      if (opt_debug)
+      if (0) // (opt_debug)
       {
         g.acquire(I);
-        vpDisplay::display(I);
       }
+      vpDisplay::display(I);
       // Detect face
       bool face_found = face_tracker.detect();
       stop_vxy = false;
 
-      std::cout << "Loop time face_tracker: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      //std::cout << "Loop time face_tracker: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
       // Check speech recognition result
 
@@ -288,14 +312,14 @@ int main(int argc, const char* argv[])
 
       if ( ((result_speech[0]) == vocabulary[0]) && (double (result_speech[1]) > 0.4 )) //move
       {
-        std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
+        //std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
         task.setLambda(lambda_base) ;
 
         move_base = true;
       }
       else if ( (result_speech[0] == vocabulary[1]) && (double(result_speech[1]) > 0.4 )) //stop
       {
-        std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
+        //std::cout << "Recognized: " << result_speech[0] << "with confidence of " << result_speech[1] << std::endl;
         task.setLambda(lambda_nobase) ;
         move_base = false;
       }
@@ -315,7 +339,11 @@ int main(int argc, const char* argv[])
 
       }
 
-      std::cout << "Loop time check_speech: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      //robot.setStiffness(arm_names,0.0);
+      //robot.getProxy()->setAngles(arm_names,arm_values,1.0);
+      //robot.getProxy()->setAngles("HipRoll",0.0,1.0);
+
+      //std::cout << "Loop time check_speech: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
       move_base_prev = move_base;
 
@@ -334,8 +362,6 @@ int main(int argc, const char* argv[])
 
         led_proxy.post.fadeRGB("FaceLeds","blue",0.1);
 
-
-
         double u = face_tracker.getCog(0).get_u();
         double v = face_tracker.getCog(0).get_v();
         if (u<= g.getWidth() && v <= g.getHeight())
@@ -344,19 +370,26 @@ int main(int argc, const char* argv[])
         vpRect bbox = face_tracker.getBBox(0);
         std::string name = face_tracker.getMessage(0);
 
-        std::cout << "Loop time face print " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+        //std::cout << "Loop time face print " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      }
 
-        AL::ALValue result = m_memProxy.getData("PeoplePerception/VisiblePeopleList");
+      AL::ALValue result = m_memProxy.getData("PeoplePerception/VisiblePeopleList");
 
-        std::cout << "Loop time get Data PeoplePerception " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      //std::cout << "Loop time get Data PeoplePerception " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
-        if (result.getSize() > 0)
+      person_found = false;
+      if (result.getSize() > 0)
+      {
+        AL::ALValue info = m_memProxy.getData("PeoplePerception/PeopleDetected");
+        int num_people = info[1].getSize();
+        std::ostringstream text;
+        text << "Found " << num_people << " person(s)";
+        vpDisplay::displayText(I, 10, 10, text.str(), vpColor::red);
+
+        person_found = true;
+
+        if (face_found) // Try to find the match between two detection
         {
-          AL::ALValue info = m_memProxy.getData("PeoplePerception/PeopleDetected");
-
-          int num_people = info[1].getSize();
-
-          bool found_person = false;
           vpImagePoint cog_face;
           double dist_min = 1000;
           unsigned int index_person = 0;
@@ -376,53 +409,72 @@ int main(int argc, const char* argv[])
             if (dist < dist_min)
             {
               dist_min = dist;
+              best_cog_face_peoplep = cog_face;
               index_person  = i;
             }
           }
 
-          vpDisplay::displayCross(I, cog_face, 10, vpColor::red);
+          vpDisplay::displayCross(I, best_cog_face_peoplep, 10, vpColor::white);
 
           if (dist_min < 55.)
+          {
             Z = info[1][index_person][1]; // Current distance
-          else
-            stop_vxy = true;
+          }
+
         }
-        else
+        else // Take the first one on the list
         {
-          std::cout << "No distance computed " << std::endl;
-          stop_vxy = true;
+          float alpha =  info[1][0][2];
+          float beta =  info[1][0][3];
           //Z = Zd;
+          // Centre of face into the image
+          float x =  g.getWidth()/2 -  g.getWidth() * beta;
+          float y =  g.getHeight()/2  + g.getHeight() * alpha;
+          head_cog_cur.set_uv(x,y);
+          Z = info[1][0][1]; // Current distance
+
         }
-        //          float alpha =  info[1][0][2];
-        //          float beta =  info[1][0][3];
-        //          //Z = Zd;
-        //          // Centre of face into the image
-        //          float x =  g.getWidth()/2 -  g.getWidth() * beta;
-        //          float y =  g.getHeight()/2  + g.getHeight() * alpha;
 
-        //          vpImagePoint cog_face(y,x);
-        //          dist = vpImagePoint::distance(cog_face,head_cog_cur);
-        //          if (dist < 55.)
-        //            Z = info[1][0][1]; // Current distance
-        //          else
-        //            stop_vxy = true;
-        //        }
-        //        else
-        //        {
-        //          std::cout << "No distance computed " << std::endl;
-        //          stop_vxy = true;
-        //          //Z = Zd;
-        //        }
+      }
+      else
+      {
+        std::cout << "No distance computed " << std::endl;
+        stop_vxy = true;
+        robot.getProxy()->setAngles("HipRoll",0.0,1.0);
+        //Z = Zd;
+      }
+      //          float alpha =  info[1][0][2];
+      //          float beta =  info[1][0][3];
+      //          //Z = Zd;
+      //          // Centre of face into the image
+      //          float x =  g.getWidth()/2 -  g.getWidth() * beta;
+      //          float y =  g.getHeight()/2  + g.getHeight() * alpha;
 
-        std::cout << "Loop time before VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      //          vpImagePoint cog_face(y,x);
+      //          dist = vpImagePoint::distance(cog_face,head_cog_cur);
+      //          if (dist < 55.)
+      //            Z = info[1][0][1]; // Current distance
+      //          else
+      //            stop_vxy = true;
+      //        }
+      //        else
+      //        {
+      //          std::cout << "No distance computed " << std::endl;
+      //          stop_vxy = true;
+      //          //Z = Zd;
+      //        }
 
+
+      //std::cout << "Loop time before VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+      if (face_found || person_found )
+      {
         // Get Head Jacobian (6x2)
         vpMatrix torso_eJe_head;
         robot.get_eJe("Head",torso_eJe_head);
 
         // Add column relative to the base rotation (Wz)
-        vpColVector col_wz(6);
-        col_wz[5] = 1;
+        //        vpColVector col_wz(6);
+        //        col_wz[5] = 1;
         for (unsigned int i = 0; i < 6; i++)
           for (unsigned int j = 0; j < torso_eJe_head.getCols(); j++)
             tJe[i][j+3] = torso_eJe_head[i][j];
@@ -463,22 +515,21 @@ int main(int argc, const char* argv[])
 
         q_dot = task.computeControlLaw(vpTime::measureTimeSecond() - servo_time_init);
 
-        std::cout << "Loop time compute VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
+        //std::cout << "Loop time compute VS: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
+        vpMatrix P = task.getI_WpW();
+        double alpha = -3.3;
+        double min = limit_yaw[0][0];
+        double max = limit_yaw[0][1];
 
-        //        vpMatrix P = task.getI_WpW();
-        //        double alpha = -4.3;
+        vpColVector z_q2 (q_dot.size());
+        vpColVector q_yaw = robot.getPosition(jointNames_head[0]);
 
-        //        double min = limit_yaw[0][0];
-        //        double max = limit_yaw[0][1];
+        z_q2[3] = 2 * alpha * q_yaw[0]/ pow((max - min),2);
 
-        //        vpColVector z_q2 (q_dot.size());
-        //        z_q2[3] = 2 * alpha * q_dot[3]/ pow((max - min),2);
-
-        //        vpColVector q3 = P * z_q2;
-        //       std::cout << "q3: " << q3 << std::endl;
-        //        if (q3.euclideanNorm()<10.0)
-        //          q_dot =  q_dot + q3;
+        vpColVector q3 = P * z_q2;
+        //if (q3.euclideanNorm()<10.0)
+        q_dot =  q_dot + q3;
 
         std::vector<float> vel(jointNames_head.size());
         vel[0] = q_dot[3];
@@ -487,15 +538,19 @@ int main(int argc, const char* argv[])
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
         //if (distance > 0.03*I.getWidth())
-        //  std::cout << "e:" << std::endl << task.getError() << std::endl;
+         std::cout << "e:" << std::endl << task.getError() << std::endl;
         //  std::cout << "vel" << std::endl << q_dot << std::endl;
+        //std::cout << "distance" << std::endl << distance <<" -- " << 0.03*I.getWidth() << " ++ " << I.getWidth() << std::endl;
 
+        //        if (distance > 0.1*I.getWidth())
         robot.setVelocity(jointNames_head,vel);
-        // robot.getProxy()->setAngles(leg_names,values,1.0);
-
-
-        std::cout << "errorZ: " << task.getError()[2] << std::endl;
-        std::cout << "stop_vxy: " << stop_vxy << std::endl;
+        //        else
+        //        {
+        //          std::cout << "Setting hipRoll to zero" << std::endl;
+        //          robot.getProxy()->setAngles("HipRoll",0.0,1.0);
+        //        }
+        // std::cout << "errorZ: " << task.getError()[2] << std::endl;
+        // std::cout << "stop_vxy: " << stop_vxy << std::endl;
 
         if (std::fabs(Z -Zd) < 0.05 || stop_vxy || !move_base)
           robot.setBaseVelocity(0.0, 0.0, q_dot[2]);
@@ -506,83 +561,83 @@ int main(int argc, const char* argv[])
         {
           vpColVector vel_head = robot.getJointVelocity(jointNames_head);
           for (unsigned int i=0 ; i < jointNames_head.size() ; i++) {
-            plotter_diff_vel->plot(i, 1, loop_iter, q_dot[i]);
+            plotter_diff_vel->plot(i, 1, loop_iter, q_dot[i+3]);
             plotter_diff_vel->plot(i, 0, loop_iter, vel_head[i]);
           }
           plotter_error->plot(0,loop_iter,task.getError());
-          plotter_vel->plot(0,loop_iter, q_dot);
+          plotter_vel->plot(0,loop_iter, q3);
           plotter_distance->plot(0,0,loop_iter,Z);
         }
 
-        if (detection_phase)
-        {
+        //        if (detection_phase)
+        //        {
 
-          //if (score >= 0.4 && distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
-          if (distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
-          {
-            if (opt_debug)
-            {
-              vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 1);
-              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
-            }
-            detected_face_map[name]++;
-            f_count++;
-          }
-          else
-          {
-            if (opt_debug)
-            {
-              vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
-              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::green);
-            }
-          }
-          if (f_count>10)
-          {
-            detection_phase = false;
-            f_count = 0;
-          }
-        }
-        else
-        {
-          std::string recognized_person_name = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->first;
-          unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
+        //          //if (score >= 0.4 && distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
+        //          if (distance < 0.06*I.getWidth() && bbox.getSize() > 3000)
+        //          {
+        //            if (opt_debug)
+        //            {
+        //              vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 1);
+        //              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::red);
+        //            }
+        //            detected_face_map[name]++;
+        //            f_count++;
+        //          }
+        //          else
+        //          {
+        //            if (opt_debug)
+        //            {
+        //              vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+        //              vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), name, vpColor::green);
+        //            }
+        //          }
+        //          if (f_count>10)
+        //          {
+        //            detection_phase = false;
+        //            f_count = 0;
+        //          }
+        //        }
+        //        else
+        //        {
+        //          std::string recognized_person_name = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->first;
+        //          unsigned int times = std::max_element(detected_face_map.begin(), detected_face_map.end(), pred)->second;
 
-          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name != "Unknown") {
+        //          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name != "Unknown") {
 
-            if (opt_language_english)
-            {
-              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ How are you ?";
-            }
-            else
-            {
-              phraseToSay = "\\emph=2\\ Salut \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ comment vas  tu ?";;
-            }
+        //            if (opt_language_english)
+        //            {
+        //              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ How are you ?";
+        //            }
+        //            else
+        //            {
+        //              phraseToSay = "\\emph=2\\ Salut \\wait=200\\ \\emph=2\\" + recognized_person_name + "\\pau=200\\ comment vas  tu ?";;
+        //            }
 
-            std::cout << phraseToSay << std::endl;
-            tts.post.say(phraseToSay);
-            recognized_names.push_back(recognized_person_name);
-          }
-          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name == "Unknown"
-              && times > 15)
-          {
+        //            std::cout << phraseToSay << std::endl;
+        //            tts.post.say(phraseToSay);
+        //            recognized_names.push_back(recognized_person_name);
+        //          }
+        //          if (!in_array(recognized_person_name, recognized_names) && recognized_person_name == "Unknown"
+        //              && times > 15)
+        //          {
 
-            if (opt_language_english)
-            {
-              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
-            }
-            else
-            {
-              phraseToSay = " \\emph=2\\ Salut \\wait=200\\ \\emph=2\\. Je ne te connais pas! \\emph=2\\  Comment t'appelles-tu ?";
-            }
+        //            if (opt_language_english)
+        //            {
+        //              phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\. I don't know you! \\emph=2\\ What's your name?";
+        //            }
+        //            else
+        //            {
+        //              phraseToSay = " \\emph=2\\ Salut \\wait=200\\ \\emph=2\\. Je ne te connais pas! \\emph=2\\  Comment t'appelles-tu ?";
+        //            }
 
-            std::cout << phraseToSay << std::endl;
-            tts.post.say(phraseToSay);
-            recognized_names.push_back(recognized_person_name);
-          }
+        //            std::cout << phraseToSay << std::endl;
+        //            tts.post.say(phraseToSay);
+        //            recognized_names.push_back(recognized_person_name);
+        //          }
 
-          detection_phase = true;
-          detected_face_map.clear();
-        }
+        //          detection_phase = true;
+        //          detected_face_map.clear();
+        //        }
       }
       else {
         robot.stop(jointNames_head);
@@ -591,8 +646,8 @@ int main(int argc, const char* argv[])
         reinit_servo = true;
       }
 
-      if (opt_debug)
-        vpDisplay::flush(I);
+      //if (opt_debug)
+      vpDisplay::flush(I);
       if (vpDisplay::getClick(I, false))
         break;
       loop_iter ++;
@@ -615,6 +670,10 @@ int main(int argc, const char* argv[])
   }
 
   std::cout << "The end: stop the robot..." << std::endl;
+
+  tts.setLanguage("French");
+  //  tts.exit();
+
 
   robot.stop(jointNames_head);
   robot.stopBase();

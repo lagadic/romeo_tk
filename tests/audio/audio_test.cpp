@@ -41,8 +41,13 @@
 #include <string>
 
 #include <alproxies/almemoryproxy.h>
+#include <qi/session.hpp>
+#include <qi/applicationsession.hpp>
+#include <qi/anymodule.hpp>
 
 #include <visp/vpPlot.h>
+#include <visp/vpDisplayX.h>
+#include <visp3/core/vpLinearKalmanFilterInstantiation.h>
 
 
 #include <visp_naoqi/vpNaoqiRobot.h>
@@ -93,9 +98,25 @@ int main(int argc, const char* argv[])
 
     robot.open();
 
-    bool servoing = true;
+    qi::SessionPtr session = qi::makeSession();
+    session->connect("tcp://131.254.10.126:9559");
+    qi::AnyObject proxy = session->service("pepper_control");
+    proxy.call<void >("start");
 
-    std::string nameNeckYaw = "NeckYaw";
+
+    std::string jointName;
+
+    if (robot.getRobotType() == vpNaoqiRobot::Pepper)
+      jointName = "HeadYaw";
+    else if (robot.getRobotType() == vpNaoqiRobot::Romeo)
+      jointName = "NeckYaw";
+    else
+    {
+      std::cout << "Type of robot not valid" << std::endl;
+      return 0;
+    }
+
+    bool servoing = true;
 
     // Define values
     float y = 1.0; //
@@ -105,7 +126,7 @@ int main(int argc, const char* argv[])
     float L = 0.0;
 
     //float lambda = 0.03;
-    float lambda = 0.03;
+    float lambda = 0.08; // 0.050;
 
     float s_star = 1.0;
 
@@ -120,9 +141,13 @@ int main(int argc, const char* argv[])
     float vel_prev = 0.;
     float delta_t = 0.170;
 
+    vpImage<unsigned char> I(320, 320);
+    vpDisplayX dd(I);
+    vpDisplay::setTitle(I, "ViSP viewer");
+
 
     vpPlot plotter (2);
-    plotter.initGraph(0, 1);
+    plotter.initGraph(0, 2);
     plotter.initGraph(1, 1);
     //plotter_eyes.initGraph(2, 1);
     //plotter_eyes.initGraph(3, 1);
@@ -141,8 +166,54 @@ int main(int argc, const char* argv[])
     plotter_e.setTitle(0,  "Energy");
 
 
+    vpPlot plotter_vel (1);
+    plotter_vel.initGraph(0, 1);
+    plotter_vel.setTitle(0,  "HeadYaw");
+
+
+
+    std::vector<float> vel_ (2);
+    std::vector<std::string> names = robot.getBodyNames("Head");
 
     unsigned long loop_iter = 0;
+
+
+    //    // Kalman filter
+    //    vpLinearKalmanFilterInstantiation kalman;
+    //    // Select a constant velocity state model with colored noise
+    //    // Measures are velocities
+    //    //kalman.setStateModel(vpLinearKalmanFilterInstantiation::stateConstVelWithColoredNoise_MeasureVel);
+    //    // Initialise the filter for a one dimension signal
+    //    int signal = 1;
+    //    vpColVector sigma_state(2);   // State vector size is 2
+    //    vpColVector sigma_measure(1); // Measure vector size is 1
+    //    double rho = 0.9;
+    //    double dt = 0.2; // non used parameter for the selected state model
+    //    sigma_state[0] = 0.000000000001;//0.000001;
+    //    sigma_measure[0] = 0.000000000001;//0.000001;
+    //   // kalman.initFilter(signal, sigma_state, sigma_measure, rho, dt);
+    //     kalman.initStateConstAccWithColoredNoise_MeasureVel(signal, sigma_state, sigma_measure, rho, dt);
+
+
+   vpLinearKalmanFilterInstantiation kalman;
+
+    double rho=0.3;
+    vpColVector sigma_state;
+    vpColVector sigma_measure(1);
+    int signal = 1;
+
+    kalman.setStateModel(vpLinearKalmanFilterInstantiation::stateConstAccWithColoredNoise_MeasureVel);
+    //kf.init(nbSrc,nbSrc,nbSrc);
+    int state_size = kalman.getStateSize();
+    sigma_state.resize(2);
+    sigma_state= 0.00001; // Same variance for all the signals
+    sigma_measure = 0.05; // Same measure variance for all the signals
+    double dt = 0.172;
+    kalman.initFilter(signal, sigma_state , sigma_measure, rho, dt );
+
+
+    kalman.verbose(true);
+
 
     while (1)
     {
@@ -158,7 +229,6 @@ int main(int argc, const char* argv[])
 
       if (start)
       {
-
         plotter_e.plot(0, 0,loop_iter, float( memProxy.getData("ALSoundProcessing/rightMicEnergy")));
         plotter_e.plot(0, 1,loop_iter, float(  memProxy.getData("ALSoundProcessing/leftMicEnergy")));
 
@@ -178,9 +248,17 @@ int main(int argc, const char* argv[])
 
           std::cout << "Ratio:" << ratio << std::endl;
         }
+        vpColVector ratio_v(1);
+        ratio_v[0] = ratio;
 
-     plotter.plot(0, 0, loop_iter,ratio);
+        kalman.filter(ratio_v);
+        std::cout << "Estimated x velocity: kalman.Xest[0]" <<  kalman.Xest[0]<< std::endl;
+        plotter.plot(0, 0, loop_iter, ratio);
+        //plotter.plot(0, 1, loop_iter, kalman.Xest[0]);
+        //   ratio = kalman.Xest[0];
+        ratio = (4*ratio + 3*kalman.Xest[0])/7;
 
+        plotter.plot(0, 1, loop_iter,ratio);
 
         if (ratio >= 1.)
           x = 1;
@@ -192,13 +270,22 @@ int main(int argc, const char* argv[])
 
         //lambda = 0.0216404* log(1+abs(ratio - s_star));
         //Compute joint velocity NeckYaw
-        vel[0] = - lambda/L * (ratio - s_star);
+        vel[0] =  - lambda/L * (ratio - s_star);
+
+        vel_[0] = vel[0];
+
+        plotter_vel.plot(0, 0, loop_iter, vel[0]);
+
 
         std::cout << "vel: " << vel << std::endl;
 
         if (servoing)
-          robot.setVelocity(nameNeckYaw,vel);
-
+        {
+          if (robot.getRobotType() == vpNaoqiRobot::Pepper)
+            proxy.async<void >("setDesJointVelocity", names, vel_ );
+          else if (robot.getRobotType() == vpNaoqiRobot::Romeo)
+            robot.setVelocity(jointName, vel);
+        }
       }
 
       // Save current values
@@ -207,13 +294,30 @@ int main(int argc, const char* argv[])
 
       loop_iter ++;
 
-      vpTime::sleepMs(130);
+      vpTime::sleepMs(170);
 
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
+      if (vpDisplay::getClick(I, false))
+        break;
     }
 
-    robot.stop(nameNeckYaw);
+
+    //   plotter->saveData(0, "ratio.dat");
+
+
+    if (robot.getRobotType() == vpNaoqiRobot::Pepper)
+    {
+      proxy.call<void>("stopJoint");
+
+      proxy.call<void>("stop");
+    }
+    else if (robot.getRobotType() == vpNaoqiRobot::Romeo)
+      robot.stop(jointName);
+
+    vpDisplay::getClick(I, true);
+    plotter.saveData(0, "ratio.dat");
+    plotter_vel.saveData(0, "vel.dat");
 
   }
   catch (const vpException &e)

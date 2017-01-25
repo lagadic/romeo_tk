@@ -10,6 +10,8 @@ set(source
   red_ball_detection_romeo.cpp
   tracker_cylinder.cpp
   get_pose_plot.cpp
+  test_jacobian_Pepper.cpp
+  test_leds.cpp
   )
 
 foreach(src ${source})
@@ -38,6 +40,9 @@ endforeach()
 #qi_use_lib(  detection-object-mbt_class romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 #qi_use_lib(  vpColoDetectionExample romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
 #qi_use_lib(  tracking_box_color romeo_tk visp_naoqi ALCOMMON ALPROXIES ALVISION)
+
+  qi_create_bin(people_perception   people_perception.cpp)
+  qi_use_lib(people_perception romeo_tk visp_naoqi ALMATH ALCOMMON ALPROXIES ALVISION)
 
 
 

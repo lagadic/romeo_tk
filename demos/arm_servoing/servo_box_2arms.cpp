@@ -12,6 +12,10 @@
 #include <almath/types/alrotation3d.h>
 #include <almath/types/altransform.h>
 
+#include <visp_naoqi/vpNaoqiGrabber.h>
+#include <visp_naoqi/vpNaoqiRobot.h>
+#include <visp_naoqi/vpNaoqiConfig.h>
+
 // ViSP includes.
 #include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>

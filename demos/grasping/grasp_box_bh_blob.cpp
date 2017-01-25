@@ -1021,7 +1021,7 @@ int main(int argc, const char* argv[])
     vpImageConvert::convert(cvI, I);
 
     //g.acquire(I);
-    if (1)
+    if (0)
     {
       //Save frame
       char buffer[50];

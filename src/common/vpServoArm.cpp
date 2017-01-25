@@ -61,7 +61,7 @@ void vpServoArm::setCurrentFeature(const vpHomogeneousMatrix &cdMc, const vpColV
   m_t.buildFrom(cdMc) ;
   vpColVector e;
   e = vpColVector::crossProd(z_c,z_d);
-  //std::cout << "e" << std::endl << e << std::endl;
+  std::cout << "e" << std::endl << e << std::endl;
   m_axis.set_s(e);
  // m_axis.setError(e);
   vpMatrix L_axis(3,3);

@@ -17,15 +17,12 @@ vpFaceTrackerOkao::vpFaceTrackerOkao(std::string ip, int port) :m_proxy(ip, port
 
   m_previuos_cog.set_uv(m_image_width / 2, m_image_height/2);
 
-
 }
-
 
 vpFaceTrackerOkao::~vpFaceTrackerOkao()
 {
   m_proxy.unsubscribe("Face");
 }
-
 
 /*!
    Allows to detect a face in the image. When more than one face is detected, faces are sorted from largest to smallest.
@@ -49,7 +46,6 @@ bool vpFaceTrackerOkao::detect()
   bool target_found = false;
   AL::ALValue result = m_mem_proxy.getData("FaceDetected");
   //-- Detect faces
-
 
   if (result.getSize() >=2)
   {
@@ -124,7 +120,6 @@ bool vpFaceTrackerOkao::detect(const vpImage<unsigned char> &I)
 {
   return detect();
 }
-
 
 float vpFaceTrackerOkao::getScore(unsigned int i) const
 {

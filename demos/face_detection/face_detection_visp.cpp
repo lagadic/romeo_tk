@@ -55,7 +55,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpImageConvert.h>
 #include <visp/vpTemplateTrackerSSDInverseCompositional.h>
@@ -65,6 +64,7 @@
 #include <visp/vpTemplateTrackerZNCCInverseCompositional.h>
 #include <visp/vpTemplateTrackerSSDESM.h>
 #include <visp/vpTemplateTrackerWarpSRT.h>
+#include <visp/vpDisplayX.h>
 
 #include <vpFaceTracker.h>
 

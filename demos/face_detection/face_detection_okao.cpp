@@ -164,26 +164,28 @@ int main(int argc, const char* argv[])
           vpDisplay::displayRectangle(I,y,x,0.0,sizeX,sizeY,vpColor::cyan,1);
 
           std::cout << i << "- size: " << sizeX*sizeY << std::endl;
+                     std::cout << i << "- Name: " << name <<" score "  << score << std::endl;
 
-          if (score >= 0.4)
-          {
-            std::cout << i << "- Name: " << name <<" score "  << score << std::endl;
 
-            //            std::cout << "NAMES: " << names << std::endl;
-            //            std::cout << "Esite: " << in_array(name, names) << std::endl;
-            //            std::cout << "==================================== " << std::endl;
+//          if (score >= 0.4)
+//          {
+//            std::cout << i << "- Name: " << name <<" score "  << score << std::endl;
 
-            if (!in_array(name, names) && sizeX*sizeY > 4000) {
-              std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + name;
-              std::cout << phraseToSay << std::endl;
-              tts.post.say(phraseToSay);
-              names.push_back(name);
+//            //            std::cout << "NAMES: " << names << std::endl;
+//            //            std::cout << "Esite: " << in_array(name, names) << std::endl;
+//            //            std::cout << "==================================== " << std::endl;
 
-            }
-          }
+//            if (!in_array(name, names) && sizeX*sizeY > 4000) {
+//              std::string phraseToSay = "\\emph=2\\ Hi \\wait=200\\ \\emph=2\\" + name;
+//              std::cout << phraseToSay << std::endl;
+//              tts.post.say(phraseToSay);
+//              names.push_back(name);
 
-          else
-            std::cout << i << "- Face not recognized. " << std::endl;
+//            }
+//          }
+
+//          else
+//            std::cout << i << "- Face not recognized. " << std::endl;
 
           //          cv::Point p1(x - (sizeX / 2), y - (sizeY / 2));
           //          cv::Point p2(x + (sizeX / 2), y + (sizeY / 2));

@@ -211,14 +211,10 @@ int main(int argc, const char* argv[])
       //      result[1] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraSaturationID);
       //      result[2] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraHueID);
       //      result[3] =g.getProxy()->getCameraParameter(g.getClientName(),AL::kCameraGainID);
-
       //      std::cout<< "Result constrast, sat, Hue, Gain " << std::endl << result << std::endl;
-
-
 
       for (unsigned int k = 0; k < num_objects ; k++)
       {
-
         char key[10];
         bool ret = vpDisplay::getKeyboardEvent(I, key, false);
         std::string s = key;
@@ -227,7 +223,6 @@ int main(int argc, const char* argv[])
           objects[k].setManualBlobInit(true);
           objects[k].setForceDetection(true);
         }
-
 
         bool obj_found =  objects[k].track(cvI,I);
 
@@ -248,16 +243,8 @@ int main(int argc, const char* argv[])
           plotter_qrcode_pose->plot(0, loop_iter, cto);
           plotter_qrcode_pose->plot(1, loop_iter, cthetauo);
 
-
-
-
         }
-
-
       }
-
-
-
       vpDisplay::flush(I);
 
       if (click_done && button == vpMouseButton::button3) {
@@ -269,10 +256,7 @@ int main(int argc, const char* argv[])
 
       std::cout << "Loop time: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
-
-
       loop_iter ++;
-
     }
 
 

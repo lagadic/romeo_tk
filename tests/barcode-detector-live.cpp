@@ -5,7 +5,6 @@
 #include <visp_naoqi/vpNaoqiGrabber.h>
 
 #include <visp/vpCameraParameters.h>
-#include <visp/vpDisplayX.h>
 #include <visp/vpImageConvert.h>
 #include <visp/vpDetectorDataMatrixCode.h>
 #include <visp/vpDetectorQRCode.h>
@@ -13,6 +12,7 @@
 #include <visp/vpPoint.h>
 #include <visp/vpPose.h>
 #include <visp/vpTemplateTrackerSSDInverseCompositional.h>
+#include <visp/vpDisplayX.h>
 #include <visp/vpTemplateTrackerWarpAffine.h>
 
 typedef enum {

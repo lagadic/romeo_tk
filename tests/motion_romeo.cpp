@@ -48,10 +48,10 @@
 #include <visp/vpTime.h>
 #include <visp/vpColVector.h>
 #include <visp/vpVelocityTwistMatrix.h>
-#include <visp/vpDisplayX.h>
 #include <visp/vpImage.h>
 #include <visp/vpExponentialMap.h>
 #include <visp/vpXmlParserHomogeneousMatrix.h>
+#include <visp/vpDisplayX.h>
 
 void moveArmCartesianPosition(/*const*/ vpNaoqiRobot &robot, const vpColVector &cart_delta_pos,
                            const std::string &end_effector_name, float delta_t, vpVelocityTwistMatrix oVe)

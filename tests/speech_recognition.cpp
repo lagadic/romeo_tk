@@ -39,18 +39,15 @@
 /*! \example speech_recognition.cpp */
 #include <iostream>
 #include <string>
-
 #include <alproxies/alspeechrecognitionproxy.h>
 #include <alproxies/altexttospeechproxy.h>
 #include <alproxies/almemoryproxy.h>
-#include <alproxies/alledsproxy.h>
-
-#include <visp_naoqi/vpNaoqiRobot.h>
-
+#include <qi/anyobject.hpp>
+#include <visp/vpTime.h>
 
 /*!
 
-   Connect toRomeo robot, and apply some motion.
+   Connect to Romeo robot, and start speech recognition.
    By default, this example connect to a robot with ip address: 198.18.0.1.
    If you want to connect on an other robot, run:
 
@@ -71,23 +68,11 @@ int main(int argc, const char* argv[])
         opt_ip = argv[2];
     }
 
-    //    vpNaoqiRobot robot;
-    //    if (! opt_ip.empty()) {
-    //      std::cout << "Connect to robot with ip address: " << opt_ip << std::endl;
-    //      robot.setRobotIp(opt_ip);
-    //    }
-
-    //    robot.open();
-
-AL::ALLedsProxy ledp(opt_ip, 9559);
-
-
     // Open Proxy for the speech
     AL::ALTextToSpeechProxy tts(opt_ip, 9559);
     tts.setLanguage("English");
 
     std::string phraseToSay = "Hi Do you want the box?";
-
 
     int id = tts.post.say(phraseToSay);
     tts.wait(id,2000);
@@ -95,29 +80,24 @@ AL::ALLedsProxy ledp(opt_ip, 9559);
     // Open Proxy for the recognition speech
     AL::ALSpeechRecognitionProxy asr(opt_ip, 9559);
 
-//    asr.exit();
-//    return 0;
-//    asr.unsubscribe("Test_ASR");
+    //    asr.exit();
+    //    return 0;
+    //    asr.unsubscribe("Test_ASR");
 
     asr.setVisualExpression(false);
     asr.setLanguage("English");
     std::vector<std::string> vocabulary;
-    vocabulary.push_back("Read");
+    vocabulary.push_back("yes");
     vocabulary.push_back("no");
 
     // Set the vocabulary
     asr.setVocabulary(vocabulary,false);
-
-
 
     AL::ALMemoryProxy memProxy(opt_ip, 9559);
 
     // Start the speech recognition engine with user Test_ASR
     asr.subscribe("Test_ASR");
     std::cout << "Speech recognition engine started" << std::endl;
-
-
-
 
     while (1)
     {
@@ -130,7 +110,6 @@ AL::ALLedsProxy ledp(opt_ip, 9559);
         id = tts.post.say(phraseToSay);
         tts.wait(id,2000);
         break;
-
       }
       else if ( (result[0] == vocabulary[1]) && (double(result[1]) > 0.0 )) // NO
       {
@@ -141,24 +120,20 @@ AL::ALLedsProxy ledp(opt_ip, 9559);
         break;
       }
 
-     vpTime::sleepMs(500);
+      vpTime::sleepMs(500);
     }
 
-
-
     asr.unsubscribe("Test_ASR");
-
 
   }
   catch (const vpException &e)
   {
     std::cerr << "Caught exception: " << e.what() << std::endl;
   }
-  catch (const AL::ALError &e)
-  {
-    std::cerr << "Caught exception: " << e.what() << std::endl;
-  }
-
+//  catch (const AL::ALError &e)
+//  {
+//    std::cerr << "Caught exception: " << e.what() << std::endl;
+//  }
 
 
   return 0;
