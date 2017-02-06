@@ -47,6 +47,8 @@ qi_create_lib(romeo_tk
     src/common/vpFaceTrackerOkao.cpp
     src/common/vpTemplateLocatization.h
     src/common/vpTemplateLocatization.cpp
+    src/common/vpPepperFollowPeople.h
+    src/common/vpPepperFollowPeople.cpp
 )
 
 qi_use_lib(romeo_tk visp_naoqi)
