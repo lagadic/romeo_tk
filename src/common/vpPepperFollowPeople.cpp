@@ -4,11 +4,43 @@
 #include <vpPepperFollowPeople.h>
 
 vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobot &robot) :m_proxy(ip, port), m_mem_proxy(ip, port),
-  m_people_proxy(ip, port), m_asr_proxy(ip, port), m_led_proxy(ip, port),m_face_tracker(ip, port),m_tts_proxy(ip, port), m_robot(NULL),
+  m_people_proxy(ip, port), m_led_proxy(ip, port),m_face_tracker(ip, port),m_tts_proxy(ip, port), m_robot(NULL),
   m_image_height(240), m_image_width(320)
 
 {
+  m_robot = &robot;
+  m_asr_proxy = new  AL::ALSpeechRecognitionProxy(ip, port);
+  m_vocabulary.push_back("follow me");
+  m_vocabulary.push_back("stop");
 
+  initialization();
+
+}
+
+
+vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobot &robot, AL::ALSpeechRecognitionProxy *asr_proxy, std::vector<std::string> vocabulary ) :m_proxy(ip, port), m_mem_proxy(ip, port),
+  m_people_proxy(ip, port), m_led_proxy(ip, port),m_face_tracker(ip, port),m_tts_proxy(ip, port), m_robot(NULL),
+  m_image_height(240), m_image_width(320)
+
+{
+  m_robot = &robot;
+  m_asr_proxy = asr_proxy;
+
+  m_vocabulary.push_back("follow me");
+  m_vocabulary.push_back("stop");
+  m_vocabulary.insert( m_vocabulary.end(), vocabulary.begin(), vocabulary.end() );
+
+  std::cout << "Vocabulary"<< std::endl;
+  for(unsigned int i = 0;i < m_vocabulary.size();i++)
+    std::cout << m_vocabulary[i] << std::endl;
+
+  initialization();
+
+}
+
+
+void vpPepperFollowPeople::initialization()
+{
   // Get the camera parameters
   std::string camera_name = "CameraTopPepper";
   m_cam = vpNaoqiGrabber::getIntrinsicCameraParameters(AL::kQVGA, camera_name, vpCameraParameters::perspectiveProjWithDistortion);
@@ -17,7 +49,6 @@ vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobo
   std::cout << "eMc:" << std::endl << m_eMc << std::endl;
   std::cout << "cam:" << std::endl << m_cam << std::endl;
 
-  m_robot = &robot;
   m_jointNames_head = m_robot->getBodyNames("Head");
 
   // Open Proxy for the speech
@@ -29,19 +60,18 @@ vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobo
   std::cout << "PeoplePerception started" << std::endl;
 
   // Open Proxy for the recognition speech
-  m_asr_proxy.pause(true);
-  m_asr_proxy.setVisualExpression(false);
-  m_asr_proxy.setLanguage("English");
-  m_vocabulary.push_back("follow me");
-  m_vocabulary.push_back("stop");
+  m_asr_proxy->pause(true);
+  m_asr_proxy->setVisualExpression(false);
+  m_asr_proxy->setLanguage("English");
 
   // Set the vocabulary
-  m_asr_proxy.setVocabulary(m_vocabulary,false);
+  m_asr_proxy->setVocabulary(m_vocabulary,false);
 
   // Start the speech recognition engine with user Test_m_asr_proxy
-  m_asr_proxy.pause(false);
-  m_asr_proxy.subscribe("Test_ASR");
+  m_asr_proxy->pause(false);
+  m_asr_proxy->subscribe("Test_ASR");
   std::cout << "Speech recognition engine started" << std::endl;
+
 
   //Set bool
   m_stop_vxy = false;
@@ -93,21 +123,20 @@ vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobo
 
   m_robot->getProxy()->setExternalCollisionProtectionEnabled("Move", false);
 
-
 }
+
 
 vpPepperFollowPeople::~vpPepperFollowPeople()
 {
   m_tts_proxy.setLanguage("French");
   m_people_proxy.unsubscribe("People");
 
-  m_asr_proxy.unsubscribe("Test_ASR");
-  m_asr_proxy.setVisualExpression(true);
-  m_asr_proxy.setLanguage("French");
+  m_asr_proxy->unsubscribe("Test_ASR");
+  m_asr_proxy->setVisualExpression(true);
+  m_asr_proxy->setLanguage("French");
 
   m_robot->getProxy()->setExternalCollisionProtectionEnabled("Move", true);
   // m_robot = NULL;
-
 }
 
 
@@ -176,7 +205,6 @@ bool vpPepperFollowPeople::computeAndApplyServo()
 
 
   // Detect Person from Depth Camera
-
   AL::ALValue result = m_mem_proxy.getData("PeoplePerception/VisiblePeopleList");
 
   // std::cout << "Loop time get Data PeoplePerception " << vpTime::measureTimeMs() - t << " ms" << std::endl;

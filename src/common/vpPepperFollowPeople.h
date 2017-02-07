@@ -51,7 +51,7 @@ protected:
   // Proxies and tracker
   AL::ALMemoryProxy m_mem_proxy;
   AL::ALPeoplePerceptionProxy m_people_proxy;
-  AL::ALSpeechRecognitionProxy m_asr_proxy;
+  AL::ALSpeechRecognitionProxy * m_asr_proxy;
   AL::ALLedsProxy m_led_proxy;
   vpFaceTrackerOkao m_face_tracker;
   AL::ALTextToSpeechProxy m_tts_proxy;
@@ -97,17 +97,19 @@ public:
     Default destructor.
    */
   vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobot &robot);
+  vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobot &robot, AL::ALSpeechRecognitionProxy *asr_proxy, std::vector<std::string> vocabulary);
   ~vpPepperFollowPeople();
 
-  bool computeAndApplyServo();
-  void stopTranslationBase();
   void activateTranslationBase();
-  void stop();
+  bool computeAndApplyServo();
   void exit();
-
   double getActualDistance() const;
+  void initialization();
   void setDesiredDistance(double dist);
   void setReverse(bool flag);
+  void stopTranslationBase();
+  void stop();
+
 
 };
 
