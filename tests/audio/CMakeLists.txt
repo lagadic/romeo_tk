@@ -4,6 +4,7 @@ set(source
   audio_test_base.cpp
   audio_test_romeo.cpp
   audio_test_romeo_neckYaw.cpp
+  ild_only_pepper.cpp
   )
 
 foreach(src ${source})
