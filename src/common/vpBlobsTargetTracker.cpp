@@ -1,6 +1,7 @@
 
 #include <vpBlobsTargetTracker.h>
 #include <visp/vpDisplay.h>
+#include <map>
 
 
 vpBlobsTargetTracker::vpBlobsTargetTracker()
