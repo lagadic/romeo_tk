@@ -27,6 +27,9 @@ set(source1
   vpBlobsTargetTrackerExample.cpp
   test_calibration.cpp
   vpBlobsTargetTracker_two_cameras.cpp
+  test_pepper_follow_me.cpp
+  test_pepper_follow_me_add_words.cpp
+  #vpMbLocalization_test.cpp
   #template_tracker_test.cpp
 )
 

@@ -208,8 +208,8 @@ int main(int argc, const char* argv[])
     vpAdaptiveGain lambda_nobase(5, 2.9, 15); // 4, 0.5, 15
     task.setLambda(lambda_base) ;
 
-    double Z = 1.2;
-    double Zd = 1.2;
+    double Z = 0.9;
+    double Zd = 0.9;
     bool stop_vxy = false;
     bool move_base = true;
     bool move_base_prev = true;
@@ -260,8 +260,6 @@ int main(int argc, const char* argv[])
     //    AL::ALValue leg_names  = AL::ALValue::array("HipRoll","HipPitch", "KneePitch" );
     //    AL::ALValue values  = AL::ALValue::array(0.0, 0.0, 0.0 );
 
-
-
     // robot.getProxy()->setMoveArmsEnabled(false,false);
     std::vector<std::string> arm_names = robot.getBodyNames("LArm");
     std::vector<std::string> rarm_names = robot.getBodyNames("RArm");
@@ -269,7 +267,6 @@ int main(int argc, const char* argv[])
     leg_names[0]= "HipRoll";
     leg_names[1]= "HipPitch";
     leg_names[2]= "KneePitch";
-
 
     arm_names.insert( arm_names.end(), rarm_names.begin(), rarm_names.end() );
     arm_names.insert( arm_names.end(), leg_names.begin(), leg_names.end() );
@@ -538,7 +535,7 @@ int main(int argc, const char* argv[])
         // Compute the distance in pixel between the target and the center of the image
         double distance = vpImagePoint::distance(head_cog_cur, head_cog_des);
         //if (distance > 0.03*I.getWidth())
-         std::cout << "e:" << std::endl << task.getError() << std::endl;
+         std::cout << "q:" << std::endl << q_dot << std::endl;
         //  std::cout << "vel" << std::endl << q_dot << std::endl;
         //std::cout << "distance" << std::endl << distance <<" -- " << 0.03*I.getWidth() << " ++ " << I.getWidth() << std::endl;
 
@@ -656,7 +653,22 @@ int main(int argc, const char* argv[])
     robot.stop(jointNames_head);
     robot.stopBase();
 
+    tts.setLanguage("French");
+  //  tts.exit();
+
+    people_proxy.unsubscribe("People");
+   // people_proxy.exit();
+
     asr.unsubscribe("Test_ASR");
+    asr.setVisualExpression(true);
+
+  //  asr.exit();
+
+    tts.setLanguage("French");
+ //   tts.exit();
+
+    led_proxy.fadeRGB("FaceLeds","white",0.1);
+  //  led_proxy.exit();
 
     vpDisplay::getClick(I, true);
 
@@ -671,13 +683,12 @@ int main(int argc, const char* argv[])
 
   std::cout << "The end: stop the robot..." << std::endl;
 
-  tts.setLanguage("French");
+  //tts.setLanguage("French");
   //  tts.exit();
 
 
   robot.stop(jointNames_head);
   robot.stopBase();
-  led_proxy.fadeRGB("FaceLeds","white",0.1);
 
   return 0;
 }

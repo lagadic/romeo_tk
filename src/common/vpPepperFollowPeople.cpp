@@ -1,7 +1,9 @@
+
 #include <alvision/alvisiondefinitions.h>
 #include <visp/vpImageConvert.h>
 
 #include <vpPepperFollowPeople.h>
+
 
 vpPepperFollowPeople::vpPepperFollowPeople(std::string ip, int port, vpNaoqiRobot &robot) :m_proxy(ip, port), m_mem_proxy(ip, port),
   m_people_proxy(ip, port), m_led_proxy(ip, port),m_face_tracker(ip, port),m_tts_proxy(ip, port), m_robot(NULL),
@@ -85,16 +87,16 @@ void vpPepperFollowPeople::initialization()
   // Set Visual Servoing:
   m_task.setServo(vpServo::EYEINHAND_L_cVe_eJe) ;
   m_task.setInteractionMatrixType(vpServo::CURRENT, vpServo::PSEUDO_INVERSE);
-  m_lambda_base.initStandard(1.2, 1.0, 10); // 2.3, 0.7, 15
+  m_lambda_base.initStandard(1.0, 0.8, 7); // 2.3, 0.7, 15
   m_lambda_nobase.initStandard(5, 2.9, 15); // 4, 0.5, 15
   m_task.setLambda(m_lambda_base) ;
 
 
   // Create the desired visual feature
-  // m_head_cog_cur.set_uv(m_image_height/2, m_image_width/2);
-  m_ip.set_uv(m_image_height/2, m_image_width/2);
+  m_head_cog_cur.set_uv(m_image_width/2, m_image_height/2);
+  m_ip.set_uv(m_image_width/2, m_image_height/2);
   // Create the current x visual feature
-  m_ip.set_uv(m_image_height/2,m_image_width/2);
+  m_ip.set_uv(m_image_width/2,m_image_height/2);
 
   vpFeatureBuilder::create(m_s, m_cam, m_ip);
   vpFeatureBuilder::create(m_sd, m_cam, m_ip);
@@ -123,6 +125,13 @@ void vpPepperFollowPeople::initialization()
 
   m_robot->getProxy()->setExternalCollisionProtectionEnabled("Move", false);
 
+
+//  I.init(m_image_height, m_image_width,0);
+//  d.init(I);
+//  vpDisplay::setTitle(I, "ViSP viewer");
+//  vpDisplay::display(I);
+
+  std::cout << "Init" << std::endl;
 }
 
 
@@ -132,6 +141,7 @@ vpPepperFollowPeople::~vpPepperFollowPeople()
   m_people_proxy.unsubscribe("People");
 
   m_asr_proxy->unsubscribe("Test_ASR");
+  m_asr_proxy->removeAllContext();
   m_asr_proxy->setVisualExpression(true);
   m_asr_proxy->setLanguage("French");
 
@@ -152,6 +162,9 @@ bool vpPepperFollowPeople::computeAndApplyServo()
     std::cout << "REINIT SERVO ms" << std::endl;
 
   }
+  std::cout << "Display" << std::endl;
+
+//  vpDisplay::display(I);
 
   //std::cout << "Loop time check_speech 0: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 
@@ -196,6 +209,17 @@ bool vpPepperFollowPeople::computeAndApplyServo()
   // std::cout << "Loop time face_tracker: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
   if (face_found) {
     m_led_proxy.post.fadeRGB("FaceLeds","blue",0.1);
+
+//        for(size_t i=0; i < m_face_tracker.getNbObjects(); i++) {
+//          vpRect bbox = m_face_tracker.getBBox(i);
+//          if (i == 0)
+//            vpDisplay::displayRectangle(I, bbox, vpColor::red, false, 2);
+//          else
+//            vpDisplay::displayRectangle(I, bbox, vpColor::green, false, 1);
+//          vpDisplay::displayText(I, (int)bbox.getTop()-10, (int)bbox.getLeft(), m_face_tracker.getMessage(i) , vpColor::red);
+//        }
+
+
 
     double u = m_face_tracker.getCog(0).get_u();
     double v = m_face_tracker.getCog(0).get_v();
@@ -303,8 +327,8 @@ bool vpPepperFollowPeople::computeAndApplyServo()
     m_task.set_eJe( eJe );
     m_task.set_cVe( vpVelocityTwistMatrix(m_eMc.inverse()) );
 
-    //    vpDisplay::displayCross(I, head_cog_des, 10, vpColor::blue);
-    //    vpDisplay::displayCross(I, head_cog_cur, 10, vpColor::green);
+//        vpDisplay::displayCross(I, m_ip, 10, vpColor::blue);
+//        vpDisplay::displayCross(I, m_head_cog_cur, 10, vpColor::green);
     //  std::cout << "head_cog_des:" << std::endl << head_cog_des << std::endl;
     //  std::cout << "head_cog_cur:" << std::endl << head_cog_cur << std::endl;
 
@@ -363,6 +387,10 @@ bool vpPepperFollowPeople::computeAndApplyServo()
     std::cout << "Stop******************************!" << std::endl;
     m_reinit_servo = true;
   }
+
+
+//   vpDisplay::flush(I);
+
 
   std::cout << "Loop time internal: " << vpTime::measureTimeMs() - t << " ms" << std::endl;
 

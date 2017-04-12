@@ -34,6 +34,8 @@
 
 #include <vpFaceTrackerOkao.h>
 
+#include <visp/vpDisplayX.h>
+
 
 class vpPepperFollowPeople
 {
@@ -79,6 +81,8 @@ protected:
   vpFeaturePoint m_sd;
 
 
+  vpImage<unsigned char> I;
+  vpDisplayX d;
 
   vpMatrix tJe;
   vpMatrix eJe;
